@@ -21,8 +21,7 @@ task :default do
   `git clone -b 'v#{ember_version}' --single-branch --depth 1 https://github.com/emberjs/ember.js.git ember`
   `cd ember && yarn && yarn run build && cd -`
 
-
   FileUtils.mkdir_p("dist")
-  FileUtils.cp_r("./ember/dist", "dist")
-  # FileUtils.rm_rf("ember")
+  FileUtils.cp_r("ember/dist/.", "dist/")
+  FileUtils.rm_rf("ember")
 end

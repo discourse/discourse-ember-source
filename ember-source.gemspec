@@ -1,4 +1,3 @@
-
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "ember/version"
@@ -9,9 +8,9 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Joffrey JAFFEUX"]
   spec.email         = ["j.jaffeux@gmail.com"]
 
-  spec.summary       = %q{Write a short summary, because RubyGems requires one.}
-  spec.description   = %q{Write a longer description or delete this line.}
-  spec.homepage      = "https://github.com"
+  spec.summary       = %q{Fork of Ember source}
+  spec.description   = %q{Fork of Ember source to permit latest ember versions}
+  spec.homepage      = "https://github.com/discourse/discourse-ember-source"
   spec.license       = "MIT"
 
   # Specify which files should be added to the gem when it is released.
