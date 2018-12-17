@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/discourse/discourse-ember-source"
   spec.license       = "MIT"
 
-  spec.files         = Dir['lib/ember/*.rb', 'dist/*.js']
+  spec.files         = Dir['lib/ember/*.rb', 'dist/*.js', 'dist/*.map']
 
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
