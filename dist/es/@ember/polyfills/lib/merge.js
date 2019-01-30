@@ -1,6 +1,4 @@
-/**
- @module @ember/polyfills
-*/
+import { deprecate } from '@ember/debug';
 /**
   Merge the contents of two objects together into the first object.
 
@@ -22,6 +20,11 @@
   @public
 */
 export default function merge(original, updates) {
+    deprecate('Use of `merge` has been deprecated. Please use `assign` instead.', false, {
+        id: 'ember-polyfills.deprecate-merge',
+        until: '4.0.0',
+        url: 'https://emberjs.com/deprecations/v3.x/#toc_ember-polyfills-deprecate-merge',
+    });
     if (updates === null || typeof updates !== 'object') {
         return original;
     }

@@ -1,0 +1,4 @@
+{
+  "name": "@ember/application/globals-resolver",
+  "module": "../globals-resolver.js"
+}

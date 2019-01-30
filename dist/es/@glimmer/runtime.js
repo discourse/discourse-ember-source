@@ -650,12 +650,12 @@ APPEND_OPCODES.add(39 /* CloseElement */, vm => {
     vm.elements().closeElement();
 });
 APPEND_OPCODES.add(40 /* Modifier */, (vm, { op1: handle }) => {
-    let manager = vm.constants.resolveHandle(handle);
+    let { manager, state } = vm.constants.resolveHandle(handle);
     let stack = vm.stack;
     let args = stack.pop();
-    let { constructing: element, updateOperations } = vm.elements();
+    let { element, updateOperations } = vm.elements();
     let dynamicScope = vm.dynamicScope();
-    let modifier = manager.create(element, args, dynamicScope, updateOperations);
+    let modifier = manager.create(element, state, args, dynamicScope, updateOperations);
     vm.env.scheduleInstallModifier(modifier, manager);
     let destructor = manager.getDestructor(modifier);
     if (destructor) {
@@ -2820,7 +2820,7 @@ class ListRevalidationDelegate {
         let { map, opcode, updating } = this;
         let nextSibling = null;
         let reference = null;
-        if (before) {
+        if (typeof before === 'string') {
             reference = map[before];
             nextSibling = reference['bounds'].firstNode();
         } else {
@@ -2843,7 +2843,7 @@ class ListRevalidationDelegate {
         let { map, updating } = this;
         let entry = map[key];
         let reference = map[before] || null;
-        if (before) {
+        if (typeof before === 'string') {
             move(entry, reference.firstNode());
         } else {
             move(entry, this.marker);

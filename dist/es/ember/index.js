@@ -1,17 +1,17 @@
 import require, { has } from 'require';
 
-import { getENV, getLookup, setLookup, ENV, context } from 'ember-environment';
+import { getENV, getLookup, setLookup, ENV, context } from '@ember/-internals/environment';
 import { IS_NODE, module } from 'node-module';
-import * as utils from 'ember-utils';
-import { Registry, Container } from 'container';
+import * as utils from '@ember/-internals/utils';
+import { Registry, Container } from '@ember/-internals/container';
 import * as instrumentation from '@ember/instrumentation';
-import { deleteMeta, meta } from 'ember-meta';
-import * as metal from 'ember-metal';
+import { deleteMeta, meta } from '@ember/-internals/meta';
+import * as metal from '@ember/-internals/metal';
 import { FEATURES, isEnabled } from '@ember/canary-features';
 import * as EmberDebug from '@ember/debug';
 import { assert, deprecate } from '@ember/debug';
 import Backburner from 'backburner';
-import Logger from 'ember-console';
+import Logger from '@ember/-internals/console';
 import Controller, { inject as injectController } from '@ember/controller';
 import ControllerMixin from '@ember/controller/lib/controller_mixin';
 import {
@@ -89,7 +89,7 @@ import {
   CoreObject,
   NativeArray,
   A,
-} from 'ember-runtime';
+} from '@ember/-internals/runtime';
 import {
   Checkbox,
   Component,
@@ -107,16 +107,18 @@ import {
   TextField,
   TextArea,
   isSerializationFirstNode,
-} from 'ember-glimmer';
+  setModifierManager,
+  modifierCapabilties,
+} from '@ember/-internals/glimmer';
 // eslint-disable-next-line import/no-unresolved
 import VERSION from './version';
-import * as views from 'ember-views';
-import * as routing from 'ember-routing';
-import * as extensionSupport from 'ember-extension-support';
+import * as views from '@ember/-internals/views';
+import * as routing from '@ember/-internals/routing';
+import * as extensionSupport from '@ember/-internals/extension-support';
 import EmberError from '@ember/error';
 import * as runloop from '@ember/runloop';
-import { getOnerror, setOnerror } from 'ember-error-handling';
-import { getOwner, setOwner } from 'ember-owner';
+import { getOnerror, setOnerror } from '@ember/-internals/error-handling';
+import { getOwner, setOwner } from '@ember/-internals/owner';
 import Application, { onLoad, runLoadHooks } from '@ember/application';
 import Resolver from '@ember/application/globals-resolver';
 import ApplicationInstance from '@ember/application/instance';
@@ -126,14 +128,9 @@ import Map from '@ember/map';
 import MapWithDefault from '@ember/map/with-default';
 import OrderedSet, { __OrderedSet__ } from '@ember/map/lib/ordered-set';
 import { assign, merge } from '@ember/polyfills';
-import {
-  PROPERTY_WILL_CHANGE,
-  PROPERTY_DID_CHANGE,
-  LOGGER,
-  EMBER_EXTEND_PROTOTYPES,
-} from '@ember/deprecated-features';
+import { LOGGER, EMBER_EXTEND_PROTOTYPES } from '@ember/deprecated-features';
 
-// ****ember-environment****
+// ****@ember/-internals/environment****
 
 const Ember = (typeof context.imports.Ember === 'object' && context.imports.Ember) || {};
 
@@ -192,7 +189,7 @@ Ember.MapWithDefault = MapWithDefault;
 Ember.assign = assign;
 Ember.merge = merge;
 
-// ****ember-utils****
+// ****@ember/-internals/utils****
 Ember.generateGuid = utils.generateGuid;
 Ember.GUID_KEY = utils.GUID_KEY;
 Ember.guidFor = utils.guidFor;
@@ -205,7 +202,7 @@ Ember.uuid = utils.uuid;
 Ember.NAME_KEY = utils.NAME_KEY;
 Ember._Cache = utils.Cache;
 
-// ****container****
+// ****@ember/-internals/container****
 Ember.Container = Container;
 Ember.Registry = Registry;
 
@@ -264,7 +261,7 @@ Object.defineProperty(Ember.run, 'currentRunLoop', {
   enumerable: false,
 });
 
-// ****ember-metal****
+// ****@ember/-internals/metal****
 
 // Using _globalsComputed here so that mutating the function is only available
 // in globals builds
@@ -290,12 +287,6 @@ Ember.isNone = metal.isNone;
 Ember.isEmpty = metal.isEmpty;
 Ember.isBlank = metal.isBlank;
 Ember.isPresent = metal.isPresent;
-if (PROPERTY_WILL_CHANGE) {
-  Ember.propertyWillChange = metal.propertyWillChange;
-}
-if (PROPERTY_DID_CHANGE) {
-  Ember.propertyDidChange = metal.propertyDidChange;
-}
 Ember.notifyPropertyChange = metal.notifyPropertyChange;
 Ember.overrideChains = metal.overrideChains;
 Ember.beginPropertyChanges = metal.beginPropertyChanges;
@@ -365,12 +356,12 @@ Object.defineProperty(Ember, 'testing', {
 
 Ember._Backburner = Backburner;
 
-// ****ember-console****
+// ****@ember/-internals/console****
 if (LOGGER) {
   Ember.Logger = Logger;
 }
 
-// ****ember-runtime****
+// ****@ember/-internals/runtime****
 Ember.A = A;
 Ember.String = {
   loc,
@@ -509,7 +500,7 @@ Object.defineProperty(Ember, 'BOOTED', {
   set: metal.setNamespaceSearchDisabled,
 });
 
-// ****ember-glimmer****
+// ****@ember/-internals/glimmer****
 Ember.Component = Component;
 Helper.helper = helper;
 Ember.Helper = Helper;
@@ -519,6 +510,8 @@ Ember.TextArea = TextArea;
 Ember.LinkComponent = LinkComponent;
 Ember._setComponentManager = setComponentManager;
 Ember._componentManagerCapabilities = capabilities;
+Ember._setModifierManager = setModifierManager;
+Ember._modifierManagerCapabilties = modifierCapabilties;
 Ember.Handlebars = {
   template,
   Utils: {
@@ -563,7 +556,7 @@ Object.defineProperty(Ember, 'TEMPLATES', {
 */
 Ember.VERSION = VERSION;
 
-// ****ember-views****
+// ****@ember/-internals/views****
 if (!views.jQueryDisabled) {
   Ember.$ = views.jQuery;
 }
@@ -581,7 +574,7 @@ Ember.TextSupport = views.TextSupport;
 Ember.ComponentLookup = views.ComponentLookup;
 Ember.EventDispatcher = views.EventDispatcher;
 
-// ****ember-routing****
+// ****@ember/-internals/routing****
 Ember.Location = routing.Location;
 Ember.AutoLocation = routing.AutoLocation;
 Ember.HashLocation = routing.HashLocation;

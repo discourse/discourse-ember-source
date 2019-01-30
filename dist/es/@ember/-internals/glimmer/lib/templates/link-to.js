@@ -1,0 +1,2 @@
+import template from '../template';
+export default template({"id":"r9g6x1y/","block":"{\"symbols\":[\"&default\"],\"statements\":[[4,\"if\",[[23,[\"linkTitle\"]]],null,{\"statements\":[[1,[21,\"linkTitle\"],false]],\"parameters\":[]},{\"statements\":[[14,1]],\"parameters\":[]}]],\"hasEval\":false}","meta":{"moduleName":"packages/@ember/-internals/glimmer/lib/templates/link-to.hbs"}});

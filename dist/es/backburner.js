@@ -480,6 +480,7 @@ class Backburner {
         this._timerTimeoutId = null;
         this._timers = [];
         this._autorun = null;
+        this._autorunStack = null;
         this.queueNames = queueNames;
         this.options = options || {};
         if (typeof this.options.defaultQueue === 'string') {
@@ -498,6 +499,7 @@ class Backburner {
                 return;
             }
             this._autorun = null;
+            this._autorunStack = null;
             this._end(true /* fromAutorun */);
         };
         let builder = this.options._buildPlatform || buildPlatform;
@@ -679,7 +681,8 @@ class Backburner {
     debounce() {
         debounceCount++;
         let [target, method, args, wait, isImmediate = false] = parseDebounceArgs(...arguments);
-        let index = findTimerItem(target, method, this._timers);
+        let _timers = this._timers;
+        let index = findTimerItem(target, method, _timers);
         let timerId;
         if (index === -1) {
             timerId = this._later(target, method, isImmediate ? DISABLE_SCHEDULE : args, wait);
@@ -688,13 +691,22 @@ class Backburner {
             }
         }
         else {
-            let executeAt = this._platform.now() + wait || this._timers[index];
-            this._timers[index] = executeAt;
+            let executeAt = this._platform.now() + wait;
             let argIndex = index + 4;
-            if (this._timers[argIndex] !== DISABLE_SCHEDULE) {
-                this._timers[argIndex] = args;
+            if (_timers[argIndex] === DISABLE_SCHEDULE) {
+                args = DISABLE_SCHEDULE;
             }
-            timerId = this._timers[index + 1];
+            timerId = _timers[index + 1];
+            let i = binarySearch(executeAt, _timers);
+            if ((index + TIMERS_OFFSET) === i) {
+                _timers[index] = executeAt;
+                _timers[argIndex] = args;
+            }
+            else {
+                let stack = this._timers[index + 5];
+                this._timers.splice(i, 0, executeAt, timerId, target, method, args, stack);
+                this._timers.splice(index, TIMERS_OFFSET);
+            }
             if (index === 0) {
                 this._reinstallTimerTimeout();
             }
@@ -737,6 +749,7 @@ class Backburner {
     getDebugInfo() {
         if (this.DEBUG) {
             return {
+                autorun: this._autorunStack,
                 counters: this.counters,
                 timers: getQueueItems(this._timers, TIMERS_OFFSET, 2),
                 instanceStack: [this.currentInstance, ...this.instanceStack]
@@ -814,6 +827,7 @@ class Backburner {
         if (this._autorun !== null) {
             this._platform.clearNext(this._autorun);
             this._autorun = null;
+            this._autorunStack = null;
         }
     }
     _later(target, method, args, wait) {
@@ -837,7 +851,7 @@ class Backburner {
         for (let i = 1; i < this._timers.length; i += TIMERS_OFFSET) {
             if (this._timers[i] === timer) {
                 this._timers.splice(i - 1, TIMERS_OFFSET);
-                if (i === 0) {
+                if (i === 1) {
                     this._reinstallTimerTimeout();
                 }
                 return true;
@@ -918,6 +932,7 @@ class Backburner {
     _ensureInstance() {
         let currentInstance = this.currentInstance;
         if (currentInstance === null) {
+            this._autorunStack = this.DEBUG ? new Error() : undefined;
             currentInstance = this.begin();
             this._scheduleAutorun();
         }

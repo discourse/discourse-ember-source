@@ -40,7 +40,6 @@ function is(variant) {
     };
 }
 // Statements
-const isModifier = is(Opcodes.Modifier);
 const isFlushElement = is(Opcodes.FlushElement);
 const isAttrSplat = is(Opcodes.AttrSplat);
 function isAttribute(val) {
@@ -53,4 +52,4 @@ function isArgument(val) {
 const isGet = is(Opcodes.Get);
 const isMaybeLocal = is(Opcodes.MaybeLocal);
 
-export { is, isModifier, isFlushElement, isAttrSplat, isAttribute, isArgument, isGet, isMaybeLocal, Opcodes as Ops };
+export { is, isFlushElement, isAttrSplat, isAttribute, isArgument, isGet, isMaybeLocal, Opcodes as Ops };

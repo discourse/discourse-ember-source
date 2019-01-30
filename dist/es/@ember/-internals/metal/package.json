@@ -1,0 +1,4 @@
+{
+  "name": "@ember/-internals/metal",
+  "module": "../metal/index.js"
+}

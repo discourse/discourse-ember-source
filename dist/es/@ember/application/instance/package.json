@@ -1,0 +1,4 @@
+{
+  "name": "@ember/application/instance",
+  "module": "../instance.js"
+}

@@ -275,9 +275,9 @@ var EventedTokenizer = /** @class */ (function () {
                 else {
                     this.delegate.beginAttributeValue(false);
                     this.delegate.finishAttributeValue();
-                    this.consume();
                     this.transitionTo("attributeName" /* attributeName */);
                     this.delegate.beginAttribute();
+                    this.consume();
                     this.delegate.appendToAttributeName(char);
                 }
             },

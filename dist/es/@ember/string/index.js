@@ -2,8 +2,8 @@
 @module @ember/string
 */
 export { getStrings as _getStrings, setStrings as _setStrings } from './lib/string_registry';
-import { ENV } from 'ember-environment';
-import { Cache } from 'ember-utils';
+import { ENV } from '@ember/-internals/environment';
+import { Cache } from '@ember/-internals/utils';
 import { getString } from './lib/string_registry';
 const STRING_DASHERIZE_REGEXP = /[ _]/g;
 const STRING_DASHERIZE_CACHE = new Cache(1000, key => decamelize(key).replace(STRING_DASHERIZE_REGEXP, '-'));

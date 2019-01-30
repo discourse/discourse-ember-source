@@ -1,0 +1,4 @@
+{
+  "name": "@ember/-internals/owner",
+  "module": "../owner/index.js"
+}

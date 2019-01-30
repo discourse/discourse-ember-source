@@ -1,5 +1,5 @@
 import { dict, unreachable, Stack, DictSet } from '@glimmer/util';
-import { Ops, isModifier, isFlushElement, isArgument, isAttribute, isAttrSplat } from '@glimmer/wire-format';
+import { Ops, isFlushElement, isArgument, isAttribute, isAttrSplat } from '@glimmer/wire-format';
 import { isLiteral, SyntaxError, preprocess } from '@glimmer/syntax';
 
 class SymbolTable {
@@ -347,9 +347,7 @@ class ComponentBlock extends Block {
     }
     push(statement) {
         if (this.inParams) {
-            if (isModifier(statement)) {
-                throw new Error('Compile Error: Element modifiers are not allowed in components');
-            } else if (isFlushElement(statement)) {
+            if (isFlushElement(statement)) {
                 this.inParams = false;
             } else if (isArgument(statement)) {
                 this.arguments.push(statement);
@@ -470,6 +468,9 @@ class JavaScriptCompiler {
         this.push([Ops.FlushElement]);
     }
     closeComponent(_element) {
+        if (_element.modifiers.length > 0) {
+            throw new Error('Compile Error: Element modifiers are not allowed in components');
+        }
         let [tag, attrs, args, block] = this.endComponent();
         this.push([Ops.Component, tag, attrs, args, block]);
     }
@@ -839,9 +840,6 @@ class TemplateCompiler {
         if (typeAttr) {
             this.attribute([typeAttr]);
         }
-        for (let i = 0; i < action.modifiers.length; i++) {
-            this.modifier([action.modifiers[i]]);
-        }
         this.opcode(['flushElement', action], null);
     }
     closeElement([action]) {
@@ -849,6 +847,11 @@ class TemplateCompiler {
             this.opcode(['closeDynamicComponent', action], action);
         } else if (isComponent(action)) {
             this.opcode(['closeComponent', action], action);
+        } else if (action.modifiers.length > 0) {
+            for (let i = 0; i < action.modifiers.length; i++) {
+                this.modifier([action.modifiers[i]]);
+            }
+            this.opcode(['closeElement', action], action);
         } else {
             this.opcode(['closeElement', action], action);
         }

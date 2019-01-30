@@ -1,0 +1,4 @@
+{
+  "name": "@ember/-internals/container",
+  "module": "../container/index.js"
+}

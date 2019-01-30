@@ -1,0 +1,4 @@
+{
+  "name": "@ember/object/computed",
+  "module": "../computed.js"
+}

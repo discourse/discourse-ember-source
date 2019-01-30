@@ -1,7 +1,7 @@
 /* eslint no-console:off */
 /* global console */
+import { ENV } from '@ember/-internals/environment';
 import { EMBER_IMPROVED_INSTRUMENTATION } from '@ember/canary-features';
-import { ENV } from 'ember-environment';
 /**
 @module @ember/instrumentation
 @private

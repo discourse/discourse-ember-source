@@ -1,0 +1,2 @@
+import template from '../template';
+export default template({"id":"HlDcU23A","block":"{\"symbols\":[],\"statements\":[[1,[27,\"component\",[[22,0,[]]],null],false]],\"hasEval\":false}","meta":{"moduleName":"packages/@ember/-internals/glimmer/lib/templates/root.hbs"}});

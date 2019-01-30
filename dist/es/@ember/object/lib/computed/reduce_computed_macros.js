@@ -2,8 +2,14 @@
 @module @ember/object
 */
 import { assert } from '@ember/debug';
-import { get, ComputedProperty, addObserver, removeObserver, getProperties } from 'ember-metal';
-import { compare, isArray, A as emberA, uniqBy as uniqByArray } from 'ember-runtime';
+import {
+  get,
+  ComputedProperty,
+  addObserver,
+  removeObserver,
+  getProperties,
+} from '@ember/-internals/metal';
+import { compare, isArray, A as emberA, uniqBy as uniqByArray } from '@ember/-internals/runtime';
 
 function reduceMacro(dependentKey, callback, initialValue, name) {
   assert(
@@ -826,12 +832,19 @@ function propertySort(itemsKey, sortPropertiesKey) {
       let activeObserversMap = cp._activeObserverMap || (cp._activeObserverMap = new WeakMap());
       let activeObservers = activeObserversMap.get(this);
 
-      if (activeObservers !== undefined) {
-        activeObservers.forEach(args => removeObserver(...args));
+      let sortPropertyDidChangeMap =
+        cp._sortPropertyDidChangeMap || (cp._sortPropertyDidChangeMap = new WeakMap());
+
+      if (!sortPropertyDidChangeMap.has(this)) {
+        sortPropertyDidChangeMap.set(this, function() {
+          this.notifyPropertyChange(key);
+        });
       }
 
-      function sortPropertyDidChange() {
-        this.notifyPropertyChange(key);
+      let sortPropertyDidChange = sortPropertyDidChangeMap.get(this);
+
+      if (activeObservers !== undefined) {
+        activeObservers.forEach(path => removeObserver(this, path, sortPropertyDidChange));
       }
 
       let itemsKeyIsAtThis = itemsKey === '@this';
@@ -839,12 +852,12 @@ function propertySort(itemsKey, sortPropertiesKey) {
       if (normalizedSortProperties.length === 0) {
         let path = itemsKeyIsAtThis ? `[]` : `${itemsKey}.[]`;
         addObserver(this, path, sortPropertyDidChange);
-        activeObservers = [[this, path, sortPropertyDidChange]];
+        activeObservers = [path];
       } else {
         activeObservers = normalizedSortProperties.map(([prop]) => {
           let path = itemsKeyIsAtThis ? `@each.${prop}` : `${itemsKey}.@each.${prop}`;
           addObserver(this, path, sortPropertyDidChange);
-          return [this, path, sortPropertyDidChange];
+          return path;
         });
       }
 
@@ -865,6 +878,7 @@ function propertySort(itemsKey, sortPropertiesKey) {
   );
 
   cp._activeObserverMap = undefined;
+  cp._sortPropertyDidChangeMap = undefined;
 
   return cp;
 }

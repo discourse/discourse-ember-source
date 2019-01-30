@@ -1,0 +1,4 @@
+{
+  "name": "@ember/-internals/error-handling",
+  "module": "../error-handling/index.js"
+}

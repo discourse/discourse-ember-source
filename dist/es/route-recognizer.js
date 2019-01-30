@@ -671,7 +671,7 @@ RouteRecognizer.prototype.recognize = function recognize (path) {
     }
     return results;
 };
-RouteRecognizer.VERSION = "0.3.3";
+RouteRecognizer.VERSION = "0.3.4";
 // Set to false to opt-out of encoding and decoding path segments.
 // See https://github.com/tildeio/route-recognizer/pull/55
 RouteRecognizer.ENCODE_AND_DECODE_PATH_SEGMENTS = true;

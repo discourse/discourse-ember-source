@@ -15,9 +15,9 @@ let template;
   @param {Object} options This is an options hash to augment the compiler options.
 */
 export default function compile(templateString, options) {
-    if (!template && has('ember-glimmer')) {
+    if (!template && has('@ember/-internals/glimmer')) {
         // tslint:disable-next-line:no-require-imports
-        template = require('ember-glimmer').template;
+        template = require('@ember/-internals/glimmer').template;
     }
     if (!template) {
         throw new Error('Cannot call `compile` with only the template compiler loaded. Please load `ember.debug.js` or `ember.prod.js` prior to calling `compile`.');

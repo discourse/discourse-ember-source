@@ -1,0 +1,4 @@
+{
+  "name": "@ember/-internals/runtime",
+  "module": "../runtime/index.js"
+}

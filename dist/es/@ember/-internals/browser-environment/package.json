@@ -1,0 +1,4 @@
+{
+  "name": "@ember/-internals/browser-environment",
+  "module": "../browser-environment/index.js"
+}

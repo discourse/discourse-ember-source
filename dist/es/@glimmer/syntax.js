@@ -2,20 +2,8 @@ import { EventedTokenizer, EntityParser, HTML5NamedCharRefs } from 'simple-html-
 import { assign } from '@glimmer/util';
 import { parse } from 'handlebars';
 
-function isCall(node) {
-    return node.type === 'SubExpression' || node.type === 'MustacheStatement' && node.path.type === 'PathExpression';
-}
-function isLiteral(input) {
-    return !!(typeof input === 'object' && input.type.match(/Literal$/));
-}
-
-var nodes = /*#__PURE__*/Object.freeze({
-    isCall: isCall,
-    isLiteral: isLiteral
-});
-
 function buildMustache(path, params, hash, raw, loc) {
-    if (!isLiteral(path)) {
+    if (typeof path === 'string') {
         path = buildPath(path);
     }
     return {
@@ -333,7 +321,7 @@ function childrenFor(node) {
 function appendChild(parent, node) {
     childrenFor(parent).push(node);
 }
-function isLiteral$1(path) {
+function isLiteral(path) {
     return path.type === 'StringLiteral' || path.type === 'BooleanLiteral' || path.type === 'NumberLiteral' || path.type === 'NullLiteral' || path.type === 'UndefinedLiteral';
 }
 function printLiteral(literal) {
@@ -679,7 +667,7 @@ function acceptCallNodes(compiler, node) {
 }
 function addElementModifier(element, mustache) {
     let { path, params, hash, loc } = mustache;
-    if (isLiteral$1(path)) {
+    if (isLiteral(path)) {
         let modifier = `{{${printLiteral(path)}}}`;
         let tag = `<${element.name} ... ${modifier} ...`;
         throw new SyntaxError(`In ${tag}, ${modifier} is not a valid modifier: "${path.original}" on line ${loc && loc.start.line}.`, mustache.loc);
@@ -712,7 +700,9 @@ function appendDynamicAttributeValuePart(attribute, part) {
     attribute.parts.push(part);
 }
 
-var visitorKeys = {
+// ensure stays in sync with typing
+// ParentNode and ChildKey types are derived from VisitorKeysMap
+const visitorKeys = {
     Program: ['body'],
     MustacheStatement: ['path', 'params', 'hash'],
     BlockStatement: ['path', 'params', 'hash', 'program', 'inverse'],
@@ -758,11 +748,41 @@ function cannotReplaceOrRemoveInKeyHandlerYet(node, key) {
     return new TraversalError('Replacing and removing in key handlers is not yet supported.', node, null, key);
 }
 
+function getEnterFunction(handler) {
+    return typeof handler === 'function' ? handler : handler.enter;
+}
+function getExitFunction(handler) {
+    return typeof handler !== 'function' ? handler.exit : undefined;
+}
+function getKeyHandler(handler, key) {
+    let keyVisitor = typeof handler !== 'function' ? handler.keys : undefined;
+    if (keyVisitor === undefined) return;
+    let keyHandler = keyVisitor[key];
+    if (keyHandler !== undefined) {
+        // widen specific key to all keys
+        return keyHandler;
+    }
+    return keyVisitor.All;
+}
+function getNodeHandler(visitor, nodeType) {
+    let handler = visitor[nodeType];
+    if (handler !== undefined) {
+        // widen specific Node to all nodes
+        return handler;
+    }
+    return visitor.All;
+}
 function visitNode(visitor, node) {
-    let handler = visitor[node.type] || visitor.All || null;
+    let handler = getNodeHandler(visitor, node.type);
+    let enter;
+    let exit;
+    if (handler !== undefined) {
+        enter = getEnterFunction(handler);
+        exit = getExitFunction(handler);
+    }
     let result;
-    if (handler && handler['enter']) {
-        result = handler['enter'].call(null, node);
+    if (enter !== undefined) {
+        result = enter(node);
     }
     if (result !== undefined && result !== null) {
         if (JSON.stringify(node) === JSON.stringify(result)) {
@@ -776,10 +796,11 @@ function visitNode(visitor, node) {
     if (result === undefined) {
         let keys = visitorKeys[node.type];
         for (let i = 0; i < keys.length; i++) {
+            // we know if it has child keys we can widen to a ParentNode
             visitKey(visitor, handler, node, keys[i]);
         }
-        if (handler && handler['exit']) {
-            result = handler['exit'].call(null, node);
+        if (exit !== undefined) {
+            result = exit(node);
         }
     }
     return result;
@@ -789,11 +810,17 @@ function visitKey(visitor, handler, node, key) {
     if (!value) {
         return;
     }
-    let keyHandler = handler && (handler.keys[key] || handler.keys.All);
-    let result;
-    if (keyHandler && keyHandler.enter) {
-        result = keyHandler.enter.call(null, node, key);
-        if (result !== undefined) {
+    let keyEnter;
+    let keyExit;
+    if (handler !== undefined) {
+        let keyHandler = getKeyHandler(handler, key);
+        if (keyHandler !== undefined) {
+            keyEnter = getEnterFunction(keyHandler);
+            keyExit = getExitFunction(keyHandler);
+        }
+    }
+    if (keyEnter !== undefined) {
+        if (keyEnter(node, key) !== undefined) {
             throw cannotReplaceOrRemoveInKeyHandlerYet(node, key);
         }
     }
@@ -805,9 +832,8 @@ function visitKey(visitor, handler, node, key) {
             assignKey(node, key, result);
         }
     }
-    if (keyHandler && keyHandler.exit) {
-        result = keyHandler.exit.call(null, node, key);
-        if (result !== undefined) {
+    if (keyExit !== undefined) {
+        if (keyExit(node, key) !== undefined) {
             throw cannotReplaceOrRemoveInKeyHandlerYet(node, key);
         }
     }
@@ -850,45 +876,7 @@ function spliceArray(array, index, result) {
     }
 }
 function traverse(node, visitor) {
-    visitNode(normalizeVisitor(visitor), node);
-}
-function normalizeVisitor(visitor) {
-    let normalizedVisitor = {};
-    for (let type in visitor) {
-        let handler = visitor[type] || visitor.All;
-        let normalizedKeys = {};
-        if (typeof handler === 'object') {
-            let keys = handler.keys;
-            if (keys) {
-                for (let key in keys) {
-                    let keyHandler = keys[key];
-                    if (typeof keyHandler === 'object') {
-                        normalizedKeys[key] = {
-                            enter: typeof keyHandler.enter === 'function' ? keyHandler.enter : null,
-                            exit: typeof keyHandler.exit === 'function' ? keyHandler.exit : null
-                        };
-                    } else if (typeof keyHandler === 'function') {
-                        normalizedKeys[key] = {
-                            enter: keyHandler,
-                            exit: null
-                        };
-                    }
-                }
-            }
-            normalizedVisitor[type] = {
-                enter: typeof handler.enter === 'function' ? handler.enter : null,
-                exit: typeof handler.exit === 'function' ? handler.exit : null,
-                keys: normalizedKeys
-            };
-        } else if (typeof handler === 'function') {
-            normalizedVisitor[type] = {
-                enter: handler,
-                exit: null,
-                keys: normalizedKeys
-            };
-        }
-    }
-    return normalizedVisitor;
+    visitNode(visitor, node);
 }
 
 const ATTR_VALUE_REGEX_TEST = /[\xA0"&]/;
@@ -1419,6 +1407,12 @@ function preprocess(html, options) {
     return program;
 }
 
+
+
+var nodes = /*#__PURE__*/Object.freeze({
+
+});
+
 // used by ember-compiler
 
-export { nodes as AST, preprocess, b as builders, TraversalError, cannotRemoveNode, cannotReplaceNode, cannotReplaceOrRemoveInKeyHandlerYet, traverse, Walker, build as print, SyntaxError, isLiteral$1 as isLiteral, printLiteral };
+export { nodes as AST, preprocess, b as builders, TraversalError, cannotRemoveNode, cannotReplaceNode, cannotReplaceOrRemoveInKeyHandlerYet, traverse, Walker, build as print, SyntaxError, isLiteral, printLiteral };

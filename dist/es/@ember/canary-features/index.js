@@ -1,8 +1,14 @@
+import { ENV } from '@ember/-internals/environment';
 import { assign } from '@ember/polyfills';
-import { ENV } from 'ember-environment';
 /**
- @module ember/canary-features
- @private
+  Set `EmberENV.FEATURES` in your application's `config/environment.js` file
+  to enable canary features in your application.
+
+  See the [feature flag guide](https://guides.emberjs.com/release/configuring-ember/feature-flags/)
+  for more details.
+
+  @module @ember/canary-features
+  @public
 */
 export const DEFAULT_FEATURES = {
     EMBER_LIBRARIES_ISREGISTERED: false,
@@ -12,7 +18,7 @@ export const DEFAULT_FEATURES = {
     EMBER_ENGINES_MOUNT_PARAMS: true,
     EMBER_MODULE_UNIFICATION: false,
     GLIMMER_CUSTOM_COMPONENT_MANAGER: true,
-    EMBER_TEMPLATE_BLOCK_LET_HELPER: true,
+    GLIMMER_MODIFIER_MANAGER: false,
     EMBER_METAL_TRACKED_PROPERTIES: false,
     EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION: true,
 };
@@ -20,11 +26,7 @@ export const DEFAULT_FEATURES = {
   The hash of enabled Canary features. Add to this, any canary features
   before creating your application.
 
-  Alternatively (and recommended), you can also define `EmberENV.FEATURES`
-  if you need to enable features flagged at runtime.
-
   @class FEATURES
-  @namespace Ember
   @static
   @since 1.1.0
   @public
@@ -42,7 +44,6 @@ export const FEATURES = assign(DEFAULT_FEATURES, ENV.FEATURES);
   @method isEnabled
   @param {String} feature The feature to check
   @return {Boolean}
-  @for Ember.FEATURES
   @since 1.1.0
   @public
 */
@@ -72,5 +73,5 @@ export const EMBER_ENGINES_MOUNT_PARAMS = featureValue(FEATURES.EMBER_ENGINES_MO
 export const EMBER_MODULE_UNIFICATION = featureValue(FEATURES.EMBER_MODULE_UNIFICATION);
 export const EMBER_METAL_TRACKED_PROPERTIES = featureValue(FEATURES.EMBER_METAL_TRACKED_PROPERTIES);
 export const GLIMMER_CUSTOM_COMPONENT_MANAGER = featureValue(FEATURES.GLIMMER_CUSTOM_COMPONENT_MANAGER);
-export const EMBER_TEMPLATE_BLOCK_LET_HELPER = featureValue(FEATURES.EMBER_TEMPLATE_BLOCK_LET_HELPER);
 export const EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION = featureValue(FEATURES.EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION);
+export const GLIMMER_MODIFIER_MANAGER = featureValue(FEATURES.GLIMMER_MODIFIER_MANAGER);
