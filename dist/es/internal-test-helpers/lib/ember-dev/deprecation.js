@@ -1,5 +1,16 @@
 import DebugAssert from './debug';
 import { callWithStub } from './utils';
+export function setupDeprecationHelpers(hooks, env) {
+    let assertion = new DeprecationAssert(env);
+    hooks.beforeEach(function () {
+        assertion.reset();
+        assertion.inject();
+    });
+    hooks.afterEach(function () {
+        assertion.assert();
+        assertion.restore();
+    });
+}
 class DeprecationAssert extends DebugAssert {
     constructor(env) {
         super('deprecate', env);

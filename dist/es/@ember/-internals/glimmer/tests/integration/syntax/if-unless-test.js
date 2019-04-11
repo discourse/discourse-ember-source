@@ -1,9 +1,9 @@
-import { Component } from '../../utils/helpers';
+import { RenderingTestCase, moduleFor, strip, runTask } from 'internal-test-helpers';
+
 import { A as emberA } from '@ember/-internals/runtime';
 import { set } from '@ember/-internals/metal';
-import { strip } from '../../utils/abstract-test-case';
 
-import { RenderingTest, moduleFor } from '../../utils/test-case';
+import { Component } from '../../utils/helpers';
 import { IfUnlessWithSyntaxTest } from '../../utils/shared-conditional-tests';
 
 moduleFor(
@@ -35,7 +35,7 @@ moduleFor(
 
 moduleFor(
   'Syntax test: {{#if}}',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test using `if` with an `{{each}}` destroys components when transitioning to and from inverse (GH #12267)'](
       assert
     ) {
@@ -65,16 +65,16 @@ moduleFor(
 
       this.assertText('123');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('123');
 
-      this.runTask(() => set(this.context, 'cond', false));
+      runTask(() => set(this.context, 'cond', false));
 
       this.assertText('Nothing Here!');
       assert.equal(destroyedChildrenCount, 3, 'the children were properly destroyed');
 
-      this.runTask(() => set(this.context, 'cond', true));
+      runTask(() => set(this.context, 'cond', true));
 
       this.assertText('123');
     }
@@ -92,15 +92,15 @@ moduleFor(
 
       this.assertText('Nothing Here!');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('Nothing Here!');
 
-      this.runTask(() => set(this.context, 'foo', { bar: { baz: true } }));
+      runTask(() => set(this.context, 'foo', { bar: { baz: true } }));
 
       this.assertText('Here!');
 
-      this.runTask(() => set(this.context, 'foo', {}));
+      runTask(() => set(this.context, 'foo', {}));
 
       this.assertText('Nothing Here!');
     }

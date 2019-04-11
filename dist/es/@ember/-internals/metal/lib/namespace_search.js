@@ -86,7 +86,7 @@ export function isSearchDisabled() {
     return searchDisabled;
 }
 export function setSearchDisabled(flag) {
-    searchDisabled = !!flag;
+    searchDisabled = Boolean(flag);
 }
 export function setUnprocessedMixins() {
     unprocessedMixins = true;

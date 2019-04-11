@@ -35,7 +35,7 @@ import { assert } from '@ember/debug';
   @public
 */
 export function addListener(obj, eventName, target, method, once) {
-    assert('You must pass at least an object and event name to addListener', !!obj && !!eventName);
+    assert('You must pass at least an object and event name to addListener', Boolean(obj) && Boolean(eventName));
     if (!method && 'function' === typeof target) {
         method = target;
         target = null;
@@ -57,7 +57,7 @@ export function addListener(obj, eventName, target, method, once) {
   @public
 */
 export function removeListener(obj, eventName, target, method) {
-    assert('You must pass at least an object and event name to removeListener', !!obj && !!eventName);
+    assert('You must pass at least an object and event name to removeListener', Boolean(obj) && Boolean(eventName));
     if (!method && 'function' === typeof target) {
         method = target;
         target = null;
@@ -82,13 +82,14 @@ export function removeListener(obj, eventName, target, method) {
   @param obj
   @param {String} eventName
   @param {Array} params Optional parameters for each listener.
-  @return true
+  @return {Boolean} if the event was delivered to one or more actions
   @public
 */
 export function sendEvent(obj, eventName, params, actions, _meta) {
     if (actions === undefined) {
         let meta = _meta === undefined ? peekMeta(obj) : _meta;
-        actions = typeof meta === 'object' && meta !== null && meta.matchingListeners(eventName);
+        actions =
+            typeof meta === 'object' && meta !== null ? meta.matchingListeners(eventName) : undefined;
     }
     if (actions === undefined || actions.length === 0) {
         return false;
@@ -121,10 +122,11 @@ export function sendEvent(obj, eventName, params, actions, _meta) {
   @for @ember/object/events
   @param obj
   @param {String} eventName
+  @return {Boolean} if `obj` has listeners for event `eventName`
 */
 export function hasListeners(obj, eventName) {
     let meta = peekMeta(obj);
-    if (meta === undefined) {
+    if (meta === null) {
         return false;
     }
     let matched = meta.matchingListeners(eventName);
@@ -155,7 +157,7 @@ export function hasListeners(obj, eventName) {
   @for @ember/object/evented
   @param {String} eventNames*
   @param {Function} func
-  @return func
+  @return {Function} the listener function, passed as last argument to on(...)
   @public
 */
 export function on(...args) {

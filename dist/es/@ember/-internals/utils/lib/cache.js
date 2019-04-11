@@ -9,16 +9,14 @@ export default class Cache {
         this.store = store || new Map();
     }
     get(key) {
-        let value = this.store.get(key);
         if (this.store.has(key)) {
             this.hits++;
             return this.store.get(key);
         }
         else {
             this.misses++;
-            value = this.set(key, this.func(key));
+            return this.set(key, this.func(key));
         }
-        return value;
     }
     set(key, value) {
         if (this.limit > this.size) {

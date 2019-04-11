@@ -5,7 +5,7 @@ class DSL {
     constructor(name = null, options) {
         this.explicitIndex = false;
         this.parent = name;
-        this.enableLoadingSubstates = !!(options && options.enableLoadingSubstates);
+        this.enableLoadingSubstates = Boolean(options && options.enableLoadingSubstates);
         this.matches = [];
         this.options = options;
     }

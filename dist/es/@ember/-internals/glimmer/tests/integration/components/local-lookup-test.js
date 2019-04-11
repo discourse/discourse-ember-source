@@ -1,12 +1,18 @@
-import { moduleFor, RenderingTest } from '../../utils/test-case';
+import {
+  moduleFor,
+  RenderingTestCase,
+  ModuleBasedTestResolver,
+  ApplicationTestCase,
+  runTask,
+} from 'internal-test-helpers';
+
 import { compile } from 'ember-template-compiler';
-import { ModuleBasedTestResolver } from 'internal-test-helpers';
-import { moduleFor as applicationModuleFor, ApplicationTestCase } from 'internal-test-helpers';
-import { Component } from '../../utils/helpers';
 import { EMBER_MODULE_UNIFICATION } from '@ember/canary-features';
 import { helper, Helper } from '@ember/-internals/glimmer';
 
-class LocalLookupTest extends RenderingTest {
+import { Component } from '../../utils/helpers';
+
+class LocalLookupTest extends RenderingTestCase {
   ['@test it can lookup a local template']() {
     this.registerComponent('x-outer/x-inner', {
       template: 'Nested template says: {{yield}}',
@@ -19,7 +25,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('Nested template says: Hi!', 'Initial render works');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('Nested template says: Hi!', 'Re-render works');
   }
@@ -37,7 +43,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('Nested template says: Hi!', 'Re-render works');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('Nested template says: Hi!', 'Re-render works');
   }
@@ -50,7 +56,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('Nested template says: Hi!', 'Initial render works');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('Nested template says: Hi!', 'Re-render works');
   }
@@ -65,7 +71,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('yall finished or yall done?');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('yall finished or yall done?');
   }
@@ -83,7 +89,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('yall finished or yall done?');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('yall finished or yall done?');
   }
@@ -99,7 +105,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('yall finished or yall done?');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('yall finished or yall done?');
   }
@@ -120,7 +126,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('yall finished or yall done?');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('yall finished or yall done?');
   }
@@ -144,7 +150,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('yall finished or yall done?');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('yall finished or yall done?');
   }
@@ -163,9 +169,9 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('yall finished or yall done?');
 
-    this.runTask(() => this.context.set('bar', 'global-bar'));
+    runTask(() => this.context.set('bar', 'global-bar'));
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('yall finished or yall ready?');
   }
@@ -180,7 +186,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('Who dat? Who dis?', 'Initial render works');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('Who dat? Who dis?', 'Re-render works');
   }
@@ -200,7 +206,7 @@ class LocalLookupTest extends RenderingTest {
 
     this.assertText('Who dat? Who dis? I dunno', 'Initial render works');
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('Who dat? Who dis? I dunno', 'Re-render works');
   }
@@ -234,7 +240,7 @@ class LocalLookupTest extends RenderingTest {
       'Nested template says (from global): Hi! Nested template says (from local): Hi! Nested template says (from local): Hi!'
     );
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText(
       'Nested template says (from global): Hi! Nested template says (from local): Hi! Nested template says (from local): Hi!'
@@ -370,7 +376,7 @@ if (EMBER_MODULE_UNIFICATION) {
 }
 
 if (EMBER_MODULE_UNIFICATION) {
-  applicationModuleFor(
+  moduleFor(
     'Components test: local lookup with resolution referrer (MU)',
     class extends ApplicationTestCase {
       ['@test Ensure that the same specifier with two sources does not share a cache key'](assert) {

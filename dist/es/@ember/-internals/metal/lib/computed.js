@@ -136,7 +136,7 @@ class ComputedProperty extends Descriptor {
             const objectConfig = config;
             assert('computed expects a function or an object as last argument.', typeof objectConfig === 'object' && !Array.isArray(objectConfig));
             assert('Config object passed to computed can only contain `get` and `set` keys.', Object.keys(objectConfig).every(key => key === 'get' || key === 'set'));
-            assert('Computed properties must receive a getter or a setter, you passed none.', !!objectConfig.get || !!objectConfig.set);
+            assert('Computed properties must receive a getter or a setter, you passed none.', Boolean(objectConfig.get) || Boolean(objectConfig.set));
             this._getter = objectConfig.get || noop;
             this._setter = objectConfig.set;
         }
@@ -147,7 +147,7 @@ class ComputedProperty extends Descriptor {
             this._auto = false;
         }
         this._dependentKeys = opts && opts.dependentKeys;
-        this._readOnly = !!opts && hasGetterOnly && opts.readOnly === true;
+        this._readOnly = Boolean(opts) && hasGetterOnly && opts.readOnly === true;
     }
     /**
       Call on a computed property to set it into non-cached mode. When in this
@@ -296,7 +296,7 @@ class ComputedProperty extends Descriptor {
         }
         // don't create objects just to invalidate
         let meta = peekMeta(obj);
-        if (meta === undefined || meta.source !== obj) {
+        if (meta === null || meta.source !== obj) {
             return;
         }
         let cache = peekCacheFor(obj);

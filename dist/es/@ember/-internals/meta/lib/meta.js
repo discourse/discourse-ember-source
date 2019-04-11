@@ -150,6 +150,19 @@ export class Meta {
             pointer = pointer.parent;
         }
     }
+    _findInheritedMap(key, subkey) {
+        let pointer = this;
+        while (pointer !== null) {
+            let map = pointer[key];
+            if (map !== undefined) {
+                let value = map.get(subkey);
+                if (value !== undefined) {
+                    return value;
+                }
+            }
+            pointer = pointer.parent;
+        }
+    }
     _hasInInheritedSet(key, value) {
         let pointer = this;
         while (pointer !== null) {
@@ -304,11 +317,11 @@ export class Meta {
         assert(this.isMetaDestroyed()
             ? `Cannot update descriptors for \`${subkey}\` on \`${toString(this.source)}\` after it has been destroyed.`
             : '', !this.isMetaDestroyed());
-        let map = this._getOrCreateOwnMap('_descriptors');
-        map[subkey] = value;
+        let map = this._descriptors || (this._descriptors = new Map());
+        map.set(subkey, value);
     }
     peekDescriptors(subkey) {
-        let possibleDesc = this._findInherited2('_descriptors', subkey);
+        let possibleDesc = this._findInheritedMap('_descriptors', subkey);
         return possibleDesc === UNDEFINED ? undefined : possibleDesc;
     }
     removeDescriptors(subkey) {
@@ -320,16 +333,15 @@ export class Meta {
         while (pointer !== null) {
             let map = pointer._descriptors;
             if (map !== undefined) {
-                for (let key in map) {
+                map.forEach((value, key) => {
                     seen = seen === undefined ? new Set() : seen;
                     if (!seen.has(key)) {
                         seen.add(key);
-                        let value = map[key];
                         if (value !== UNDEFINED) {
                             fn(key, value);
                         }
                     }
-                }
+                });
             }
             pointer = pointer.parent;
         }
@@ -595,7 +607,7 @@ export function peekMeta(obj) {
         return meta;
     }
     let pointer = getPrototypeOf(obj);
-    while (pointer !== undefined && pointer !== null) {
+    while (pointer !== null) {
         if (DEBUG) {
             counters.peekPrototypeWalks++;
         }
@@ -611,6 +623,7 @@ export function peekMeta(obj) {
         }
         pointer = getPrototypeOf(pointer);
     }
+    return null;
 }
 /**
   Tears down the meta on an object so that it can be garbage collected.
@@ -630,7 +643,7 @@ export function deleteMeta(obj) {
         counters.deleteCalls++;
     }
     let meta = peekMeta(obj);
-    if (meta !== undefined) {
+    if (meta !== null) {
         meta.destroy();
     }
 }
@@ -661,7 +674,7 @@ export const meta = function meta(obj) {
     }
     let maybeMeta = peekMeta(obj);
     // remove this code, in-favor of explicit parent
-    if (maybeMeta !== undefined && maybeMeta.source === obj) {
+    if (maybeMeta !== null && maybeMeta.source === obj) {
         return maybeMeta;
     }
     let newMeta = new Meta(obj);
@@ -685,7 +698,7 @@ export function descriptorFor(obj, keyName, _meta) {
     assert('Cannot call `descriptorFor` on undefined', obj !== undefined);
     assert(`Cannot call \`descriptorFor\` on ${typeof obj}`, typeof obj === 'object' || typeof obj === 'function');
     let meta = _meta === undefined ? peekMeta(obj) : _meta;
-    if (meta !== undefined) {
+    if (meta !== null) {
         return meta.peekDescriptors(keyName);
     }
 }

@@ -1,7 +1,7 @@
 import { computed, get, getProperties, isEmpty, set, setProperties } from '@ember/-internals/metal';
 import { getOwner } from '@ember/-internals/owner';
 import { A as emberA, ActionHandler, Evented, Object as EmberObject, typeOf, } from '@ember/-internals/runtime';
-import { EMBER_ROUTING_ROUTER_SERVICE } from '@ember/canary-features';
+import { EMBER_ROUTING_BUILD_ROUTEINFO_METADATA, EMBER_ROUTING_ROUTER_SERVICE, } from '@ember/canary-features';
 import { assert, deprecate, info, isTesting } from '@ember/debug';
 import { ROUTER_EVENTS } from '@ember/deprecated-features';
 import { assign } from '@ember/polyfills';
@@ -1210,7 +1210,7 @@ class Route extends EmberObject {
         // NOTE: We're specifically checking that skipAssert is true, because according
         //   to the old API the second parameter was model. We do not want people who
         //   passed a model to skip the assertion.
-        assert(`The controller named '${name}' could not be found. Make sure that this route exists and has already been entered at least once. If you are accessing a controller not associated with a route, make sure the controller class is explicitly defined.`, !!controller || _skipAssert === true);
+        assert(`The controller named '${name}' could not be found. Make sure that this route exists and has already been entered at least once. If you are accessing a controller not associated with a route, make sure the controller class is explicitly defined.`, Boolean(controller) || _skipAssert === true);
         return controller;
     }
     /**
@@ -1657,13 +1657,13 @@ function buildRenderOptions(route, isDefaultRender, _name, options) {
     if (typeof controller === 'string') {
         let controllerName = controller;
         controller = owner.lookup(`controller:${controllerName}`);
-        assert(`You passed \`controller: '${controllerName}'\` into the \`render\` method, but no such controller could be found.`, isDefaultRender || !!controller);
+        assert(`You passed \`controller: '${controllerName}'\` into the \`render\` method, but no such controller could be found.`, isDefaultRender || Boolean(controller));
     }
     if (model) {
         controller.set('model', model);
     }
     let template = owner.lookup(`template:${templateName}`);
-    assert(`Could not find "${templateName}" template, view, or component.`, isDefaultRender || !!template);
+    assert(`Could not find "${templateName}" template, view, or component.`, isDefaultRender || Boolean(template));
     let parent;
     if (into && (parent = parentRoute(route)) && into === parent.routeName) {
         into = undefined;
@@ -1948,7 +1948,7 @@ Route.reopen(ActionHandler, Evented, {
         return {
             find(name, value) {
                 let modelClass = owner.factoryFor(`model:${name}`);
-                assert(`You used the dynamic segment ${name}_id in your route ${routeName}, but ${namespace}.${classify(name)} did not exist and you did not override your route's \`model\` hook.`, !!modelClass);
+                assert(`You used the dynamic segment ${name}_id in your route ${routeName}, but ${namespace}.${classify(name)} did not exist and you did not override your route's \`model\` hook.`, Boolean(modelClass));
                 if (!modelClass) {
                     return;
                 }
@@ -2294,6 +2294,46 @@ if (EMBER_ROUTING_ROUTER_SERVICE && ROUTER_EVENTS) {
             }
             return params;
         },
+    });
+}
+if (EMBER_ROUTING_BUILD_ROUTEINFO_METADATA) {
+    Route.reopen({
+        /**
+          Allows you to produce custom metadata for the route.
+          The return value of this method will be attatched to
+          its corresponding RouteInfoWithAttributes obejct.
+    
+          Example
+    
+          ```app/routes/posts/index.js
+          import Route from '@ember/routing/route';
+    
+          export default Route.extend({
+            buildRouteInfoMetadata() {
+              return { title: 'Posts Page' }
+            }
+          });
+          ```
+          ```app/routes/application.js
+          import Route from '@ember/routing/route';
+          import { inject as service } from '@ember/service';
+    
+          export default Route.extend({
+            router: service('router'),
+            init() {
+              this._super(...arguments);
+              this.router.on('routeDidChange', transition => {
+                document.title = transition.to.metadata.title;
+                // would update document's title to "Posts Page"
+              });
+            }
+          });
+          ```
+    
+          @return any
+          @category ember-routing-build-routeinfo-metadata
+         */
+        buildRouteInfoMetadata() { },
     });
 }
 export default Route;

@@ -457,7 +457,7 @@ APPEND_OPCODES.add(46 /* CompileBlock */, vm => {
     let stack = vm.stack;
     let block = stack.pop();
     if (block) {
-        stack.pushSmi(block.compile());
+        stack.push(block.compile());
     } else {
         stack.pushNull();
     }
@@ -1040,9 +1040,9 @@ APPEND_OPCODES.add(86 /* GetComponentLayout */, (vm, { op1: _state }) => {
     let { state: instanceState, capabilities } = instance;
     let { state: definitionState } = definition;
     let invoke;
-    if (hasStaticLayout(capabilities, manager)) {
+    if (hasStaticLayoutCapability(capabilities, manager)) {
         invoke = manager.getLayout(definitionState, resolver);
-    } else if (hasDynamicLayout(capabilities, manager)) {
+    } else if (hasDynamicLayoutCapability(capabilities, manager)) {
         invoke = manager.getDynamicLayout(instanceState, resolver);
     } else {
         throw unreachable();
@@ -1050,10 +1050,10 @@ APPEND_OPCODES.add(86 /* GetComponentLayout */, (vm, { op1: _state }) => {
     stack.push(invoke.symbolTable);
     stack.push(invoke.handle);
 });
-function hasStaticLayout(capabilities, _manager) {
+function hasStaticLayoutCapability(capabilities, _manager) {
     return hasCapability(capabilities, 1 /* DynamicLayout */) === false;
 }
-function hasDynamicLayout(capabilities, _manager) {
+function hasDynamicLayoutCapability(capabilities, _manager) {
     return hasCapability(capabilities, 1 /* DynamicLayout */) === true;
 }
 APPEND_OPCODES.add(68 /* Main */, (vm, { op1: register }) => {
@@ -1330,40 +1330,35 @@ class SingleNodeBounds {
         return this.node;
     }
 }
-function bounds(parent, first, last) {
-    return new ConcreteBounds(parent, first, last);
-}
-function single(parent, node) {
-    return new SingleNodeBounds(parent, node);
-}
 function move(bounds, reference) {
     let parent = bounds.parentElement();
     let first = bounds.firstNode();
     let last = bounds.lastNode();
-    let node = first;
-    while (node) {
-        let next = node.nextSibling;
-        parent.insertBefore(node, reference);
-        if (node === last) return next;
-        node = next;
+    let current = first;
+    while (true) {
+        let next = current.nextSibling;
+        parent.insertBefore(current, reference);
+        if (current === last) {
+            return next;
+        }
+        current = next;
     }
-    return null;
 }
 function clear(bounds) {
     let parent = bounds.parentElement();
     let first = bounds.firstNode();
     let last = bounds.lastNode();
-    let node = first;
-    while (node) {
-        let next = node.nextSibling;
-        parent.removeChild(node);
-        if (node === last) return next;
-        node = next;
+    let current = first;
+    while (true) {
+        let next = current.nextSibling;
+        parent.removeChild(current);
+        if (current === last) {
+            return next;
+        }
+        current = next;
     }
-    return null;
 }
 
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 // Patch:    insertAdjacentHTML on SVG Fix
 // Browsers: Safari, IE, Edge, Firefox ~33-34
 // Reason:   insertAdjacentHTML does not exist on SVG elements in Safari. It is
@@ -1383,6 +1378,9 @@ function applySVGInnerHTMLFix(document, DOMClass, svgNamespace) {
     let div = document.createElement('div');
     return class DOMChangesWithSVGInnerHTMLFix extends DOMClass {
         insertHTMLBefore(parent, nextSibling, html) {
+            if (html === '') {
+                return super.insertHTMLBefore(parent, nextSibling, html);
+            }
             if (parent.namespaceURI !== svgNamespace) {
                 return super.insertHTMLBefore(parent, nextSibling, html);
             }
@@ -1391,24 +1389,24 @@ function applySVGInnerHTMLFix(document, DOMClass, svgNamespace) {
     };
 }
 function fixSVG(parent, div, html, reference) {
+
     let source;
     // This is important, because decendants of the <foreignObject> integration
     // point are parsed in the HTML namespace
     if (parent.tagName.toUpperCase() === 'FOREIGNOBJECT') {
         // IE, Edge: also do not correctly support using `innerHTML` on SVG
         // namespaced elements. So here a wrapper is used.
-        let wrappedHtml = '<svg><foreignObject>' + (html || '<!---->') + '</foreignObject></svg>';
+        let wrappedHtml = '<svg><foreignObject>' + html + '</foreignObject></svg>';
         div.innerHTML = wrappedHtml;
         source = div.firstChild.firstChild;
     } else {
         // IE, Edge: also do not correctly support using `innerHTML` on SVG
         // namespaced elements. So here a wrapper is used.
-        let wrappedHtml = '<svg>' + (html || '<!---->') + '</svg>';
+        let wrappedHtml = '<svg>' + html + '</svg>';
         div.innerHTML = wrappedHtml;
         source = div.firstChild;
     }
-    let [first, last] = moveNodesBefore(source, parent, reference);
-    return new ConcreteBounds(parent, first, last);
+    return moveNodesBefore(source, parent, reference);
 }
 function shouldApplyFix(document, svgNamespace) {
     let svg = document.createElementNS(svgNamespace, 'svg');
@@ -1450,6 +1448,9 @@ function applyTextNodeMergingFix(document, DOMClass) {
             this.uselessComment = document.createComment('');
         }
         insertHTMLBefore(parent, nextSibling, html) {
+            if (html === '') {
+                return super.insertHTMLBefore(parent, nextSibling, html);
+            }
             let didSetUselessComment = false;
             let nextPrevious = nextSibling ? nextSibling.previousSibling : parent.lastChild;
             if (nextPrevious && nextPrevious instanceof Text) {
@@ -1475,7 +1476,7 @@ function shouldApplyFix$1(document) {
     return true;
 }
 
-const SVG_NAMESPACE$1 = 'http://www.w3.org/2000/svg';
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg" /* SVG */;
 // http://www.w3.org/TR/html/syntax.html#html-integration-point
 const SVG_INTEGRATION_POINTS = { foreignObject: 1, desc: 1, title: 1 };
 // http://www.w3.org/TR/html/syntax.html#adjust-svg-attributes
@@ -1492,14 +1493,15 @@ function isWhitespace(string) {
 }
 function moveNodesBefore(source, target, nextSibling) {
     let first = source.firstChild;
-    let last = null;
+    let last = first;
     let current = first;
     while (current) {
+        let next = current.nextSibling;
+        target.insertBefore(current, nextSibling);
         last = current;
-        current = current.nextSibling;
-        target.insertBefore(last, nextSibling);
+        current = next;
     }
-    return [first, last];
+    return new ConcreteBounds(target, first, last);
 }
 class DOMOperations {
     constructor(document) {
@@ -1514,7 +1516,7 @@ class DOMOperations {
     createElement(tag, context) {
         let isElementInSVGNamespace, isHTMLIntegrationPoint;
         if (context) {
-            isElementInSVGNamespace = context.namespaceURI === SVG_NAMESPACE$1 || tag === 'svg';
+            isElementInSVGNamespace = context.namespaceURI === SVG_NAMESPACE || tag === 'svg';
             isHTMLIntegrationPoint = SVG_INTEGRATION_POINTS[context.tagName];
         } else {
             isElementInSVGNamespace = tag === 'svg';
@@ -1527,7 +1529,7 @@ class DOMOperations {
             if (BLACKLIST_TABLE[tag]) {
                 throw new Error(`Cannot create a ${tag} inside an SVG context`);
             }
-            return this.document.createElementNS(SVG_NAMESPACE$1, tag);
+            return this.document.createElementNS(SVG_NAMESPACE, tag);
         } else {
             return this.document.createElement(tag);
         }
@@ -1535,8 +1537,34 @@ class DOMOperations {
     insertBefore(parent, node, reference) {
         parent.insertBefore(node, reference);
     }
-    insertHTMLBefore(_parent, nextSibling, html) {
-        return insertHTMLBefore(this.uselessElement, _parent, nextSibling, html);
+    insertHTMLBefore(parent, nextSibling, html) {
+        if (html === '') {
+            let comment = this.createComment('');
+            parent.insertBefore(comment, nextSibling);
+            return new ConcreteBounds(parent, comment, comment);
+        }
+        let prev = nextSibling ? nextSibling.previousSibling : parent.lastChild;
+        let last;
+        if (nextSibling === null) {
+            parent.insertAdjacentHTML("beforeend" /* beforeend */, html);
+            last = parent.lastChild;
+        } else if (nextSibling instanceof HTMLElement) {
+            nextSibling.insertAdjacentHTML("beforebegin" /* beforebegin */, html);
+            last = nextSibling.previousSibling;
+        } else {
+            // Non-element nodes do not support insertAdjacentHTML, so add an
+            // element and call it on that element. Then remove the element.
+            //
+            // This also protects Edge, IE and Firefox w/o the inspector open
+            // from merging adjacent text nodes. See ./compat/text-node-merging-fix.ts
+            let { uselessElement } = this;
+            parent.insertBefore(uselessElement, nextSibling);
+            uselessElement.insertAdjacentHTML("beforebegin" /* beforebegin */, html);
+            last = uselessElement.previousSibling;
+            parent.removeChild(uselessElement);
+        }
+        let first = prev ? prev.nextSibling : parent.firstChild;
+        return new ConcreteBounds(parent, first, last);
     }
     createTextNode(text) {
         return this.document.createTextNode(text);
@@ -1562,7 +1590,7 @@ var DOM;
     DOM.TreeConstruction = TreeConstruction;
     let appliedTreeContruction = TreeConstruction;
     appliedTreeContruction = applyTextNodeMergingFix(doc, appliedTreeContruction);
-    appliedTreeContruction = applySVGInnerHTMLFix(doc, appliedTreeContruction, SVG_NAMESPACE$1);
+    appliedTreeContruction = applySVGInnerHTMLFix(doc, appliedTreeContruction, SVG_NAMESPACE);
     DOM.DOMTreeConstruction = appliedTreeContruction;
 })(DOM || (DOM = {}));
 class DOMChanges extends DOMOperations {
@@ -1581,35 +1609,9 @@ class DOMChanges extends DOMOperations {
         this.insertBefore(element, node, reference.nextSibling);
     }
 }
-function insertHTMLBefore(useless, _parent, _nextSibling, _html) {
-    let parent = _parent;
-    let nextSibling = _nextSibling;
-    let prev = nextSibling ? nextSibling.previousSibling : parent.lastChild;
-    let last;
-    let html = _html || '<!---->';
-    if (nextSibling === null) {
-        parent.insertAdjacentHTML('beforeend', html);
-        last = parent.lastChild;
-    } else if (nextSibling instanceof HTMLElement) {
-        nextSibling.insertAdjacentHTML('beforebegin', html);
-        last = nextSibling.previousSibling;
-    } else {
-        // Non-element nodes do not support insertAdjacentHTML, so add an
-        // element and call it on that element. Then remove the element.
-        //
-        // This also protects Edge, IE and Firefox w/o the inspector open
-        // from merging adjacent text nodes. See ./compat/text-node-merging-fix.ts
-        parent.insertBefore(useless, nextSibling);
-        useless.insertAdjacentHTML('beforebegin', html);
-        last = useless.previousSibling;
-        parent.removeChild(useless);
-    }
-    let first = prev ? prev.nextSibling : parent.firstChild;
-    return new ConcreteBounds(parent, first, last);
-}
 let helper = DOMChanges;
 helper = applyTextNodeMergingFix(doc, helper);
-helper = applySVGInnerHTMLFix(doc, helper, SVG_NAMESPACE$1);
+helper = applySVGInnerHTMLFix(doc, helper, SVG_NAMESPACE);
 var helper$1 = helper;
 const DOMTreeConstruction = DOM.DOMTreeConstruction;
 
@@ -1716,7 +1718,7 @@ function preferAttr(tagName, propName) {
 function dynamicAttribute(element, attr, namespace) {
     let { tagName, namespaceURI } = element;
     let attribute = { element, name: attr, namespace };
-    if (namespaceURI === SVG_NAMESPACE$1) {
+    if (namespaceURI === SVG_NAMESPACE) {
         return buildDynamicAttribute(tagName, attr, attribute);
     }
     let { type, normalized } = normalizeProperty(element, attr);
@@ -2090,18 +2092,18 @@ class LowLevelVM {
     }
     // Start a new frame and save $ra and $fp on the stack
     pushFrame() {
-        this.stack.pushSmi(this.ra);
-        this.stack.pushSmi(this.stack.fp);
+        this.stack.push(this.ra);
+        this.stack.push(this.stack.fp);
         this.stack.fp = this.stack.sp - 1;
     }
     // Restore $ra, $sp and $fp
     popFrame() {
         this.stack.sp = this.stack.fp - 1;
-        this.ra = this.stack.getSmi(0);
-        this.stack.fp = this.stack.getSmi(1);
+        this.ra = this.stack.get(0);
+        this.stack.fp = this.stack.get(1);
     }
     pushSmallFrame() {
-        this.stack.pushSmi(this.ra);
+        this.stack.push(this.ra);
     }
     popSmallFrame() {
         this.ra = this.stack.popSmi();
@@ -2305,9 +2307,9 @@ class NewElementBuilder {
     didAddDestroyable(d) {
         this.block().newDestroyable(d);
     }
-    didAppendBounds(bounds$$1) {
-        this.block().didAppendBounds(bounds$$1);
-        return bounds$$1;
+    didAppendBounds(bounds) {
+        this.block().didAppendBounds(bounds);
+        return bounds;
     }
     didAppendNode(node) {
         this.block().didAppendNode(node);
@@ -2336,19 +2338,19 @@ class NewElementBuilder {
     __appendFragment(fragment) {
         let first = fragment.firstChild;
         if (first) {
-            let ret = bounds(this.element, first, fragment.lastChild);
+            let ret = new ConcreteBounds(this.element, first, fragment.lastChild);
             this.dom.insertBefore(this.element, fragment, this.nextSibling);
             return ret;
         } else {
-            return single(this.element, this.__appendComment(''));
+            return new SingleNodeBounds(this.element, this.__appendComment(''));
         }
     }
     __appendHTML(html) {
         return this.dom.insertHTMLBefore(this.element, this.nextSibling, html);
     }
     appendDynamicHTML(value) {
-        let bounds$$1 = this.trustedContent(value);
-        this.didAppendBounds(bounds$$1);
+        let bounds = this.trustedContent(value);
+        this.didAppendBounds(bounds);
     }
     appendDynamicText(value) {
         let node = this.untrustedContent(value);
@@ -2356,13 +2358,13 @@ class NewElementBuilder {
         return node;
     }
     appendDynamicFragment(value) {
-        let bounds$$1 = this.__appendFragment(value);
-        this.didAppendBounds(bounds$$1);
+        let bounds = this.__appendFragment(value);
+        this.didAppendBounds(bounds);
     }
     appendDynamicNode(value) {
         let node = this.__appendNode(value);
-        let bounds$$1 = single(this.element, node);
-        this.didAppendBounds(bounds$$1);
+        let bounds = new SingleNodeBounds(this.element, node);
+        this.didAppendBounds(bounds);
     }
     trustedContent(value) {
         return this.__appendHTML(value);
@@ -2415,10 +2417,12 @@ class SimpleBlockTracker {
         return this.parent;
     }
     firstNode() {
-        return this.first && this.first.firstNode();
+        let first = this.first;
+        return first.firstNode();
     }
     lastNode() {
-        return this.last && this.last.lastNode();
+        let last = this.last;
+        return last.lastNode();
     }
     openElement(element) {
         this.didAppendNode(element);
@@ -2434,12 +2438,12 @@ class SimpleBlockTracker {
         }
         this.last = new Last(node);
     }
-    didAppendBounds(bounds$$1) {
+    didAppendBounds(bounds) {
         if (this.nesting !== 0) return;
         if (!this.first) {
-            this.first = bounds$$1;
+            this.first = bounds;
         }
-        this.last = bounds$$1;
+        this.last = bounds;
     }
     newDestroyable(d) {
         this.destroyables = this.destroyables || [];
@@ -2488,11 +2492,11 @@ class BlockListTracker {
     }
     firstNode() {
         let head = this.boundList.head();
-        return head && head.firstNode();
+        return head.firstNode();
     }
     lastNode() {
         let tail = this.boundList.tail();
-        return tail && tail.lastNode();
+        return tail.lastNode();
     }
     openElement(_element) {
     }
@@ -2502,14 +2506,14 @@ class BlockListTracker {
     }
     didAppendBounds(_bounds) {}
     newDestroyable(_d) {}
-    finalize(_stack) {}
+    finalize(_stack) {
+    }
 }
 function clientBuilder(env, cursor) {
     return NewElementBuilder.forInitialRender(env, cursor);
 }
 
-const HI = 0x80000000;
-const MASK = 0x7fffffff;
+const MAX_SMI = 0xfffffff;
 class InnerStack {
     constructor(inner = new Stack$1(), js = []) {
         this.inner = inner;
@@ -2542,25 +2546,19 @@ class InnerStack {
         } else {
             let idx = this.js.length;
             this.js.push(value);
-            this.inner.writeRaw(pos, idx | HI);
+            this.inner.writeRaw(pos, ~idx);
         }
     }
-    writeSmi(pos, value) {
-        this.inner.writeSmi(pos, value);
-    }
-    writeImmediate(pos, value) {
+    writeRaw(pos, value) {
         this.inner.writeRaw(pos, value);
     }
     get(pos) {
         let value = this.inner.getRaw(pos);
-        if (value & HI) {
-            return this.js[value & MASK];
+        if (value < 0) {
+            return this.js[~value];
         } else {
             return decodeImmediate(value);
         }
-    }
-    getSmi(pos) {
-        return this.inner.getSmi(pos);
     }
     reset() {
         this.inner.reset();
@@ -2589,17 +2587,11 @@ class EvaluationStack {
     push(value) {
         this.stack.write(++this.sp, value);
     }
-    pushSmi(value) {
-        this.stack.writeSmi(++this.sp, value);
-    }
-    pushImmediate(value) {
-        this.stack.writeImmediate(++this.sp, encodeImmediate(value));
-    }
     pushEncodedImmediate(value) {
-        this.stack.writeImmediate(++this.sp, value);
+        this.stack.writeRaw(++this.sp, value);
     }
     pushNull() {
-        this.stack.writeImmediate(++this.sp, 19 /* Null */);
+        this.stack.write(++this.sp, null);
     }
     dup(position = this.sp) {
         this.stack.copy(position, ++this.sp);
@@ -2613,19 +2605,13 @@ class EvaluationStack {
         return top;
     }
     popSmi() {
-        return this.stack.getSmi(this.sp--);
+        return this.stack.get(this.sp--);
     }
     peek(offset = 0) {
         return this.stack.get(this.sp - offset);
     }
-    peekSmi(offset = 0) {
-        return this.stack.getSmi(this.sp - offset);
-    }
     get(offset, base = this.fp) {
         return this.stack.get(base + offset);
-    }
-    getSmi(offset, base = this.fp) {
-        return this.stack.getSmi(base + offset);
     }
     set(value, offset, base = this.fp) {
         this.stack.write(base + offset, value);
@@ -2659,8 +2645,7 @@ function isImmediate(value) {
             // not an integer
             if (value % 1 !== 0) return false;
             let abs = Math.abs(value);
-            // too big
-            if (abs > HI) return false;
+            if (abs > MAX_SMI) return false;
             return true;
         default:
             return false;
@@ -2668,8 +2653,11 @@ function isImmediate(value) {
 }
 function encodeSmi(primitive) {
     if (primitive < 0) {
+        let abs = Math.abs(primitive);
+        if (abs > MAX_SMI) throw new Error('not smi');
         return Math.abs(primitive) << 3 | 4 /* NEGATIVE */;
     } else {
+        if (primitive > MAX_SMI) throw new Error('not smi');
         return primitive << 3 | 0 /* NUMBER */;
     }
 }
@@ -2749,7 +2737,7 @@ class UpdatingVM {
     }
 }
 class BlockOpcode extends UpdatingOpcode {
-    constructor(start, state, runtime, bounds$$1, children) {
+    constructor(start, state, runtime, bounds, children) {
         super();
         this.start = start;
         this.state = state;
@@ -2758,7 +2746,7 @@ class BlockOpcode extends UpdatingOpcode {
         this.next = null;
         this.prev = null;
         this.children = children;
-        this.bounds = bounds$$1;
+        this.bounds = bounds;
     }
     parentElement() {
         return this.bounds.parentElement();
@@ -2780,8 +2768,8 @@ class BlockOpcode extends UpdatingOpcode {
     }
 }
 class TryOpcode extends BlockOpcode {
-    constructor(start, state, runtime, bounds$$1, children) {
-        super(start, state, runtime, bounds$$1, children);
+    constructor(start, state, runtime, bounds, children) {
+        super(start, state, runtime, bounds, children);
         this.type = 'try';
         this.tag = this._tag = UpdatableTag.create(CONSTANT_TAG);
     }
@@ -2792,9 +2780,9 @@ class TryOpcode extends BlockOpcode {
         vm.try(this.children, this);
     }
     handleException() {
-        let { state, bounds: bounds$$1, children, start, prev, next, runtime } = this;
+        let { state, bounds, children, start, prev, next, runtime } = this;
         children.clear();
-        let elementStack = NewElementBuilder.resume(runtime.env, bounds$$1, bounds$$1.reset(runtime.env));
+        let elementStack = NewElementBuilder.resume(runtime.env, bounds, bounds.reset(runtime.env));
         let vm = VM.resume(state, runtime, elementStack);
         let updating = new LinkedList();
         vm.execute(start, vm => {
@@ -2865,8 +2853,8 @@ class ListRevalidationDelegate {
     }
 }
 class ListBlockOpcode extends BlockOpcode {
-    constructor(start, state, runtime, bounds$$1, children, artifacts) {
-        super(start, state, runtime, bounds$$1, children);
+    constructor(start, state, runtime, bounds, children, artifacts) {
+        super(start, state, runtime, bounds, children);
         this.type = 'list-block';
         this.map = dict();
         this.lastIterated = INITIAL;
@@ -2883,10 +2871,10 @@ class ListBlockOpcode extends BlockOpcode {
     evaluate(vm) {
         let { artifacts, lastIterated } = this;
         if (!artifacts.tag.validate(lastIterated)) {
-            let { bounds: bounds$$1 } = this;
+            let { bounds } = this;
             let { dom } = vm;
             let marker = dom.createComment('');
-            dom.insertAfter(bounds$$1.parentElement(), marker, bounds$$1.lastNode());
+            dom.insertAfter(bounds.parentElement(), marker, bounds.lastNode());
             let target = new ListRevalidationDelegate(this, marker);
             let synchronizer = new IteratorSynchronizer({ target, artifacts });
             synchronizer.sync();
@@ -2896,9 +2884,9 @@ class ListBlockOpcode extends BlockOpcode {
         super.evaluate(vm);
     }
     vmForInsertion(nextSibling) {
-        let { bounds: bounds$$1, state, runtime } = this;
+        let { bounds, state, runtime } = this;
         let elementStack = NewElementBuilder.forInitialRender(runtime.env, {
-            element: bounds$$1.parentElement(),
+            element: bounds.parentElement(),
             nextSibling
         });
         return VM.resume(state, runtime, elementStack);
@@ -2926,11 +2914,11 @@ class UpdatingVMFrame {
 }
 
 class RenderResult {
-    constructor(env, program, updating, bounds$$1) {
+    constructor(env, program, updating, bounds) {
         this.env = env;
         this.program = program;
         this.updating = updating;
-        this.bounds = bounds$$1;
+        this.bounds = bounds;
     }
     rerender({ alwaysRevalidate = false } = { alwaysRevalidate: false }) {
         let { env, program, updating } = this;
@@ -3019,16 +3007,25 @@ class Arguments {
     capture() {
         let positional = this.positional.length === 0 ? EMPTY_POSITIONAL : this.positional.capture();
         let named = this.named.length === 0 ? EMPTY_NAMED : this.named.capture();
-        return {
-            tag: this.tag,
-            length: this.length,
-            positional,
-            named
-        };
+        return new CapturedArguments(this.tag, positional, named, this.length);
     }
     clear() {
         let { stack, length } = this;
         if (length > 0 && stack !== null) stack.pop(length);
+    }
+}
+class CapturedArguments {
+    constructor(tag, positional, named, length) {
+        this.tag = tag;
+        this.positional = positional;
+        this.named = named;
+        this.length = length;
+    }
+    value() {
+        return {
+            named: this.named.value(),
+            positional: this.positional.value()
+        };
     }
 }
 class PositionalArguments {
@@ -3347,12 +3344,7 @@ class CapturedBlockArguments {
 }
 const EMPTY_NAMED = new CapturedNamedArguments(CONSTANT_TAG, EMPTY_ARRAY, EMPTY_ARRAY);
 const EMPTY_POSITIONAL = new CapturedPositionalArguments(CONSTANT_TAG, EMPTY_ARRAY);
-const EMPTY_ARGS = {
-    tag: CONSTANT_TAG,
-    length: 0,
-    positional: EMPTY_POSITIONAL,
-    named: EMPTY_NAMED
-};
+const EMPTY_ARGS = new CapturedArguments(CONSTANT_TAG, EMPTY_POSITIONAL, EMPTY_NAMED, 0);
 
 class VM {
     constructor(runtime, scope, dynamicScope, elementStack) {
@@ -3475,7 +3467,7 @@ class VM {
         vm.updatingOpcodeStack.push(new LinkedList());
         return vm;
     }
-    static empty(program, env, elementStack) {
+    static empty(program, env, elementStack, handle) {
         let dynamicScope = {
             get() {
                 return UNDEFINED_REFERENCE;
@@ -3489,6 +3481,7 @@ class VM {
         };
         let vm = new VM({ program, env }, Scope.root(UNDEFINED_REFERENCE, 0), dynamicScope, elementStack);
         vm.updatingOpcodeStack.push(new LinkedList());
+        vm.pc = vm.heap.getaddr(handle);
         return vm;
     }
     static resume({ scope, dynamicScope }, runtime, stack) {
@@ -3671,8 +3664,48 @@ class TemplateIteratorImpl {
         return this.vm.next();
     }
 }
-function render(program, env, self, dynamicScope, builder, handle) {
+function renderMain(program, env, self, dynamicScope, builder, handle) {
     let vm = VM.initial(program, env, self, dynamicScope, builder, handle);
+    return new TemplateIteratorImpl(vm);
+}
+/**
+ * Returns a TemplateIterator configured to render a root component.
+ */
+function renderComponent(program, env, builder, main, name, args = {}) {
+    const vm = VM.empty(program, env, builder, main);
+    const { resolver } = vm.constants;
+    const definition = resolveComponent(resolver, name, null);
+    const { manager, state } = definition;
+    const capabilities = capabilityFlagsFrom(manager.getCapabilities(state));
+    let invocation;
+    if (hasStaticLayoutCapability(capabilities, manager)) {
+        invocation = manager.getLayout(state, resolver);
+    } else {
+        throw new Error('Cannot invoke components with dynamic layouts as a root component.');
+    }
+    // Get a list of tuples of argument names and references, like
+    // [['title', reference], ['name', reference]]
+    const argList = Object.keys(args).map(key => [key, args[key]]);
+    const blockNames = ['main', 'else', 'attrs'];
+    // Prefix argument names with `@` symbol
+    const argNames = argList.map(([name]) => `@${name}`);
+    vm.pushFrame();
+    // Push blocks on to the stack, three stack values per block
+    for (let i = 0; i < 3 * blockNames.length; i++) {
+        vm.stack.push(null);
+    }
+    vm.stack.push(null);
+    // For each argument, push its backing reference on to the stack
+    argList.forEach(([, reference]) => {
+        vm.stack.push(reference);
+    });
+    // Configure VM based on blocks and args just pushed on to the stack.
+    vm.args.setup(vm.stack, argNames, blockNames, 0, false);
+    // Needed for the Op.Main opcode: arguments, component invocation object, and
+    // component definition.
+    vm.stack.push(vm.args);
+    vm.stack.push(invocation);
+    vm.stack.push(definition);
     return new TemplateIteratorImpl(vm);
 }
 
@@ -3867,7 +3900,7 @@ class RehydrateBuilder extends NewElementBuilder {
         if (candidateBounds) {
             let first = candidateBounds.firstNode();
             let last = candidateBounds.lastNode();
-            let newBounds = bounds(this.element, first.nextSibling, last.previousSibling);
+            let newBounds = new ConcreteBounds(this.element, first.nextSibling, last.previousSibling);
             let possibleEmptyMarker = this.remove(first);
             this.remove(last);
             if (possibleEmptyMarker !== null && isEmpty$1(possibleEmptyMarker)) {
@@ -3895,7 +3928,7 @@ class RehydrateBuilder extends NewElementBuilder {
             while (last && !isMarker(last)) {
                 last = last.nextSibling;
             }
-            return bounds(this.element, first, last);
+            return new ConcreteBounds(this.element, first, last);
         } else {
             return null;
         }
@@ -4023,13 +4056,13 @@ class RehydrateBuilder extends NewElementBuilder {
             this.pushBlockTracker(tracker, true);
         }
     }
-    didAppendBounds(bounds$$1) {
-        super.didAppendBounds(bounds$$1);
+    didAppendBounds(bounds) {
+        super.didAppendBounds(bounds);
         if (this.candidate) {
-            let last = bounds$$1.lastNode();
+            let last = bounds.lastNode();
             this.candidate = last && last.nextSibling;
         }
-        return bounds$$1;
+        return bounds;
     }
 }
 function isTextNode(node) {
@@ -4067,7 +4100,7 @@ function isEmpty$1(node) {
     return node.nodeType === 8 && node.nodeValue === '% %';
 }
 function isSameNodeType(candidate, tag) {
-    if (candidate.namespaceURI === SVG_NAMESPACE$1) {
+    if (candidate.namespaceURI === SVG_NAMESPACE) {
         return candidate.tagName === tag;
     }
     return candidate.tagName === tag.toUpperCase();
@@ -4083,4 +4116,4 @@ function rehydrationBuilder(env, cursor) {
     return RehydrateBuilder.forInitialRender(env, cursor);
 }
 
-export { render as renderMain, NULL_REFERENCE, UNDEFINED_REFERENCE, PrimitiveReference, ConditionalReference, setDebuggerCallback, resetDebuggerCallback, getDynamicVar, VM as LowLevelVM, UpdatingVM, RenderResult, SimpleDynamicAttribute, DynamicAttribute, EMPTY_ARGS, Scope, Environment, DefaultEnvironment, DEFAULT_CAPABILITIES, MINIMAL_CAPABILITIES, CurriedComponentDefinition, isCurriedComponentDefinition, curry, helper$1 as DOMChanges, SVG_NAMESPACE$1 as SVG_NAMESPACE, DOMChanges as IDOMChanges, DOMTreeConstruction, isWhitespace, insertHTMLBefore, normalizeProperty, NewElementBuilder, clientBuilder, rehydrationBuilder, RehydrateBuilder, ConcreteBounds, Cursor, capabilityFlagsFrom, hasCapability };
+export { renderMain, renderComponent, NULL_REFERENCE, UNDEFINED_REFERENCE, PrimitiveReference, ConditionalReference, setDebuggerCallback, resetDebuggerCallback, getDynamicVar, VM as LowLevelVM, UpdatingVM, RenderResult, SimpleDynamicAttribute, DynamicAttribute, EMPTY_ARGS, Scope, Environment, DefaultEnvironment, DEFAULT_CAPABILITIES, MINIMAL_CAPABILITIES, CurriedComponentDefinition, isCurriedComponentDefinition, curry, helper$1 as DOMChanges, SVG_NAMESPACE, DOMChanges as IDOMChanges, DOMTreeConstruction, isWhitespace, normalizeProperty, NewElementBuilder, clientBuilder, rehydrationBuilder, RehydrateBuilder, ConcreteBounds, Cursor, capabilityFlagsFrom, hasCapability };

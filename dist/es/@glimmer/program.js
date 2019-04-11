@@ -201,10 +201,12 @@ class Opcode {
     }
 }
 
-function encodeTableInfo(size, scopeSize, state) {
-    return size | scopeSize << 16 | state << 30;
+function encodeTableInfo(scopeSize, state) {
+
+    return state | scopeSize << 2;
 }
 function changeState(info, newState) {
+
     return info | newState << 30;
 }
 const PAGE_SIZE = 0x100000;
@@ -218,9 +220,9 @@ const PAGE_SIZE = 0x100000;
  *
  * The table 32-bit aligned and has the following layout:
  *
- * | ... | hp (u32) |       info (u32)          |
- * | ... |  Handle  | Size | Scope Size | State |
- * | ... | 32-bits  | 16b  |    14b     |  2b   |
+ * | ... | hp (u32) |       info (u32)   | size (u32) |
+ * | ... |  Handle  | Scope Size | State | Size       |
+ * | ... | 32bits   | 30bits     | 2bits | 32bit      |
  *
  * With this information we effectively have the ability to
  * control when we want to free memory. That being said you
@@ -236,13 +238,13 @@ class Heap {
         this.capacity = PAGE_SIZE;
         if (serializedHeap) {
             let { buffer, table, handle } = serializedHeap;
-            this.heap = new Uint16Array(buffer);
+            this.heap = new Uint32Array(buffer);
             this.table = table;
             this.offset = this.heap.length;
             this.handle = handle;
             this.capacity = 0;
         } else {
-            this.heap = new Uint16Array(PAGE_SIZE);
+            this.heap = new Uint32Array(PAGE_SIZE);
             this.table = [];
         }
     }
@@ -253,7 +255,7 @@ class Heap {
     sizeCheck() {
         if (this.capacity === 0) {
             let heap = slice(this.heap, 0, this.offset);
-            this.heap = new Uint16Array(heap.length + PAGE_SIZE);
+            this.heap = new Uint32Array(heap.length + PAGE_SIZE);
             this.heap.set(heap, 0);
             this.capacity = PAGE_SIZE;
         }
@@ -266,17 +268,14 @@ class Heap {
         this.heap[address] = value;
     }
     malloc() {
-        this.table.push(this.offset, 0);
+        // push offset, info, size
+        this.table.push(this.offset, 0, 0);
         let handle = this.handle;
-        this.handle += 2 /* ENTRY_SIZE */;
+        this.handle += 3 /* ENTRY_SIZE */;
         return handle;
     }
     finishMalloc(handle, scopeSize) {
-        let start = this.table[handle];
-        let finish = this.offset;
-        let instructionSize = finish - start;
-        let info = encodeTableInfo(instructionSize, scopeSize, 0 /* Allocated */);
-        this.table[handle + 1 /* INFO_OFFSET */] = info;
+        this.table[handle + 1 /* INFO_OFFSET */] = encodeTableInfo(scopeSize, 0 /* Allocated */);
     }
     size() {
         return this.offset;
@@ -288,9 +287,9 @@ class Heap {
         return this.table[handle];
     }
     gethandle(address) {
-        this.table.push(address, encodeTableInfo(0, 0, 3 /* Pointer */));
+        this.table.push(address, encodeTableInfo(0, 3 /* Pointer */), 0);
         let handle = this.handle;
-        this.handle += 2 /* ENTRY_SIZE */;
+        this.handle += 3 /* ENTRY_SIZE */;
         return handle;
     }
     sizeof(handle) {
@@ -298,50 +297,16 @@ class Heap {
     }
     scopesizeof(handle) {
         let info = this.table[handle + 1 /* INFO_OFFSET */];
-        return (info & 1073676288 /* SCOPE_MASK */) >> 16;
+        return info >> 2;
     }
     free(handle) {
         let info = this.table[handle + 1 /* INFO_OFFSET */];
         this.table[handle + 1 /* INFO_OFFSET */] = changeState(info, 1 /* Freed */);
     }
-    /**
-     * The heap uses the [Mark-Compact Algorithm](https://en.wikipedia.org/wiki/Mark-compact_algorithm) to shift
-     * reachable memory to the bottom of the heap and freeable
-     * memory to the top of the heap. When we have shifted all
-     * the reachable memory to the top of the heap, we move the
-     * offset to the next free position.
-     */
-    compact() {
-        let compactedSize = 0;
-        let { table, table: { length }, heap } = this;
-        for (let i = 0; i < length; i += 2 /* ENTRY_SIZE */) {
-            let offset = table[i];
-            let info = table[i + 1 /* INFO_OFFSET */];
-            let size = info & 65535 /* SIZE_MASK */;
-            let state = info & 3221225472 /* STATE_MASK */ >> 30;
-            if (state === 2 /* Purged */) {
-                    continue;
-                } else if (state === 1 /* Freed */) {
-                    // transition to "already freed" aka "purged"
-                    // a good improvement would be to reuse
-                    // these slots
-                    table[i + 1 /* INFO_OFFSET */] = changeState(info, 2 /* Purged */);
-                    compactedSize += size;
-                } else if (state === 0 /* Allocated */) {
-                    for (let j = offset; j <= i + size; j++) {
-                        heap[j - compactedSize] = heap[j];
-                    }
-                    table[i] = offset - compactedSize;
-                } else if (state === 3 /* Pointer */) {
-                    table[i] = offset - compactedSize;
-                }
-        }
-        this.offset = this.offset - compactedSize;
-    }
     pushPlaceholder(valueFunc) {
         this.sizeCheck();
         let address = this.offset++;
-        this.heap[address] = 65535 /* MAX_SIZE */;
+        this.heap[address] = 2147483647 /* MAX_SIZE */;
         this.placeholders.push([address, valueFunc]);
     }
     patchPlaceholders() {
@@ -395,7 +360,7 @@ function slice(arr, start, end) {
     if (arr.slice !== undefined) {
         return arr.slice(start, end);
     }
-    let ret = new Uint16Array(end);
+    let ret = new Uint32Array(end);
     for (; start < end; start++) {
         ret[start] = arr[start];
     }

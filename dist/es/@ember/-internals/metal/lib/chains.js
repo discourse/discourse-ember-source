@@ -100,7 +100,7 @@ function removeChainWatcher(obj, keyName, node, _meta) {
         return;
     }
     let meta = _meta === undefined ? peekMeta(obj) : _meta;
-    if (meta === undefined ||
+    if (meta === null ||
         meta.isSourceDestroying() ||
         meta.isMetaDestroyed() ||
         meta.readableChainWatchers() === undefined) {
@@ -285,7 +285,7 @@ function lazyGet(obj, key) {
     }
     let meta = peekMeta(obj);
     // check if object meant only to be a prototype
-    if (meta !== undefined && meta.proto === obj) {
+    if (meta !== null && meta.proto === obj) {
         return;
     }
     // Use `get` if the return value is an EachProxy or an uncacheable value.

@@ -201,13 +201,13 @@ function mergeMixins(mixins, meta, descs, values, base, keys) {
         }
     }
 }
-function followAlias(obj, desc, descs, values) {
-    let altKey = desc.methodName;
-    let value;
+function followMethodAlias(obj, _desc, descs, values) {
+    let altKey = _desc.methodName;
     let possibleDesc;
-    if (descs[altKey] || values[altKey]) {
-        value = values[altKey];
-        desc = descs[altKey];
+    let desc = descs[altKey];
+    let value = values[altKey];
+    if (desc !== undefined || value !== undefined) {
+        // do nothing
     }
     else if ((possibleDesc = descriptorFor(obj, altKey)) !== undefined) {
         desc = possibleDesc;
@@ -259,7 +259,7 @@ export function applyMixin(obj, mixins) {
         desc = descs[key];
         value = values[key];
         while (desc && desc instanceof Alias) {
-            let followed = followAlias(obj, desc, descs, values);
+            let followed = followMethodAlias(obj, desc, descs, values);
             desc = followed.desc;
             value = followed.value;
         }
@@ -406,7 +406,7 @@ export default class Mixin {
     static mixins(obj) {
         let meta = peekMeta(obj);
         let ret = [];
-        if (meta === undefined) {
+        if (meta === null) {
             return ret;
         }
         meta.forEachMixins((currentMixin) => {
@@ -463,7 +463,7 @@ export default class Mixin {
             return _detect(obj, this);
         }
         let meta = peekMeta(obj);
-        if (meta === undefined) {
+        if (meta === null) {
             return false;
         }
         return meta.hasMixin(this);
@@ -614,7 +614,7 @@ export function observer(...args) {
     let func = args.pop();
     let _paths = args;
     assert('observer called without a function', typeof func === 'function');
-    assert('observer called without valid path', _paths.length > 0 && _paths.every(p => typeof p === 'string' && !!p.length));
+    assert('observer called without valid path', _paths.length > 0 && _paths.every(p => typeof p === 'string' && Boolean(p.length)));
     let paths = [];
     let addWatchedProperty = (path) => paths.push(path);
     for (let i = 0; i < _paths.length; ++i) {

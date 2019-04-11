@@ -17,7 +17,7 @@ export default function assertReservedNamedArguments(env) {
     };
 }
 if (EMBER_GLIMMER_NAMED_ARGUMENTS) {
-    isReserved = name => RESERVED.indexOf(name) !== -1 || !!name.match(/^@[^a-z]/);
+    isReserved = name => RESERVED.indexOf(name) !== -1 || Boolean(name.match(/^@[^a-z]/));
     assertMessage = name => `'${name}' is reserved.`;
 }
 else {

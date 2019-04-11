@@ -298,6 +298,7 @@ import { computed, get } from '@ember/-internals/metal';
 import { isSimpleClick } from '@ember/-internals/views';
 import { assert, warn } from '@ember/debug';
 import { flaggedInstrument } from '@ember/instrumentation';
+import { assign } from '@ember/polyfills';
 import { inject as injectService } from '@ember/service';
 import { DEBUG } from '@glimmer/env';
 import EmberComponent, { HAS_BLOCK } from '../component';
@@ -319,6 +320,7 @@ import layout from '../templates/link-to';
   @see {Ember.Templates.helpers.link-to}
   @public
 **/
+const EMPTY_QUERY_PARAMS = Object.freeze({ values: Object.freeze({}) });
 const LinkComponent = EmberComponent.extend({
     layout,
     tagName: 'a',
@@ -509,10 +511,10 @@ const LinkComponent = EmberComponent.extend({
         if (typeof currentWhen === 'boolean') {
             return currentWhen;
         }
-        let isCurrentWhenSpecified = !!currentWhen;
+        let isCurrentWhenSpecified = Boolean(currentWhen);
         currentWhen = currentWhen || get(this, 'qualifiedRouteName');
         currentWhen = currentWhen.split(' ');
-        let routing = get(this, '_routing');
+        let routing = this._routing;
         let models = get(this, 'models');
         let resolvedQueryParams = get(this, 'resolvedQueryParams');
         for (let i = 0; i < currentWhen.length; i++) {
@@ -547,7 +549,7 @@ const LinkComponent = EmberComponent.extend({
         return this._isActive(currentState);
     }),
     willBeActive: computed('_routing.targetState', function computeLinkToComponentWillBeActive() {
-        let routing = get(this, '_routing');
+        let routing = this._routing;
         let targetState = get(routing, 'targetState');
         if (get(routing, 'currentState') === targetState) {
             return;
@@ -615,12 +617,12 @@ const LinkComponent = EmberComponent.extend({
         return false;
     },
     _generateTransition(payload, qualifiedRouteName, models, queryParams, shouldReplace) {
-        let routing = get(this, '_routing');
+        let routing = this._routing;
         return () => {
             payload.transition = routing.transitionTo(qualifiedRouteName, models, queryParams, shouldReplace);
         };
     },
-    queryParams: null,
+    queryParams: EMPTY_QUERY_PARAMS,
     qualifiedRouteName: computed('targetRouteName', '_routing.currentState', function computeLinkToComponentQualifiedRouteName() {
         let params = get(this, 'params');
         let paramsLength = params.length;
@@ -637,15 +639,9 @@ const LinkComponent = EmberComponent.extend({
     resolvedQueryParams: computed('queryParams', function computeLinkToComponentResolvedQueryParams() {
         let resolvedQueryParams = {};
         let queryParams = get(this, 'queryParams');
-        if (!queryParams) {
-            return resolvedQueryParams;
-        }
-        let values = queryParams.values;
-        for (let key in values) {
-            if (!values.hasOwnProperty(key)) {
-                continue;
-            }
-            resolvedQueryParams[key] = values[key];
+        if (queryParams !== EMPTY_QUERY_PARAMS) {
+            let { values } = queryParams;
+            assign(resolvedQueryParams, values);
         }
         return resolvedQueryParams;
     }),
@@ -668,7 +664,7 @@ const LinkComponent = EmberComponent.extend({
         if (get(this, 'loading')) {
             return get(this, 'loadingHref');
         }
-        let routing = get(this, '_routing');
+        let routing = this._routing;
         let queryParams = get(this, 'queryParams.values');
         if (DEBUG) {
             /*
@@ -747,7 +743,7 @@ const LinkComponent = EmberComponent.extend({
             queryParams = params.pop();
         }
         else {
-            queryParams = { values: {} };
+            queryParams = EMPTY_QUERY_PARAMS;
         }
         this.set('queryParams', queryParams);
         // 4. Any remaining indices (excepting `targetRouteName` at 0) are `models`.

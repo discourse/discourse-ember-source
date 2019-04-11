@@ -32,15 +32,14 @@ let deferred = 0;
 */
 function notifyPropertyChange(obj, keyName, _meta) {
     let meta = _meta === undefined ? peekMeta(obj) : _meta;
-    let hasMeta = meta !== undefined;
-    if (hasMeta && (meta.isInitializing() || meta.isPrototypeMeta(obj))) {
+    if (meta !== null && (meta.isInitializing() || meta.isPrototypeMeta(obj))) {
         return;
     }
     let possibleDesc = descriptorFor(obj, keyName, meta);
     if (possibleDesc !== undefined && typeof possibleDesc.didChange === 'function') {
         possibleDesc.didChange(obj, keyName);
     }
-    if (hasMeta && meta.peekWatching(keyName) > 0) {
+    if (meta !== null && meta.peekWatching(keyName) > 0) {
         dependentKeysDidChange(obj, keyName, meta);
         chainsDidChange(obj, keyName, meta);
         notifyObservers(obj, keyName, meta);
@@ -48,7 +47,7 @@ function notifyPropertyChange(obj, keyName, _meta) {
     if (PROPERTY_DID_CHANGE in obj) {
         obj[PROPERTY_DID_CHANGE](keyName);
     }
-    if (hasMeta) {
+    if (meta !== null) {
         if (meta.isSourceDestroying()) {
             return;
         }

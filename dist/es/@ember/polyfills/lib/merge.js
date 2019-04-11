@@ -17,6 +17,7 @@ import { deprecate } from '@ember/debug';
   @param {Object} original The object to merge into
   @param {Object} updates The object to copy properties from
   @return {Object}
+  @deprecated
   @public
 */
 export default function merge(original, updates) {

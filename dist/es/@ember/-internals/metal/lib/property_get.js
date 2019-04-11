@@ -69,7 +69,9 @@ export function get(obj, keyName) {
     let isObject = type === 'object';
     let isFunction = type === 'function';
     let isObjectLike = isObject || isFunction;
-    let descriptor;
+    if (isPath(keyName)) {
+        return isObjectLike ? _getPath(obj, keyName) : undefined;
+    }
     let value;
     if (isObjectLike) {
         if (EMBER_METAL_TRACKED_PROPERTIES) {
@@ -77,7 +79,7 @@ export function get(obj, keyName) {
             if (tracker)
                 tracker.add(tagForProperty(obj, keyName));
         }
-        descriptor = descriptorFor(obj, keyName);
+        let descriptor = descriptorFor(obj, keyName);
         if (descriptor !== undefined) {
             return descriptor.get(obj, keyName);
         }
@@ -92,9 +94,6 @@ export function get(obj, keyName) {
         value = obj[keyName];
     }
     if (value === undefined) {
-        if (isPath(keyName)) {
-            return _getPath(obj, keyName);
-        }
         if (isObject &&
             !(keyName in obj) &&
             typeof obj.unknownProperty === 'function') {
@@ -105,7 +104,7 @@ export function get(obj, keyName) {
 }
 export function _getPath(root, path) {
     let obj = root;
-    let parts = path.split('.');
+    let parts = typeof path === 'string' ? path.split('.') : path;
     for (let i = 0; i < parts.length; i++) {
         if (obj === undefined || obj === null || obj.isDestroyed) {
             return undefined;

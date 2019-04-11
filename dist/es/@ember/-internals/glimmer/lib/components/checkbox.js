@@ -47,7 +47,7 @@ const Checkbox = EmberComponent.extend({
     indeterminate: false,
     didInsertElement() {
         this._super(...arguments);
-        get(this, 'element').indeterminate = !!get(this, 'indeterminate');
+        get(this, 'element').indeterminate = Boolean(get(this, 'indeterminate'));
     },
     change() {
         set(this, 'checked', this.element.checked);

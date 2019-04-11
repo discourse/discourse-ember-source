@@ -2,7 +2,7 @@ import { meta as metaFor } from '@ember/-internals/meta';
 import { isProxy } from '@ember/-internals/utils';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { backburner } from '@ember/runloop';
-import { combine, CONSTANT_TAG, DirtyableTag, UpdatableTag } from '@glimmer/reference';
+import { combine, CONSTANT_TAG, DirtyableTag, UpdatableTag, } from '@glimmer/reference';
 let hasViews = () => false;
 export function setHasViews(fn) {
     hasViews = fn;

@@ -1,12 +1,13 @@
-import { RenderingTest, moduleFor } from '../../utils/test-case';
-import { strip } from '../../utils/abstract-test-case';
+import { RenderingTestCase, moduleFor, strip, runTask } from 'internal-test-helpers';
+
 import { set, get, setProperties } from '@ember/-internals/metal';
-import { Component } from '../../utils/helpers';
 import { A as emberA } from '@ember/-internals/runtime';
+
+import { Component } from '../../utils/helpers';
 
 moduleFor(
   'Helpers test: {{unbound}}',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test should be able to output a property without binding']() {
       this.render(`<div id="first">{{unbound content.anUnboundString}}</div>`, {
         content: {
@@ -16,15 +17,15 @@ moduleFor(
 
       this.assertText('No spans here, son.');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('No spans here, son.');
 
-      this.runTask(() => set(this.context, 'content.anUnboundString', 'HEY'));
+      runTask(() => set(this.context, 'content.anUnboundString', 'HEY'));
 
       this.assertText('No spans here, son.');
 
-      this.runTask(() =>
+      runTask(() =>
         set(this.context, 'content', {
           anUnboundString: 'No spans here, son.',
         })
@@ -40,7 +41,7 @@ moduleFor(
 
       this.assertText('abc123');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('abc123');
     }
@@ -52,15 +53,15 @@ moduleFor(
 
       this.assertText('bam1');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('bam1');
 
-      this.runTask(() => this.context.items.setEach('wham', 'HEY'));
+      runTask(() => this.context.items.setEach('wham', 'HEY'));
 
       this.assertText('bam1');
 
-      this.runTask(() => set(this.context, 'items', emberA([{ wham: 'bam' }, { wham: 1 }])));
+      runTask(() => set(this.context, 'items', emberA([{ wham: 'bam' }, { wham: 1 }])));
 
       this.assertText('bam1');
     }
@@ -86,15 +87,15 @@ moduleFor(
 
       this.assertHTML('<a href="BORK"></a>');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertHTML('<a href="BORK"></a>');
 
-      this.runTask(() => set(this.context, 'model.foo', 'OOF'));
+      runTask(() => set(this.context, 'model.foo', 'OOF'));
 
       this.assertHTML('<a href="BORK"></a>');
 
-      this.runTask(() => set(this.context, 'model', { foo: 'BORK' }));
+      runTask(() => set(this.context, 'model', { foo: 'BORK' }));
 
       this.assertHTML('<a href="BORK"></a>');
     }
@@ -138,15 +139,15 @@ moduleFor(
 
       this.assertHTML(escapedHtml);
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertHTML(escapedHtml);
 
-      this.runTask(() => this.context.people.setEach('url', 'http://google.com'));
+      runTask(() => this.context.people.setEach('url', 'http://google.com'));
 
       this.assertHTML(escapedHtml);
 
-      this.runTask(() => set(this.context, 'people', unsafeUrls));
+      runTask(() => set(this.context, 'people', unsafeUrls));
 
       this.assertHTML(escapedHtml);
     }
@@ -158,25 +159,25 @@ moduleFor(
 
       this.assertText('BORK');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('BORK');
 
-      this.runTask(() => set(this.context, 'foo', 'OOF'));
+      runTask(() => set(this.context, 'foo', 'OOF'));
 
       this.assertText('BORK');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('OOF');
 
-      this.runTask(() => set(this.context, 'foo', ''));
+      runTask(() => set(this.context, 'foo', ''));
 
       this.assertText('OOF');
 
-      this.runTask(() => set(this.context, 'foo', 'BORK'));
+      runTask(() => set(this.context, 'foo', 'BORK'));
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('BORK');
     }
@@ -191,22 +192,22 @@ moduleFor(
 
       this.assertText('BORK');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('BORK');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'foo', 'oof');
         this.rerender();
       });
 
       this.assertText('BORK');
 
-      this.runTask(() => set(this.context, 'foo', 'blip'));
+      runTask(() => set(this.context, 'foo', 'blip'));
 
       this.assertText('BORK');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'foo', 'bork');
         this.rerender();
       });
@@ -225,22 +226,22 @@ moduleFor(
 
       this.assertText('BORK BORK');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('BORK BORK');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'foo', 'oof');
         this.rerender();
       });
 
       this.assertText('BORK BORK');
 
-      this.runTask(() => set(this.context, 'foo', 'blip'));
+      runTask(() => set(this.context, 'foo', 'blip'));
 
       this.assertText('BORK BORK');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'foo', 'bork');
         this.rerender();
       });
@@ -267,15 +268,15 @@ moduleFor(
 
       this.assertText('XXXXX XXXXX XX XXXX');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('XXXXX XXXXX XX XXXX');
 
-      this.runTask(() => set(this.context, 'bar', 1));
+      runTask(() => set(this.context, 'bar', 1));
 
       this.assertText('XXXXX X XX XXXX');
 
-      this.runTask(() => set(this.context, 'bar', 5));
+      runTask(() => set(this.context, 'bar', 5));
 
       this.assertText('XXXXX XXXXX XX XXXX');
     }
@@ -297,11 +298,11 @@ moduleFor(
 
       this.assertText('before-core-bar before-core-bar bar-core-after bar-core-after');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('before-core-bar before-core-bar bar-core-after bar-core-after');
 
-      this.runTask(() => {
+      runTask(() => {
         setProperties(this.context.model, {
           prefix: 'beforeChanged',
           value: 'coreChanged',
@@ -313,7 +314,7 @@ moduleFor(
         'before-core-bar beforeChanged-coreChanged-bar bar-core-after bar-coreChanged-afterChanged'
       );
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'model', {
           prefix: 'before',
           value: 'core',
@@ -340,15 +341,15 @@ moduleFor(
 
       this.assertText('abc abc');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('abc abc');
 
-      this.runTask(() => set(this.context, 'model.bar', 'X'));
+      runTask(() => set(this.context, 'model.bar', 'X'));
 
       this.assertText('aXc abc');
 
-      this.runTask(() =>
+      runTask(() =>
         set(this.context, 'model', {
           foo: 'a',
           bar: 'b',
@@ -408,15 +409,15 @@ moduleFor(
 
       this.assertText('SHOOBY SHOOBY shoobytaylor shoobytaylor');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('SHOOBY SHOOBY shoobytaylor shoobytaylor');
 
-      this.runTask(() => set(this.context, 'person.firstName', 'sally'));
+      runTask(() => set(this.context, 'person.firstName', 'sally'));
 
       this.assertText('SALLY SHOOBY sallytaylor shoobytaylor');
 
-      this.runTask(() =>
+      runTask(() =>
         set(this.context, 'person', {
           firstName: 'shooby',
           lastName: 'taylor',
@@ -447,15 +448,15 @@ moduleFor(
 
       this.assertText('SHOOBY SHOOBYCINDY CINDY');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('SHOOBY SHOOBYCINDY CINDY');
 
-      this.runTask(() => this.context.people.setEach('firstName', 'chad'));
+      runTask(() => this.context.people.setEach('firstName', 'chad'));
 
       this.assertText('CHAD SHOOBYCHAD CINDY');
 
-      this.runTask(() =>
+      runTask(() =>
         set(
           this.context,
           'people',
@@ -524,15 +525,15 @@ moduleFor(
 
       this.assertText('SHOOBY SHOOBY shoobytaylor shoobytaylor');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('SHOOBY SHOOBY shoobytaylor shoobytaylor');
 
-      this.runTask(() => set(this.context, 'person.firstName', 'sally'));
+      runTask(() => set(this.context, 'person.firstName', 'sally'));
 
       this.assertText('SALLY SHOOBY sallytaylor shoobytaylor');
 
-      this.runTask(() =>
+      runTask(() =>
         set(this.context, 'person', {
           firstName: 'shooby',
           lastName: 'taylor',
@@ -564,15 +565,15 @@ moduleFor(
 
       this.assertText('truetrue');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('truetrue');
 
-      this.runTask(() => set(this.context, 'model.bar', false));
+      runTask(() => set(this.context, 'model.bar', false));
 
       this.assertText('falsefalse');
 
-      this.runTask(() =>
+      runTask(() =>
         set(this.context, 'model', {
           foo: true,
           notfoo: false,
@@ -602,15 +603,15 @@ moduleFor(
 
       this.assertText('bork');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('bork');
 
-      this.runTask(() => set(fooBarInstance, 'model.foo', 'oof'));
+      runTask(() => set(fooBarInstance, 'model.foo', 'oof'));
 
       this.assertText('bork');
 
-      this.runTask(() => set(fooBarInstance, 'model', { foo: 'bork' }));
+      runTask(() => set(fooBarInstance, 'model', { foo: 'bork' }));
 
       this.assertText('bork');
     }
@@ -634,15 +635,15 @@ moduleFor(
 
       this.assertText('bork');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('bork');
 
-      this.runTask(() => set(fooBarInstance, 'model.foo', 'oof'));
+      runTask(() => set(fooBarInstance, 'model.foo', 'oof'));
 
       this.assertText('bork');
 
-      this.runTask(() => set(fooBarInstance, 'model', { foo: 'bork' }));
+      runTask(() => set(fooBarInstance, 'model', { foo: 'bork' }));
 
       this.assertText('bork');
     }

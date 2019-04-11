@@ -1,5 +1,5 @@
 /**
-@module @ember/string
+@module @ember/template
 */
 export class SafeString {
     constructor(string) {
@@ -36,12 +36,12 @@ export function escapeExpression(string) {
             return '';
         }
         else if (!string) {
-            return string + '';
+            return String(string);
         }
         // Force a string conversion as this will be done by the append regardless and
         // the regex test will do this transparently behind the scenes, causing issues if
         // an object's to string has escaped characters in it.
-        string = '' + string;
+        string = String(string);
     }
     if (!possible.test(string)) {
         return string;
@@ -54,7 +54,7 @@ export function escapeExpression(string) {
   ensure Ember's rendering layer does not escape the HTML.
 
   ```javascript
-  import { htmlSafe } from '@ember/string';
+  import { htmlSafe } from '@ember/template';
 
   htmlSafe('<div>someString</div>')
   ```
@@ -62,7 +62,7 @@ export function escapeExpression(string) {
   @method htmlSafe
   @for @ember/template
   @static
-  @return {Handlebars.SafeString} A string that will not be HTML escaped by Handlebars.
+  @return {SafeString} A string that will not be HTML escaped by Handlebars.
   @public
 */
 export function htmlSafe(str) {
@@ -70,7 +70,7 @@ export function htmlSafe(str) {
         str = '';
     }
     else if (typeof str !== 'string') {
-        str = '' + str;
+        str = String(str);
     }
     return new SafeString(str);
 }
@@ -78,7 +78,7 @@ export function htmlSafe(str) {
   Detects if a string was decorated using `htmlSafe`.
 
   ```javascript
-  import { htmlSafe, isHTMLSafe } from '@ember/string';
+  import { htmlSafe, isHTMLSafe } from '@ember/template';
 
   var plainString = 'plain string',
       safeString = htmlSafe('<div>someValue</div>');

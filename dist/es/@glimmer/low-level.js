@@ -44,38 +44,15 @@ class Stack {
         // TODO: Grow?
         this.vec[pos] = value;
     }
-    writeSmi(pos, value) {
-        this.vec[pos] = encodeSmi(value);
-    }
     // TODO: partially decoded enum?
     getRaw(pos) {
         return this.vec[pos];
-    }
-    getSmi(pos) {
-        return decodeSmi(this.vec[pos]);
     }
     reset() {
         this.vec.length = 0;
     }
     len() {
         return this.vec.length;
-    }
-}
-function decodeSmi(smi) {
-    switch (smi & 0b111) {
-        case 0 /* NUMBER */:
-            return smi >> 3;
-        case 4 /* NEGATIVE */:
-            return -(smi >> 3);
-        default:
-            throw new Error('unreachable');
-    }
-}
-function encodeSmi(primitive) {
-    if (primitive < 0) {
-        return Math.abs(primitive) << 3 | 4 /* NEGATIVE */;
-    } else {
-        return primitive << 3 | 0 /* NUMBER */;
     }
 }
 

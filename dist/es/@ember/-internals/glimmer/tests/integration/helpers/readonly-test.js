@@ -1,10 +1,12 @@
-import { RenderingTest, moduleFor } from '../../utils/test-case';
-import { Component } from '../../utils/helpers';
+import { RenderingTestCase, moduleFor, runTask } from 'internal-test-helpers';
+
 import { set, get } from '@ember/-internals/metal';
+
+import { Component } from '../../utils/helpers';
 
 moduleFor(
   'Helpers test: {{readonly}}',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test {{readonly}} of a path should work']() {
       let component;
 
@@ -25,7 +27,7 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(component, 'value', 13));
+      runTask(() => set(component, 'value', 13));
       this.assert.notOk(component.attrs.value.update);
 
       this.assertText('13', 'local property is updated');
@@ -103,13 +105,13 @@ moduleFor(
       assert.strictEqual(get(component, 'value'), 'initial', 'no mutable cell');
       assert.strictEqual(this.context.thing, 'initial');
 
-      this.runTask(() => set(this.context, 'thing', 'updated!'));
+      runTask(() => set(this.context, 'thing', 'updated!'));
 
       this.assertText('updated!');
       assert.strictEqual(component.attrs.value, 'updated!', 'passed down value was set in attrs');
       assert.strictEqual(get(component, 'value'), 'updated!', 'passed down value was set');
 
-      this.runTask(() => set(this.context, 'thing', 'initial'));
+      runTask(() => set(this.context, 'thing', 'initial'));
 
       this.assertText('initial');
     }
@@ -140,13 +142,13 @@ moduleFor(
       assert.deepEqual(get(component, 'value'), { prop: 'initial' });
       assert.deepEqual(this.context.thing, { prop: 'initial' });
 
-      this.runTask(() => set(component, 'value.prop', 'updated!'));
+      runTask(() => set(component, 'value.prop', 'updated!'));
 
       this.assertText('updated!', 'nested path is updated');
       assert.deepEqual(get(component, 'value'), { prop: 'updated!' });
       assert.deepEqual(this.context.thing, { prop: 'updated!' });
 
-      this.runTask(() => set(component, 'value.prop', 'initial'));
+      runTask(() => set(component, 'value.prop', 'initial'));
 
       this.assertText('initial');
     }
@@ -172,12 +174,12 @@ moduleFor(
       this.assert.notOk(component.attrs.value.update);
       this.assert.strictEqual(get(component, 'value'), '12');
 
-      this.runTask(() => set(component, 'value', '13'));
+      runTask(() => set(component, 'value', '13'));
 
       this.assertText('13', 'local property is updated');
       this.assert.strictEqual(get(component, 'value'), '13');
 
-      this.runTask(() => set(component, 'value', '12'));
+      runTask(() => set(component, 'value', '12'));
 
       this.assertText('12');
     }
@@ -215,7 +217,7 @@ moduleFor(
       this.assert.equal(get(middle, 'foo'), 12, "middle's local foo received the value");
 
       // updating the mut-cell directly
-      this.runTask(() => bottom.attrs.bar.update(13));
+      runTask(() => bottom.attrs.bar.update(13));
 
       this.assert.equal(
         get(bottom, 'bar'),
@@ -230,7 +232,7 @@ moduleFor(
       this.assertText('13 13');
       this.assert.equal(get(this.context, 'val'), 12, 'But context val is not updated');
 
-      this.runTask(() => set(bottom, 'bar', 14));
+      runTask(() => set(bottom, 'bar', 14));
 
       this.assert.equal(
         get(bottom, 'bar'),
@@ -246,7 +248,7 @@ moduleFor(
       this.assert.equal(get(this.context, 'val'), 12, 'But context val is not updated');
 
       this.assert.notOk(middle.attrs.foo.update, "middle's foo attr is not a mutable cell");
-      this.runTask(() => set(middle, 'foo', 15));
+      runTask(() => set(middle, 'foo', 15));
 
       this.assertText('15 15');
       this.assert.equal(get(middle, 'foo'), 15, "set of middle's foo took effect");
@@ -257,7 +259,7 @@ moduleFor(
       );
       this.assert.equal(get(this.context, 'val'), 12, 'Context val remains unchanged');
 
-      this.runTask(() => set(this.context, 'val', 10));
+      runTask(() => set(this.context, 'val', 10));
 
       this.assertText('10 10');
       this.assert.equal(
@@ -272,7 +274,7 @@ moduleFor(
       );
 
       // setting as a normal property
-      this.runTask(() => set(bottom, 'bar', undefined));
+      runTask(() => set(bottom, 'bar', undefined));
 
       this.assertText(' ');
       this.assert.equal(
@@ -286,7 +288,7 @@ moduleFor(
         "middle's local foo was updated to a falsy value"
       );
 
-      this.runTask(() => set(this.context, 'val', 12));
+      runTask(() => set(this.context, 'val', 12));
       this.assertText('12 12', 'bottom and middle were both reset');
     }
   }

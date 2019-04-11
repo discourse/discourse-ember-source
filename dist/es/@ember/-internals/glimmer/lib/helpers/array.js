@@ -6,6 +6,14 @@
    components.
 
    ```handlebars
+   <MyComponent @people={{array
+     'Tom Dade'
+     'Yehuda Katz'
+     this.myOtherPerson}}
+   />
+   ```
+    or
+   ```handlebars
    {{my-component people=(array
      'Tom Dade'
      'Yehuda Katz'

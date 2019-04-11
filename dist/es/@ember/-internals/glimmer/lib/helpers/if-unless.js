@@ -99,6 +99,12 @@ class ConditionalHelperReference extends CachedReference {
   You can use the `if` helper inside another helper as a nested helper:
 
   ```handlebars
+  <SomeComponent @height={{if isBig "100" "10"}} />
+  ```
+
+  or
+
+  ```handlebars
   {{some-component height=(if isBig "100" "10")}}
   ```
 
@@ -126,6 +132,12 @@ export function inlineIf(_vm, { positional }) {
   ```
 
   You can use the `unless` helper inside another helper as a subexpression.
+
+  ```handlebars
+  <SomeComponent @height={{unless isBig "10" "100"}} />
+  ```
+
+  or
 
   ```handlebars
   {{some-component height=(unless isBig "10" "100")}}

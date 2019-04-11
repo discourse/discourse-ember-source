@@ -17,8 +17,8 @@ const CAPABILITIES = {
 export function capabilities(managerAPI, options = {}) {
     assert('Invalid component manager compatibility specified', managerAPI === '3.4');
     return {
-        asyncLifeCycleCallbacks: !!options.asyncLifecycleCallbacks,
-        destructor: !!options.destructor,
+        asyncLifeCycleCallbacks: Boolean(options.asyncLifecycleCallbacks),
+        destructor: Boolean(options.destructor),
     };
 }
 export function hasAsyncLifeCycleCallbacks(delegate) {

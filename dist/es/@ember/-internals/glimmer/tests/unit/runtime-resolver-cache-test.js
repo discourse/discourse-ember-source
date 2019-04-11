@@ -1,11 +1,18 @@
-import { RenderingTest, moduleFor } from '../utils/test-case';
-import { Component } from '../utils/helpers';
+import {
+  RenderingTestCase,
+  moduleFor,
+  runDestroy,
+  runAppend,
+  runTask,
+} from 'internal-test-helpers';
+
 import { set } from '@ember/-internals/metal';
-import { runDestroy, runAppend } from 'internal-test-helpers';
+
+import { Component } from '../utils/helpers';
 
 moduleFor(
   'ember-glimmer runtime resolver cache',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     '@test a helper definition is only generated once'(assert) {
       this.registerHelper('foo-bar', () => 'foo-bar helper!');
       this.registerHelper('baz-qux', () => 'baz-qux helper!');
@@ -43,7 +50,7 @@ moduleFor(
       );
 
       // show component-two for the first time
-      this.runTask(() => set(this.context, 'cond', false));
+      runTask(() => set(this.context, 'cond', false));
 
       this.assertText('baz-qux helper!');
       state = this.expectCacheChanges(
@@ -55,13 +62,13 @@ moduleFor(
       );
 
       // show foo-bar again
-      this.runTask(() => set(this.context, 'cond', true));
+      runTask(() => set(this.context, 'cond', true));
 
       this.assertText('foo-bar helper!');
       state = this.expectCacheChanges({}, state, 'toggle back to foo-bar cache hit');
 
       // show baz-qux again
-      this.runTask(() => set(this.context, 'cond', false));
+      runTask(() => set(this.context, 'cond', false));
 
       this.assertText('baz-qux helper!');
       state = this.expectCacheChanges({}, state, 'toggle back to baz-qux cache hit');
@@ -101,7 +108,7 @@ moduleFor(
       );
 
       // show component-two for the first time
-      this.runTask(() => set(this.context, 'componentName', 'component-two'));
+      runTask(() => set(this.context, 'componentName', 'component-two'));
 
       this.assertText('Two');
       state = this.expectCacheChanges(
@@ -111,13 +118,13 @@ moduleFor(
       );
 
       // show component-one again
-      this.runTask(() => set(this.context, 'componentName', 'component-one'));
+      runTask(() => set(this.context, 'componentName', 'component-one'));
 
       this.assertText('One');
       state = this.expectCacheChanges({}, state, 'toggle back to component-one no change');
 
       // show component-two again
-      this.runTask(() => set(this.context, 'componentName', 'component-two'));
+      runTask(() => set(this.context, 'componentName', 'component-two'));
 
       this.assertText('Two');
       state = this.expectCacheChanges({}, state, 'toggle back to component-two no change');
@@ -174,7 +181,7 @@ moduleFor(
       );
 
       // show component-two for the first time
-      this.runTask(() => set(this.context, 'cond', false));
+      runTask(() => set(this.context, 'cond', false));
 
       this.assertText('Two');
       state = this.expectCacheChanges(
@@ -187,13 +194,13 @@ moduleFor(
       );
 
       // show component-one again
-      this.runTask(() => set(this.context, 'cond', true));
+      runTask(() => set(this.context, 'cond', true));
 
       this.assertText('One');
       state = this.expectCacheChanges({}, state, 'toggle back to component-one no change');
 
       // show component-two again
-      this.runTask(() => set(this.context, 'cond', false));
+      runTask(() => set(this.context, 'cond', false));
 
       this.assertText('Two');
       state = this.expectCacheChanges(

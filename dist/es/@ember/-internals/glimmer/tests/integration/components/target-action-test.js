@@ -1,11 +1,18 @@
+import {
+  moduleFor,
+  RenderingTestCase,
+  ApplicationTestCase,
+  strip,
+  runTask,
+} from 'internal-test-helpers';
+
 import { assign } from '@ember/polyfills';
-import { moduleFor, RenderingTest, ApplicationTest } from '../../utils/test-case';
-import { strip } from '../../utils/abstract-test-case';
 import { set, Mixin } from '@ember/-internals/metal';
-import { Component } from '../../utils/helpers';
 import Controller from '@ember/controller';
 import { Object as EmberObject } from '@ember/-internals/runtime';
 import { Route } from '@ember/-internals/routing';
+
+import { Component } from '../../utils/helpers';
 
 function expectSendActionDeprecation(fn) {
   expectDeprecation(
@@ -16,7 +23,7 @@ function expectSendActionDeprecation(fn) {
 
 moduleFor(
   'Components test: sendAction',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     constructor() {
       super(...arguments);
       this.actionCounts = {};
@@ -69,7 +76,7 @@ moduleFor(
       this.renderDelegate();
 
       expectSendActionDeprecation(() => {
-        this.runTask(() => this.delegate.sendAction());
+        runTask(() => this.delegate.sendAction());
       });
 
       this.assertSendCount(0);
@@ -79,7 +86,7 @@ moduleFor(
       this.renderDelegate();
 
       expectSendActionDeprecation(() => {
-        this.runTask(() => {
+        runTask(() => {
           set(this.delegate, 'action', 'addItem');
           this.delegate.sendAction();
         });
@@ -95,7 +102,7 @@ moduleFor(
       this.renderDelegate();
 
       expectSendActionDeprecation(() => {
-        this.runTask(() => {
+        runTask(() => {
           set(this.delegate, 'action', () => this.assert.ok(true, 'function is called'));
           this.delegate.sendAction();
         });
@@ -108,7 +115,7 @@ moduleFor(
 
       this.renderDelegate();
       expectSendActionDeprecation(() => {
-        this.runTask(() => {
+        runTask(() => {
           set(this.delegate, 'action', actualArgument => {
             this.assert.deepEqual(argument, actualArgument, 'argument is passed');
           });
@@ -124,16 +131,16 @@ moduleFor(
       });
 
       expectSendActionDeprecation(() => {
-        this.runTask(() => this.delegate.sendAction());
+        runTask(() => this.delegate.sendAction());
       });
 
       this.assertSendCount(0);
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'playing', 'didStartPlaying');
       });
       expectSendActionDeprecation(() => {
-        this.runTask(() => {
+        runTask(() => {
           this.delegate.sendAction('playing');
         });
       });
@@ -148,14 +155,14 @@ moduleFor(
       });
 
       expectSendActionDeprecation(() => {
-        this.runTask(() => this.delegate.sendAction('playing'));
+        runTask(() => this.delegate.sendAction('playing'));
       });
 
       this.assertSendCount(0);
 
-      this.runTask(() => this.delegate.attrs.playing.update('didStartPlaying'));
+      runTask(() => this.delegate.attrs.playing.update('didStartPlaying'));
       expectSendActionDeprecation(() => {
-        this.runTask(() => this.delegate.sendAction('playing'));
+        runTask(() => this.delegate.sendAction('playing'));
       });
 
       this.assertSendCount(1);
@@ -167,7 +174,7 @@ moduleFor(
 
       let component = this.delegate;
       expectSendActionDeprecation(() => {
-        this.runTask(() => {
+        runTask(() => {
           set(this.delegate, 'playing', 'didStartPlaying');
           component.sendAction('playing');
         });
@@ -177,14 +184,14 @@ moduleFor(
       this.assertNamedSendCount('didStartPlaying', 1);
 
       expectSendActionDeprecation(() => {
-        this.runTask(() => component.sendAction('playing'));
+        runTask(() => component.sendAction('playing'));
       });
 
       this.assertSendCount(2);
       this.assertNamedSendCount('didStartPlaying', 2);
 
       expectSendActionDeprecation(() => {
-        this.runTask(() => {
+        runTask(() => {
           set(component, 'action', 'didDoSomeBusiness');
           component.sendAction();
         });
@@ -197,7 +204,7 @@ moduleFor(
     ['@test Calling sendAction when the action name is not a string raises an exception']() {
       this.renderDelegate();
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.delegate, 'action', {});
         set(this.delegate, 'playing', {});
       });
@@ -217,7 +224,7 @@ moduleFor(
       let secondContext = { song: 'My Achey Breaky Ember' };
 
       expectSendActionDeprecation(() => {
-        this.runTask(() => {
+        runTask(() => {
           set(this.delegate, 'playing', 'didStartPlaying');
           this.delegate.sendAction('playing', testContext);
         });
@@ -228,7 +235,7 @@ moduleFor(
       this.assertSentWithArgs([testContext], 'context was sent with the action');
 
       expectSendActionDeprecation(() => {
-        this.runTask(() => {
+        runTask(() => {
           this.delegate.sendAction('playing', firstContext, secondContext);
         });
       });
@@ -296,7 +303,7 @@ moduleFor(
 
       this.renderDelegate();
       expectSendActionDeprecation(() => {
-        this.runTask(() => innerChild.sendAction('bar', 'something special'));
+        runTask(() => innerChild.sendAction('bar', 'something special'));
       });
     }
 
@@ -320,7 +327,7 @@ moduleFor(
         shouldRender: true,
       });
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'shouldRender', false);
       });
 
@@ -333,7 +340,7 @@ moduleFor(
 
 moduleFor(
   'Components test: sendAction to a controller',
-  class extends ApplicationTest {
+  class extends ApplicationTestCase {
     ["@test sendAction should trigger an action on the parent component's controller if it exists"](
       assert
     ) {
@@ -518,7 +525,7 @@ moduleFor(
 
 moduleFor(
   'Components test: sendAction of a closure action',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test action should be called'](assert) {
       assert.expect(2);
       let component;
@@ -544,7 +551,7 @@ moduleFor(
 
       this.render('{{outer-component}}');
       expectSendActionDeprecation(() => {
-        this.runTask(() => component.sendAction('submitAction'));
+        runTask(() => component.sendAction('submitAction'));
       });
     }
 
@@ -581,7 +588,7 @@ moduleFor(
 
       this.render('{{outer-component}}');
       expectSendActionDeprecation(() => {
-        this.runTask(() => innerComponent.sendAction('innerSubmit', fourth));
+        runTask(() => innerComponent.sendAction('innerSubmit', fourth));
       });
 
       this.assert.deepEqual(
@@ -595,7 +602,7 @@ moduleFor(
 
 moduleFor(
   'Components test: send',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test sending to undefined actions triggers an error'](assert) {
       assert.expect(2);
 
@@ -617,7 +624,7 @@ moduleFor(
 
       this.render('{{foo-bar}}');
 
-      this.runTask(() => component.send('foo', 'bar'));
+      runTask(() => component.send('foo', 'bar'));
 
       expectAssertion(() => {
         return component.send('baz', 'bar');
@@ -645,7 +652,7 @@ moduleFor(
 
       this.render('{{foo-bar}}');
 
-      this.runTask(() => component.send('foo', 'baz'));
+      runTask(() => component.send('foo', 'baz'));
     }
 
     ['@test a handled action can be bubbled to the target for continued processing']() {
@@ -677,7 +684,7 @@ moduleFor(
 
       this.render('{{foo-bar poke="poke"}}');
 
-      this.runTask(() => component.send('poke'));
+      runTask(() => component.send('poke'));
     }
 
     ["@test action can be handled by a superclass' actions object"](assert) {
@@ -721,7 +728,7 @@ moduleFor(
 
       this.render('{{x-index}}');
 
-      this.runTask(() => {
+      runTask(() => {
         component.send('foo');
         component.send('bar', 'HELLO');
         component.send('baz');
@@ -767,7 +774,7 @@ moduleFor(
         shouldRender: true,
       });
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'shouldRender', false);
       });
 

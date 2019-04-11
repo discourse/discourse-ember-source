@@ -1,12 +1,19 @@
-import { moduleFor, ApplicationTest, RenderingTest } from '../../utils/test-case';
+import {
+  moduleFor,
+  ApplicationTestCase,
+  RenderingTestCase,
+  classes as classMatcher,
+  runTask,
+} from 'internal-test-helpers';
+
 import Controller from '@ember/controller';
 import { set } from '@ember/-internals/metal';
+
 import { LinkComponent } from '../../utils/helpers';
-import { classes as classMatcher } from '../../utils/test-helpers';
 
 moduleFor(
   'Link-to component',
-  class extends ApplicationTest {
+  class extends ApplicationTestCase {
     visitWithDeprecation(path, deprecation) {
       let p;
 
@@ -43,7 +50,7 @@ moduleFor(
 
       return this.visit('/').then(() => {
         this.assertText('foo');
-        this.runTask(() => set(controller, 'title', 'bar'));
+        runTask(() => set(controller, 'title', 'bar'));
         this.assertText('bar');
       });
     }
@@ -70,7 +77,7 @@ moduleFor(
 
       return this.visit('/bar').then(() => {
         assert.equal(this.firstChild.classList.contains('active'), false);
-        this.runTask(() => set(controller, 'routeName', 'bar'));
+        runTask(() => set(controller, 'routeName', 'bar'));
         assert.equal(this.firstChild.classList.contains('active'), true);
       });
     }
@@ -157,7 +164,7 @@ moduleFor(
 
 moduleFor(
   'Link-to component with query-params',
-  class extends ApplicationTest {
+  class extends ApplicationTestCase {
     constructor() {
       super(...arguments);
 
@@ -202,7 +209,7 @@ moduleFor(
 
 moduleFor(
   'Link-to component',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test should be able to be inserted in DOM when the router is not present - block']() {
       this.render(`{{#link-to 'index'}}Go to Index{{/link-to}}`);
 

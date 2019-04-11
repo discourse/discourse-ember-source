@@ -1,4 +1,5 @@
-import { RenderingTest, moduleFor } from '../utils/test-case';
+import { RenderingTestCase, moduleFor, runTask } from 'internal-test-helpers';
+
 import { Component } from '../utils/helpers';
 import { getCurrentRunLoop, run } from '@ember/runloop';
 import {
@@ -10,7 +11,7 @@ import { jQueryDisabled, jQuery } from '@ember/-internals/views';
 import { HAS_NATIVE_PROXY } from '@ember/-internals/utils';
 import { DEBUG } from '@glimmer/env';
 
-let canDataTransfer = !!document.createEvent('HTMLEvents').dataTransfer;
+let canDataTransfer = Boolean(document.createEvent('HTMLEvents').dataTransfer);
 
 function fireNativeWithDataTransfer(node, type, dataTransfer) {
   let event = document.createEvent('HTMLEvents');
@@ -21,7 +22,7 @@ function fireNativeWithDataTransfer(node, type, dataTransfer) {
 
 moduleFor(
   'EventDispatcher',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test events bubble view hierarchy for form elements'](assert) {
       let receivedEvent;
 
@@ -36,7 +37,7 @@ moduleFor(
 
       this.render(`{{x-foo}}`);
 
-      this.runTask(() => this.$('#is-done').trigger('change'));
+      runTask(() => this.$('#is-done').trigger('change'));
       assert.ok(receivedEvent, 'change event was triggered');
       assert.strictEqual(receivedEvent.target, this.$('#is-done')[0]);
     }
@@ -55,7 +56,7 @@ moduleFor(
 
       this.render(`{{x-bar}}`);
 
-      this.runTask(() => this.$('#is-done').trigger('click'));
+      runTask(() => this.$('#is-done').trigger('click'));
       assert.ok(receivedEvent, 'change event was triggered');
       assert.strictEqual(receivedEvent.target, this.$('#is-done')[0]);
     }
@@ -74,7 +75,7 @@ moduleFor(
 
       this.render(`{{x-bar}}`);
 
-      this.runTask(() => this.$('#is-done').trigger('click'));
+      runTask(() => this.$('#is-done').trigger('click'));
       assert.ok(receivedEvent, 'change event was triggered');
       assert.strictEqual(receivedEvent.target, this.$('#is-done')[0]);
     }
@@ -100,7 +101,7 @@ moduleFor(
 
       this.render(`{{#x-foo}}{{x-bar}}{{/x-foo}}`);
 
-      this.runTask(() => this.$('#is-done').trigger('change'));
+      runTask(() => this.$('#is-done').trigger('change'));
       assert.ok(receivedEvent, 'change event was triggered');
       assert.strictEqual(receivedEvent.target, this.$('#is-done')[0]);
     }
@@ -128,7 +129,7 @@ moduleFor(
 
       this.render(`{{#x-foo}}{{x-bar}}{{/x-foo}}`);
 
-      this.runTask(() => this.$('#is-done').trigger('change'));
+      runTask(() => this.$('#is-done').trigger('change'));
       assert.notOk(hasReceivedEvent, 'change event has not been received');
     }
 
@@ -170,7 +171,7 @@ moduleFor(
       let inner = this.$('#inner')[0];
 
       // mouse moves over #outer
-      this.runTask(() => {
+      runTask(() => {
         this.$(outer).trigger('mouseenter', { canBubble: false, relatedTarget: parent });
         this.$(outer).trigger('mouseover', { relatedTarget: parent });
         this.$(parent).trigger('mouseout', { relatedTarget: outer });
@@ -179,21 +180,21 @@ moduleFor(
       assert.strictEqual(receivedEnterEvents[0].target, outer);
 
       // mouse moves over #inner
-      this.runTask(() => {
+      runTask(() => {
         this.$(inner).trigger('mouseover', { relatedTarget: outer });
         this.$(outer).trigger('mouseout', { relatedTarget: inner });
       });
       assert.equal(receivedEnterEvents.length, 1, 'mouseenter event was not triggered again');
 
       // mouse moves out of #inner
-      this.runTask(() => {
+      runTask(() => {
         this.$(inner).trigger('mouseout', { relatedTarget: outer });
         this.$(outer).trigger('mouseover', { relatedTarget: inner });
       });
       assert.equal(receivedLeaveEvents.length, 0, 'mouseleave event was not triggered');
 
       // mouse moves out of #outer
-      this.runTask(() => {
+      runTask(() => {
         this.$(outer).trigger('mouseleave', { canBubble: false, relatedTarget: parent });
         this.$(outer).trigger('mouseout', { relatedTarget: parent });
         this.$(parent).trigger('mouseover', { relatedTarget: outer });
@@ -226,7 +227,7 @@ moduleFor(
       let inner = this.$('#inner')[0];
 
       // mouse moves over #outer
-      this.runTask(() => {
+      runTask(() => {
         this.$(outer).trigger('mouseenter', { canBubble: false, relatedTarget: parent });
         this.$(outer).trigger('mouseover', { relatedTarget: parent });
         this.$(parent).trigger('mouseout', { relatedTarget: outer });
@@ -235,21 +236,21 @@ moduleFor(
       assert.strictEqual(receivedEnterEvents[0].target, outer);
 
       // mouse moves over #inner
-      this.runTask(() => {
+      runTask(() => {
         this.$(inner).trigger('mouseover', { relatedTarget: outer });
         this.$(outer).trigger('mouseout', { relatedTarget: inner });
       });
       assert.equal(receivedEnterEvents.length, 1, 'mouseenter event was not triggered again');
 
       // mouse moves out of #inner
-      this.runTask(() => {
+      runTask(() => {
         this.$(inner).trigger('mouseout', { relatedTarget: outer });
         this.$(outer).trigger('mouseover', { relatedTarget: inner });
       });
       assert.equal(receivedLeaveEvents.length, 0, 'mouseleave event was not triggered');
 
       // mouse moves out of #outer
-      this.runTask(() => {
+      runTask(() => {
         this.$(outer).trigger('mouseleave', { canBubble: false, relatedTarget: parent });
         this.$(outer).trigger('mouseout', { relatedTarget: parent });
         this.$(parent).trigger('mouseover', { relatedTarget: outer });
@@ -281,7 +282,7 @@ moduleFor(
       let inner = this.$('#inner')[0];
 
       // we replicate fast mouse movement, where mouseover is fired directly in #inner, skipping #outer
-      this.runTask(() => {
+      runTask(() => {
         this.$(outer).trigger('mouseenter', { canBubble: false, relatedTarget: parent });
         this.$(inner).trigger('mouseover', { relatedTarget: parent });
         this.$(parent).trigger('mouseout', { relatedTarget: inner });
@@ -290,7 +291,7 @@ moduleFor(
       assert.strictEqual(receivedEnterEvents[0].target, inner);
 
       // mouse moves out of #outer
-      this.runTask(() => {
+      runTask(() => {
         this.$(outer).trigger('mouseleave', { canBubble: false, relatedTarget: parent });
         this.$(inner).trigger('mouseout', { relatedTarget: parent });
         this.$(parent).trigger('mouseover', { relatedTarget: inner });
@@ -329,7 +330,7 @@ moduleFor(
       let inner = this.$('#inner')[0];
 
       // we replicate fast mouse movement, where mouseover is fired directly in #inner, skipping #outer
-      this.runTask(() => {
+      runTask(() => {
         this.$(outer).trigger('mouseenter', { canBubble: false, relatedTarget: parent });
         this.$(inner).trigger('mouseover', { relatedTarget: parent });
         this.$(parent).trigger('mouseout', { relatedTarget: inner });
@@ -338,7 +339,7 @@ moduleFor(
       assert.strictEqual(receivedEnterEvents[0].target, inner);
 
       // mouse moves out of #inner
-      this.runTask(() => {
+      runTask(() => {
         this.$(outer).trigger('mouseleave', { canBubble: false, relatedTarget: parent });
         this.$(inner).trigger('mouseout', { relatedTarget: parent });
         this.$(parent).trigger('mouseover', { relatedTarget: inner });
@@ -352,7 +353,7 @@ moduleFor(
 
 moduleFor(
   'EventDispatcher#setup',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     constructor() {
       super(...arguments);
 
@@ -426,7 +427,7 @@ moduleFor(
 if (EMBER_IMPROVED_INSTRUMENTATION) {
   moduleFor(
     'EventDispatcher - Instrumentation',
-    class extends RenderingTest {
+    class extends RenderingTestCase {
       teardown() {
         super.teardown();
         instrumentationReset();
@@ -485,7 +486,7 @@ if (EMBER_IMPROVED_INSTRUMENTATION) {
 if (canDataTransfer) {
   moduleFor(
     'EventDispatcher - Event Properties',
-    class extends RenderingTest {
+    class extends RenderingTestCase {
       ['@test dataTransfer property is added to drop event'](assert) {
         let receivedEvent;
         this.registerComponent('x-foo', {
@@ -508,7 +509,7 @@ if (canDataTransfer) {
 if (jQueryDisabled) {
   moduleFor(
     'EventDispatcher#native-events',
-    class extends RenderingTest {
+    class extends RenderingTestCase {
       ['@test native events are passed when jQuery is not present'](assert) {
         let receivedEvent;
 
@@ -523,7 +524,7 @@ if (jQueryDisabled) {
 
         this.render(`{{x-foo}}`);
 
-        this.runTask(() => this.$('#foo').click());
+        runTask(() => this.$('#foo').click());
         assert.ok(receivedEvent, 'click event was triggered');
         assert.notOk(receivedEvent.originalEvent, 'event is not a jQuery.Event');
       }
@@ -532,7 +533,7 @@ if (jQueryDisabled) {
 } else {
   moduleFor(
     'EventDispatcher#jquery-events',
-    class extends RenderingTest {
+    class extends RenderingTestCase {
       beforeEach() {
         this.jqueryIntegration = window.ENV._JQUERY_INTEGRATION;
       }
@@ -555,7 +556,7 @@ if (jQueryDisabled) {
 
         this.render(`{{x-foo}}`);
 
-        this.runTask(() => this.$('#foo').click());
+        runTask(() => this.$('#foo').click());
         assert.ok(receivedEvent, 'click event was triggered');
         assert.ok(receivedEvent instanceof jQuery.Event, 'event is a jQuery.Event');
       }
@@ -576,7 +577,7 @@ if (jQueryDisabled) {
 
         this.render(`{{x-foo}}`);
 
-        this.runTask(() => this.$('#foo').click());
+        runTask(() => this.$('#foo').click());
         expectDeprecation(() => {
           let { originalEvent } = receivedEvent;
           assert.ok(originalEvent, 'jQuery event has originalEvent property');
@@ -598,7 +599,7 @@ if (jQueryDisabled) {
 
         this.render(`{{x-foo}}`);
 
-        this.runTask(() => this.$('#foo').click());
+        runTask(() => this.$('#foo').click());
         expectNoDeprecation(() => {
           receivedEvent.stopPropagation();
           receivedEvent.stopImmediatePropagation();
@@ -625,7 +626,7 @@ if (jQueryDisabled) {
 
         this.render(`{{x-foo}}`);
 
-        this.runTask(() => this.$('#foo').click());
+        runTask(() => this.$('#foo').click());
         expectNoDeprecation(() => {
           let { originalEvent } = receivedEvent;
           assert.ok(originalEvent, 'jQuery event has originalEvent property');
@@ -651,7 +652,7 @@ if (jQueryDisabled) {
 
         this.render(`{{x-foo}}`);
 
-        this.runTask(() => this.$('#foo').click());
+        runTask(() => this.$('#foo').click());
         expectNoDeprecation(() => {
           let { __originalEvent: originalEvent } = receivedEvent;
           assert.ok(originalEvent, 'jQuery event has __originalEvent property');

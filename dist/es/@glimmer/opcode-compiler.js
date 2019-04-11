@@ -681,6 +681,7 @@ function decodePrimitive(primitive, constants) {
                     return undefined;
             }
         case 4 /* NEGATIVE */:
+        case 5 /* BIG_NUM */:
             return constants.getNumber(value);
         default:
             throw unreachable();
@@ -1394,7 +1395,7 @@ class OpcodeBuilder extends StdOpcodeBuilder {
         let { symbols } = symbolTable;
         if (capabilities.createArgs) {
             this.pushFrame();
-            this.compileArgs(null, hash, null, synthetic);
+            this.compileArgs(params, hash, null, synthetic);
         }
         this.beginComponentTransaction();
         if (capabilities.dynamicScope) {
@@ -1579,7 +1580,7 @@ class OpcodeBuilder extends StdOpcodeBuilder {
         this.push(13 /* Primitive */, immediate);
     }
     sizeImmediate(shifted, primitive) {
-        if (shifted >= 65535 /* MAX_SIZE */ || shifted < 0) {
+        if (shifted >= 4294967295 /* MAX_SIZE */ || shifted < 0) {
             return this.constants.number(primitive) << 3 | 5 /* BIG_NUM */;
         }
         return shifted;

@@ -77,7 +77,7 @@ export function supportsHistory(userAgent, history) {
         userAgent.indexOf('Windows Phone') === -1) {
         return false;
     }
-    return !!(history && 'pushState' in history);
+    return Boolean(history && 'pushState' in history);
 }
 /**
   Replaces the current location, making sure we explicitly include the origin

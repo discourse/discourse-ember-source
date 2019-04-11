@@ -362,7 +362,7 @@ class EmberRouter extends EmberObject {
             return false;
         }
         let resolver = get(owner, 'application.__registry__.resolver.moduleBasedResolver');
-        return !!resolver;
+        return Boolean(resolver);
     }
     /**
       Initializes the current router instance and sets up the change handling
@@ -741,11 +741,11 @@ class EmberRouter extends EmberObject {
     }
     _doTransition(_targetRouteName, models, _queryParams, _keepDefaultQueryParamValues) {
         let targetRouteName = _targetRouteName || getActiveTargetName(this._routerMicrolib);
-        assert(`The route ${targetRouteName} was not found`, !!targetRouteName && this._routerMicrolib.hasRoute(targetRouteName));
+        assert(`The route ${targetRouteName} was not found`, Boolean(targetRouteName) && this._routerMicrolib.hasRoute(targetRouteName));
         let queryParams = {};
         this._processActiveTransitionQueryParams(targetRouteName, models, queryParams, _queryParams);
         assign(queryParams, _queryParams);
-        this._prepareQueryParams(targetRouteName, models, queryParams, !!_keepDefaultQueryParamValues);
+        this._prepareQueryParams(targetRouteName, models, queryParams, Boolean(_keepDefaultQueryParamValues));
         let transition = this._routerMicrolib.transitionTo(targetRouteName, ...models, { queryParams });
         didBeginTransition(transition, this);
         return transition;
@@ -785,7 +785,7 @@ class EmberRouter extends EmberObject {
     */
     _prepareQueryParams(targetRouteName, models, queryParams, _fromRouterService) {
         let state = calculatePostTransitionState(this, targetRouteName, models);
-        this._hydrateUnsuppliedQueryParams(state, queryParams, !!_fromRouterService);
+        this._hydrateUnsuppliedQueryParams(state, queryParams, Boolean(_fromRouterService));
         this._serializeQueryParams(state.routeInfos, queryParams);
         if (!_fromRouterService) {
             this._pruneDefaultQueryParamValues(state.routeInfos, queryParams);

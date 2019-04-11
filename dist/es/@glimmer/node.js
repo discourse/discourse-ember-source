@@ -1,4 +1,4 @@
-import { DOMTreeConstruction, ConcreteBounds, NewElementBuilder } from '@glimmer/runtime';
+import { DOMTreeConstruction, NewElementBuilder, ConcreteBounds } from '@glimmer/runtime';
 
 class NodeDOMTreeConstruction extends DOMTreeConstruction {
     constructor(doc) {
@@ -6,14 +6,6 @@ class NodeDOMTreeConstruction extends DOMTreeConstruction {
     }
     // override to prevent usage of `this.document` until after the constructor
     setupUselessElement() {}
-    insertHTMLBefore(parent, reference, html) {
-        let prev = reference ? reference.previousSibling : parent.lastChild;
-        let raw = this.document.createRawHTMLSection(html);
-        parent.insertBefore(raw, reference);
-        let first = prev ? prev.nextSibling : parent.firstChild;
-        let last = reference ? reference.previousSibling : parent.lastChild;
-        return new ConcreteBounds(parent, first, last);
-    }
     // override to avoid SVG detection/work when in node (this is not needed in SSR)
     createElement(tag) {
         return this.document.createElement(tag);

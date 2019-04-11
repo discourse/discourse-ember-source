@@ -80,7 +80,7 @@ export default class AutoLocation extends EmberObject {
         }
         let concrete = getOwner(this).lookup(`location:${implementation}`);
         set(concrete, 'rootURL', rootURL);
-        assert(`Could not find location '${implementation}'.`, !!concrete);
+        assert(`Could not find location '${implementation}'.`, Boolean(concrete));
         set(this, 'concreteImplementation', concrete);
     }
     willDestroy() {
@@ -164,7 +164,7 @@ AutoLocation.reopen({
 function delegateToConcreteImplementation(methodName) {
     return function (...args) {
         let concreteImplementation = get(this, 'concreteImplementation');
-        assert("AutoLocation's detect() method should be called before calling any other hooks.", !!concreteImplementation);
+        assert("AutoLocation's detect() method should be called before calling any other hooks.", Boolean(concreteImplementation));
         return tryInvoke(concreteImplementation, methodName, args);
     };
 }

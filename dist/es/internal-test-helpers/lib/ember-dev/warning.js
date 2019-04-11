@@ -1,5 +1,16 @@
 import DebugAssert from './debug';
 import { callWithStub } from './utils';
+export function setupWarningHelpers(hooks, env) {
+    let assertion = new WarningAssert(env);
+    hooks.beforeEach(function () {
+        assertion.reset();
+        assertion.inject();
+    });
+    hooks.afterEach(function () {
+        assertion.assert();
+        assertion.restore();
+    });
+}
 class WarningAssert extends DebugAssert {
     constructor(env) {
         super('warn', env);

@@ -1,16 +1,18 @@
-import { RenderingTest, moduleFor } from '../../utils/test-case';
+import { RenderingTestCase, moduleFor, runTask } from 'internal-test-helpers';
+
 import { Component } from '../../utils/helpers';
+
 import { set } from '@ember/-internals/metal';
 
 moduleFor(
   'Helpers test: {{hash}}',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test returns a hash with the right key-value']() {
       this.render(`{{#with (hash name=\"Sergio\") as |person|}}{{person.name}}{{/with}}`);
 
       this.assertText('Sergio');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('Sergio');
     }
@@ -22,7 +24,7 @@ moduleFor(
 
       this.assertText('Sergio Arbeo');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('Sergio Arbeo');
     }
@@ -39,15 +41,15 @@ moduleFor(
 
       this.assertText('Marisa Arbeo');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('Marisa Arbeo');
 
-      this.runTask(() => set(this.context, 'model.firstName', 'Sergio'));
+      runTask(() => set(this.context, 'model.firstName', 'Sergio'));
 
       this.assertText('Sergio Arbeo');
 
-      this.runTask(() => set(this.context, 'model', { firstName: 'Marisa' }));
+      runTask(() => set(this.context, 'model', { firstName: 'Marisa' }));
 
       this.assertText('Marisa Arbeo');
     }
@@ -65,19 +67,19 @@ moduleFor(
 
       this.assertText('Marisa Arbeo');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('Marisa Arbeo');
 
-      this.runTask(() => set(this.context, 'model.firstName', 'Sergio'));
+      runTask(() => set(this.context, 'model.firstName', 'Sergio'));
 
       this.assertText('Sergio Arbeo');
 
-      this.runTask(() => set(this.context, 'model.lastName', 'Smith'));
+      runTask(() => set(this.context, 'model.lastName', 'Smith'));
 
       this.assertText('Sergio Smith');
 
-      this.runTask(() =>
+      runTask(() =>
         set(this.context, 'model', {
           firstName: 'Marisa',
           lastName: 'Arbeo',
@@ -97,15 +99,15 @@ moduleFor(
 
       this.assertText('Balint');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('Balint');
 
-      this.runTask(() => set(this.context, 'model.firstName', 'Chad'));
+      runTask(() => set(this.context, 'model.firstName', 'Chad'));
 
       this.assertText('Chad');
 
-      this.runTask(() => set(this.context, 'model', { firstName: 'Balint' }));
+      runTask(() => set(this.context, 'model', { firstName: 'Balint' }));
 
       this.assertText('Balint');
     }
@@ -129,15 +131,15 @@ moduleFor(
 
       this.assertText('Chad');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('Chad');
 
-      this.runTask(() => set(fooBarInstance, 'model.firstName', 'Godfrey'));
+      runTask(() => set(fooBarInstance, 'model.firstName', 'Godfrey'));
 
       this.assertText('Godfrey');
 
-      this.runTask(() => set(fooBarInstance, 'model', { firstName: 'Chad' }));
+      runTask(() => set(fooBarInstance, 'model', { firstName: 'Chad' }));
 
       this.assertText('Chad');
     }
@@ -166,18 +168,18 @@ moduleFor(
 
       this.assertText('Chad Hietala');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('Chad Hietala');
 
-      this.runTask(() => {
+      runTask(() => {
         set(fooBarInstance, 'model.firstName', 'Godfrey');
         set(this.context, 'model.lastName', 'Chan');
       });
 
       this.assertText('Godfrey Chan');
 
-      this.runTask(() => {
+      runTask(() => {
         set(fooBarInstance, 'model', { firstName: 'Chad' });
         set(this.context, 'model', { lastName: 'Hietala' });
       });

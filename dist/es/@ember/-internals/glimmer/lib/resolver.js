@@ -2,7 +2,7 @@ import { privatize as P } from '@ember/-internals/container';
 import { ENV } from '@ember/-internals/environment';
 import { setOwner } from '@ember/-internals/owner';
 import { lookupComponent, lookupPartial } from '@ember/-internals/views';
-import { EMBER_MODULE_UNIFICATION, GLIMMER_CUSTOM_COMPONENT_MANAGER, GLIMMER_MODIFIER_MANAGER, } from '@ember/canary-features';
+import { EMBER_GLIMMER_ARRAY_HELPER, EMBER_MODULE_UNIFICATION, GLIMMER_CUSTOM_COMPONENT_MANAGER, GLIMMER_MODIFIER_MANAGER, } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { _instrumentStart } from '@ember/instrumentation';
 import { LazyCompiler, Macros, PartialDefinition } from '@glimmer/opcode-compiler';
@@ -52,7 +52,6 @@ const BUILTINS_HELPERS = {
     concat,
     get,
     hash,
-    array,
     log,
     mut,
     'query-params': queryParams,
@@ -69,6 +68,9 @@ const BUILTINS_HELPERS = {
     '-outlet': outletHelper,
     '-assert-implicit-component-helper-argument': componentAssertionHelper,
 };
+if (EMBER_GLIMMER_ARRAY_HELPER) {
+    BUILTINS_HELPERS['array'] = array;
+}
 const BUILTIN_MODIFIERS = {
     action: { manager: new ActionModifierManager(), state: null },
 };
@@ -158,11 +160,14 @@ export default class RuntimeResolver {
      */
     createTemplate(factory, owner) {
         let cache = this.templateCache.get(owner);
+        let template;
         if (cache === undefined) {
             cache = new Map();
             this.templateCache.set(owner, cache);
         }
-        let template = cache.get(factory);
+        else {
+            template = cache.get(factory);
+        }
         if (template === undefined) {
             const { compiler } = this;
             const injections = { compiler };
@@ -265,26 +270,23 @@ export default class RuntimeResolver {
             return cachedComponentDefinition;
         }
         let finalizer = _instrumentStart('render.getComponentDefinition', instrumentationPayload, name);
-        if (layout && !component && ENV._TEMPLATE_ONLY_GLIMMER_COMPONENTS) {
-            let definition = new TemplateOnlyComponentDefinition(layout);
-            finalizer();
-            this.componentDefinitionCache.set(key, definition);
-            return definition;
+        let definition;
+        if (layout !== undefined && component === undefined && ENV._TEMPLATE_ONLY_GLIMMER_COMPONENTS) {
+            definition = new TemplateOnlyComponentDefinition(layout);
         }
-        if (GLIMMER_CUSTOM_COMPONENT_MANAGER && component && component.class) {
+        if (GLIMMER_CUSTOM_COMPONENT_MANAGER &&
+            component !== undefined &&
+            component.class !== undefined) {
             let managerFactory = getComponentManager(component.class);
             if (managerFactory) {
                 let delegate = managerFactory(meta.owner);
-                let definition = new CustomManagerDefinition(name, component, delegate, layout || meta.owner.lookup(P `template:components/-default`));
-                finalizer();
-                this.componentDefinitionCache.set(key, definition);
-                return definition;
+                definition = new CustomManagerDefinition(name, component, delegate, layout || meta.owner.lookup(P `template:components/-default`));
             }
         }
-        let definition = layout || component
-            ? new CurlyComponentDefinition(name, component || meta.owner.factoryFor(P `component:-default`), null, layout // TODO fix type
-            )
-            : null;
+        if (definition === undefined) {
+            definition = new CurlyComponentDefinition(name, component || meta.owner.factoryFor(P `component:-default`), null, layout // TODO fix type
+            );
+        }
         finalizer();
         this.componentDefinitionCache.set(key, definition);
         return definition;

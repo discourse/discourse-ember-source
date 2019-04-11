@@ -1,10 +1,12 @@
-import { RenderingTest, moduleFor } from '../../utils/test-case';
-import { Component } from '../../utils/helpers';
+import { RenderingTestCase, moduleFor, runTask } from 'internal-test-helpers';
+
 import { set, get } from '@ember/-internals/metal';
+
+import { Component } from '../../utils/helpers';
 
 moduleFor(
   'Helpers test: {{get}}',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test should be able to get an object value with a static key']() {
       this.render(`[{{get colors 'apple'}}] [{{if true (get colors 'apple')}}]`, {
         colors: { apple: 'red' },
@@ -12,15 +14,15 @@ moduleFor(
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => set(this.context, 'colors.apple', 'green'));
+      runTask(() => set(this.context, 'colors.apple', 'green'));
 
       this.assertText('[green] [green]');
 
-      this.runTask(() =>
+      runTask(() =>
         set(this.context, 'colors', {
           apple: 'red',
         })
@@ -40,15 +42,15 @@ moduleFor(
 
       this.assertText('[red and yellow] [red and yellow]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[red and yellow] [red and yellow]');
 
-      this.runTask(() => set(this.context, 'colors.apple.gala', 'yellow and red striped'));
+      runTask(() => set(this.context, 'colors.apple.gala', 'yellow and red striped'));
 
       this.assertText('[yellow and red striped] [yellow and red striped]');
 
-      this.runTask(() => set(this.context, 'colors', { apple: { gala: 'red and yellow' } }));
+      runTask(() => set(this.context, 'colors', { apple: { gala: 'red and yellow' } }));
 
       this.assertText('[red and yellow] [red and yellow]');
     }
@@ -65,15 +67,15 @@ moduleFor(
 
       this.assertText('[First][Second][Third]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[First][Second][Third]');
 
-      this.runTask(() => set(this.context, 'items.1', 'Qux'));
+      runTask(() => set(this.context, 'items.1', 'Qux'));
 
       this.assertText('[Qux][Second][Third]');
 
-      this.runTask(() => set(this.context, 'items', { 1: 'First', 2: 'Second', 3: 'Third' }));
+      runTask(() => set(this.context, 'items', { 1: 'First', 2: 'Second', 3: 'Third' }));
 
       this.assertText('[First][Second][Third]');
     }
@@ -85,15 +87,15 @@ moduleFor(
 
       this.assertText('[1][2][3]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[1][2][3]');
 
-      this.runTask(() => set(this.context, 'numbers', [3, 2, 1]));
+      runTask(() => set(this.context, 'numbers', [3, 2, 1]));
 
       this.assertText('[3][2][1]');
 
-      this.runTask(() => set(this.context, 'numbers', [1, 2, 3]));
+      runTask(() => set(this.context, 'numbers', [1, 2, 3]));
 
       this.assertText('[1][2][3]');
     }
@@ -110,15 +112,15 @@ moduleFor(
 
       this.assertText('[First][Second][Third]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[First][Second][Third]');
 
-      this.runTask(() => set(this.context, 'items.1', 'Qux'));
+      runTask(() => set(this.context, 'items.1', 'Qux'));
 
       this.assertText('[Qux][Second][Third]');
 
-      this.runTask(() => set(this.context, 'items', { 1: 'First', 2: 'Second', 3: 'Third' }));
+      runTask(() => set(this.context, 'items', { 1: 'First', 2: 'Second', 3: 'Third' }));
 
       this.assertText('[First][Second][Third]');
     }
@@ -130,11 +132,11 @@ moduleFor(
 
       this.assertText('[1][2][3]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[1][2][3]');
 
-      this.runTask(() => set(this.context, 'numbers', [3, 2, 1]));
+      runTask(() => set(this.context, 'numbers', [3, 2, 1]));
 
       this.assertText('[3][2][1]');
     }
@@ -147,26 +149,26 @@ moduleFor(
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => set(this.context, 'key', 'banana'));
+      runTask(() => set(this.context, 'key', 'banana'));
 
       this.assertText('[yellow] [yellow]');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'colors.apple', 'green');
         set(this.context, 'colors.banana', 'purple');
       });
 
       this.assertText('[purple] [purple]');
 
-      this.runTask(() => set(this.context, 'key', 'apple'));
+      runTask(() => set(this.context, 'key', 'apple'));
 
       this.assertText('[green] [green]');
 
-      this.runTask(() => set(this.context, 'colors', { apple: 'red' }));
+      runTask(() => set(this.context, 'colors', { apple: 'red' }));
 
       this.assertText('[red] [red]');
     }
@@ -185,19 +187,19 @@ moduleFor(
 
       this.assertText('[red and yellow] [red and yellow]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[red and yellow] [red and yellow]');
 
-      this.runTask(() => set(this.context, 'key', 'apple.mcintosh'));
+      runTask(() => set(this.context, 'key', 'apple.mcintosh'));
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => set(this.context, 'key', 'banana'));
+      runTask(() => set(this.context, 'key', 'banana'));
 
       this.assertText('[yellow] [yellow]');
 
-      this.runTask(() => set(this.context, 'key', 'apple.gala'));
+      runTask(() => set(this.context, 'key', 'apple.gala'));
 
       this.assertText('[red and yellow] [red and yellow]');
     }
@@ -218,19 +220,19 @@ moduleFor(
 
       this.assertText('[red and yellow] [red and yellow]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[red and yellow] [red and yellow]');
 
-      this.runTask(() => set(this.context, 'colors.apple.gala', 'yellow and red striped'));
+      runTask(() => set(this.context, 'colors.apple.gala', 'yellow and red striped'));
 
       this.assertText('[yellow and red striped] [yellow and red striped]');
 
-      this.runTask(() => set(this.context, 'colors.apple.gala', 'yellow-redish'));
+      runTask(() => set(this.context, 'colors.apple.gala', 'yellow-redish'));
 
       this.assertText('[yellow-redish] [yellow-redish]');
 
-      this.runTask(() =>
+      runTask(() =>
         set(this.context, 'colors', {
           apple: {
             gala: 'red and yellow',
@@ -254,26 +256,26 @@ moduleFor(
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => set(this.context, 'key', 'key2'));
+      runTask(() => set(this.context, 'key', 'key2'));
 
       this.assertText('[yellow] [yellow]');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'colors.apple', 'green');
         set(this.context, 'colors.banana', 'purple');
       });
 
       this.assertText('[purple] [purple]');
 
-      this.runTask(() => set(this.context, 'key', 'key1'));
+      runTask(() => set(this.context, 'key', 'key1'));
 
       this.assertText('[green] [green]');
 
-      this.runTask(() => set(this.context, 'colors', { apple: 'red', banana: 'yellow' }));
+      runTask(() => set(this.context, 'colors', { apple: 'red', banana: 'yellow' }));
 
       this.assertText('[red] [red]');
     }
@@ -293,31 +295,31 @@ moduleFor(
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => set(this.context, 'objectKey', 'colors2'));
+      runTask(() => set(this.context, 'objectKey', 'colors2'));
 
       this.assertText('[green] [green]');
 
-      this.runTask(() => set(this.context, 'objectKey', 'colors1'));
+      runTask(() => set(this.context, 'objectKey', 'colors1'));
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => set(this.context, 'key', 'banana'));
+      runTask(() => set(this.context, 'key', 'banana'));
 
       this.assertText('[yellow] [yellow]');
 
-      this.runTask(() => set(this.context, 'objectKey', 'colors2'));
+      runTask(() => set(this.context, 'objectKey', 'colors2'));
 
       this.assertText('[purple] [purple]');
 
-      this.runTask(() => set(this.context, 'objectKey', 'colors1'));
+      runTask(() => set(this.context, 'objectKey', 'colors1'));
 
       this.assertText('[yellow] [yellow]');
 
-      this.runTask(() => set(this.context, 'key', 'apple'));
+      runTask(() => set(this.context, 'key', 'apple'));
     }
 
     ['@test should be able to get an object value with a get helper as the value and a get helper as the key']() {
@@ -339,27 +341,27 @@ moduleFor(
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => set(this.context, 'objectKey', 'colors2'));
+      runTask(() => set(this.context, 'objectKey', 'colors2'));
 
       this.assertText('[green] [green]');
 
-      this.runTask(() => set(this.context, 'objectKey', 'colors1'));
+      runTask(() => set(this.context, 'objectKey', 'colors1'));
 
       this.assertText('[red] [red]');
 
-      this.runTask(() => set(this.context, 'key', 'key2'));
+      runTask(() => set(this.context, 'key', 'key2'));
 
       this.assertText('[yellow] [yellow]');
 
-      this.runTask(() => set(this.context, 'objectKey', 'colors2'));
+      runTask(() => set(this.context, 'objectKey', 'colors2'));
 
       this.assertText('[purple] [purple]');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'objectKey', 'colors1');
         set(this.context, 'key', 'key1');
       });
@@ -390,18 +392,18 @@ moduleFor(
 
       this.assertText('banana');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('banana');
 
-      this.runTask(() => {
+      runTask(() => {
         set(fooBarInstance, 'mcintosh', 'yellow');
         set(this.context, 'colors', { yellow: 'bus' });
       });
 
       this.assertText('bus');
 
-      this.runTask(() => {
+      runTask(() => {
         set(fooBarInstance, 'mcintosh', 'red');
         set(this.context, 'colors', { red: 'banana' });
       });
@@ -416,15 +418,15 @@ moduleFor(
 
       this.assertText('[] []');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[] []');
 
-      this.runTask(() => set(this.context, 'colors', { apple: 'green', banana: 'purple' }));
+      runTask(() => set(this.context, 'colors', { apple: 'green', banana: 'purple' }));
 
       this.assertText('[green] [green]');
 
-      this.runTask(() => set(this.context, 'colors', null));
+      runTask(() => set(this.context, 'colors', null));
 
       this.assertText('[] []');
     }
@@ -440,15 +442,15 @@ moduleFor(
 
       this.assertText('[] []');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('[] []');
 
-      this.runTask(() => set(this.context, 'key', 'banana'));
+      runTask(() => set(this.context, 'key', 'banana'));
 
       this.assertText('[yellow] [yellow]');
 
-      this.runTask(() => set(this.context, 'key', null));
+      runTask(() => set(this.context, 'key', null));
 
       this.assertText('[] []');
     }
@@ -471,15 +473,15 @@ moduleFor(
 
       assert.strictEqual(this.$('#get-input').val(), 'banana');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       assert.strictEqual(this.$('#get-input').val(), 'banana');
 
-      this.runTask(() => set(this.context, 'source.banana', 'yellow'));
+      runTask(() => set(this.context, 'source.banana', 'yellow'));
 
       assert.strictEqual(this.$('#get-input').val(), 'yellow');
 
-      this.runTask(() =>
+      runTask(() =>
         this.$('#get-input')
           .val('some value')
           .trigger('change')
@@ -488,7 +490,7 @@ moduleFor(
       assert.strictEqual(this.$('#get-input').val(), 'some value');
       assert.strictEqual(get(this.context, 'source.banana'), 'some value');
 
-      this.runTask(() => set(this.context, 'source', { banana: 'banana' }));
+      runTask(() => set(this.context, 'source', { banana: 'banana' }));
 
       assert.strictEqual(this.$('#get-input').val(), 'banana');
     }
@@ -504,15 +506,15 @@ moduleFor(
 
       assert.strictEqual(this.$('#get-input').val(), 'banana');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       assert.strictEqual(this.$('#get-input').val(), 'banana');
 
-      this.runTask(() => set(this.context, 'source.banana', 'yellow'));
+      runTask(() => set(this.context, 'source.banana', 'yellow'));
 
       assert.strictEqual(this.$('#get-input').val(), 'yellow');
 
-      this.runTask(() =>
+      runTask(() =>
         this.$('#get-input')
           .val('some value')
           .trigger('change')
@@ -521,11 +523,11 @@ moduleFor(
       assert.strictEqual(this.$('#get-input').val(), 'some value');
       assert.strictEqual(get(this.context, 'source.banana'), 'some value');
 
-      this.runTask(() => set(this.context, 'key', 'apple'));
+      runTask(() => set(this.context, 'key', 'apple'));
 
       assert.strictEqual(this.$('#get-input').val(), 'apple');
 
-      this.runTask(() =>
+      runTask(() =>
         this.$('#get-input')
           .val('some other value')
           .trigger('change')
@@ -534,7 +536,7 @@ moduleFor(
       assert.strictEqual(this.$('#get-input').val(), 'some other value');
       assert.strictEqual(get(this.context, 'source.apple'), 'some other value');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'key', 'banana');
         set(this.context, 'source', { banana: 'banana' });
       });
@@ -558,15 +560,15 @@ moduleFor(
 
       assert.strictEqual(this.$('#get-input').val(), 'mcintosh');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       assert.strictEqual(this.$('#get-input').val(), 'mcintosh');
 
-      this.runTask(() => set(this.context, 'source.apple.mcintosh', 'red'));
+      runTask(() => set(this.context, 'source.apple.mcintosh', 'red'));
 
       assert.strictEqual(this.$('#get-input').val(), 'red');
 
-      this.runTask(() =>
+      runTask(() =>
         this.$('#get-input')
           .val('some value')
           .trigger('change')
@@ -575,11 +577,11 @@ moduleFor(
       assert.strictEqual(this.$('#get-input').val(), 'some value');
       assert.strictEqual(get(this.context, 'source.apple.mcintosh'), 'some value');
 
-      this.runTask(() => set(this.context, 'key', 'apple.gala'));
+      runTask(() => set(this.context, 'key', 'apple.gala'));
 
       assert.strictEqual(this.$('#get-input').val(), 'gala');
 
-      this.runTask(() =>
+      runTask(() =>
         this.$('#get-input')
           .val('some other value')
           .trigger('change')
@@ -588,11 +590,11 @@ moduleFor(
       assert.strictEqual(this.$('#get-input').val(), 'some other value');
       assert.strictEqual(get(this.context, 'source.apple.gala'), 'some other value');
 
-      this.runTask(() => set(this.context, 'key', 'banana'));
+      runTask(() => set(this.context, 'key', 'banana'));
 
       assert.strictEqual(this.$('#get-input').val(), 'banana');
 
-      this.runTask(() =>
+      runTask(() =>
         this.$('#get-input')
           .val('yet another value')
           .trigger('change')
@@ -601,7 +603,7 @@ moduleFor(
       assert.strictEqual(this.$('#get-input').val(), 'yet another value');
       assert.strictEqual(get(this.context, 'source.banana'), 'yet another value');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'key', 'apple.mcintosh');
         set(this.context, 'source', {
           apple: {

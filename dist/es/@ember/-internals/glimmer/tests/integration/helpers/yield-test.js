@@ -1,10 +1,12 @@
-import { RenderingTest, moduleFor } from '../../utils/test-case';
+import { RenderingTestCase, moduleFor, runTask } from 'internal-test-helpers';
+
 import { set } from '@ember/-internals/metal';
+
 import { Component } from '../../utils/helpers';
 
 moduleFor(
   'Helpers test: {{yield}} helper',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test can yield to block']() {
       this.registerComponent('yield-comp', {
         template: '[In layout:] {{yield}}',
@@ -17,10 +19,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'object.title', 'Vancouver'));
+      runTask(() => set(this.context, 'object.title', 'Vancouver'));
       this.assertText('[In layout:] [In Block:] Vancouver');
 
-      this.runTask(() => set(this.context, 'object', { title: 'Seattle' }));
+      runTask(() => set(this.context, 'object', { title: 'Seattle' }));
       this.assertText('[In layout:] [In Block:] Seattle');
     }
 
@@ -39,10 +41,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'object.title', 'Vancouver'));
+      runTask(() => set(this.context, 'object.title', 'Vancouver'));
       this.assertText('[In layout:] [In Block:] Vancouver');
 
-      this.runTask(() => set(this.context, 'object', { title: 'Seattle' }));
+      runTask(() => set(this.context, 'object', { title: 'Seattle' }));
       this.assertText('[In layout:] [In Block:] Seattle');
     }
 
@@ -60,10 +62,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'list', [4, 5]));
+      runTask(() => set(this.context, 'list', [4, 5]));
       this.assertText('HelloHello');
 
-      this.runTask(() => set(this.context, 'list', list));
+      runTask(() => set(this.context, 'list', list));
       this.assertText('HelloHelloHello');
     }
 
@@ -79,10 +81,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'boolean', false));
+      runTask(() => set(this.context, 'boolean', false));
       this.assertText('');
 
-      this.runTask(() => set(this.context, 'boolean', true));
+      runTask(() => set(this.context, 'boolean', true));
       this.assertText('Hello');
     }
 
@@ -96,10 +98,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'text', 'portland'));
+      runTask(() => set(this.context, 'text', 'portland'));
       this.assertText('portland');
 
-      this.runTask(() => set(this.context, 'text', 'ohai'));
+      runTask(() => set(this.context, 'text', 'ohai'));
       this.assertText('ohai');
     }
 
@@ -118,10 +120,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'text', 'portland'));
+      runTask(() => set(this.context, 'text', 'portland'));
       this.assertText('portland');
 
-      this.runTask(() => set(this.context, 'text', 'ohai'));
+      runTask(() => set(this.context, 'text', 'ohai'));
       this.assertText('ohai');
     }
 
@@ -137,10 +139,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'title', 'Mr. Chag'));
+      runTask(() => set(this.context, 'title', 'Mr. Chag'));
       this.assertText('Hello: Mr. Chag');
 
-      this.runTask(() => set(this.context, 'title', 'Mr. Selden'));
+      runTask(() => set(this.context, 'title', 'Mr. Selden'));
       this.assertText('Hello: Mr. Selden');
     }
 
@@ -159,10 +161,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'boundText', 'Otherworld'));
+      runTask(() => set(this.context, 'boundText', 'Otherworld'));
       this.assertText('InnerOtherworld');
 
-      this.runTask(() => set(this.context, 'boundText', 'Original'));
+      runTask(() => set(this.context, 'boundText', 'Original'));
       this.assertText('InnerOriginal');
     }
 
@@ -181,10 +183,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'boundText', 'Otherworld'));
+      runTask(() => set(this.context, 'boundText', 'Otherworld'));
       this.assertText('InnerOtherworld');
 
-      this.runTask(() => set(this.context, 'boundText', 'Outer'));
+      runTask(() => set(this.context, 'boundText', 'Outer'));
       this.assertText('InnerOuter');
     }
 
@@ -201,10 +203,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'item', 'Otherworld'));
+      runTask(() => set(this.context, 'item', 'Otherworld'));
       this.assertText('InnerOtherworld');
 
-      this.runTask(() => set(this.context, 'item', 'Outer'));
+      runTask(() => set(this.context, 'item', 'Outer'));
       this.assertText('InnerOuter');
     }
 
@@ -221,10 +223,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'boundText', 'Update'));
+      runTask(() => set(this.context, 'boundText', 'Update'));
       this.assertText('UpdateUpdate');
 
-      this.runTask(() => set(this.context, 'boundText', 'Outer'));
+      runTask(() => set(this.context, 'boundText', 'Outer'));
       this.assertText('OuterOuter');
     }
 
@@ -265,10 +267,10 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'boundText', 'update'));
+      runTask(() => set(this.context, 'boundText', 'update'));
       this.assertText('Hello update');
 
-      this.runTask(() => set(this.context, 'boundText', 'world'));
+      runTask(() => set(this.context, 'boundText', 'world'));
       this.assertText('Hello world');
     }
   }

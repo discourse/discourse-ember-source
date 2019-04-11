@@ -1,9 +1,10 @@
-import { RenderingTest, moduleFor } from '../utils/test-case';
+import { RenderingTestCase, moduleFor, runTask } from 'internal-test-helpers';
+
 import { set } from '@ember/-internals/metal';
 
 moduleFor(
   'Input element tests',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     runAttributeTest(attributeName, values) {
       let template = `<input ${attributeName}={{value}}>`;
       this.render(template, { value: values[0] });
@@ -13,7 +14,7 @@ moduleFor(
         `${attributeName} is set on initial render`
       );
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
       this.assertAttributeHasValue(
         attributeName,
         values[0],
@@ -41,7 +42,7 @@ moduleFor(
         `${propertyName} is set on initial render`
       );
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
       this.assertPropertyHasValue(
         propertyName,
         values[0],
@@ -65,7 +66,7 @@ moduleFor(
       this.render(template, { value: values[0] });
       this.assertPropertyHasValue(value, '', `${value} is set on initial render`);
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
       this.assertPropertyHasValue(value, '', `${value} is set on noop rerender`);
       this.setComponentValue(values[1]);
 
@@ -82,21 +83,21 @@ moduleFor(
 
       this.assert.equal(this.$inputElement().prop('disabled'), false);
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assert.equal(this.$inputElement().prop('disabled'), false);
 
-      this.runTask(() => this.context.set('model.value', true));
+      runTask(() => this.context.set('model.value', true));
 
       this.assert.equal(this.$inputElement().prop('disabled'), true);
       this.assertHTML('<input disabled="">'); // Note the DOM output is <input disabled>
 
-      this.runTask(() => this.context.set('model.value', 'wat'));
+      runTask(() => this.context.set('model.value', 'wat'));
 
       this.assert.equal(this.$inputElement().prop('disabled'), true);
       this.assertHTML('<input disabled="">'); // Note the DOM output is <input disabled>
 
-      this.runTask(() => this.context.set('model', { value: false }));
+      runTask(() => this.context.set('model', { value: false }));
 
       this.assert.equal(this.$inputElement().prop('disabled'), false);
       this.assertHTML('<input>');
@@ -206,7 +207,7 @@ moduleFor(
     }
 
     setComponentValue(value) {
-      this.runTask(() => set(this.context, 'value', value));
+      runTask(() => set(this.context, 'value', value));
     }
 
     setSelectionRange(start, end) {

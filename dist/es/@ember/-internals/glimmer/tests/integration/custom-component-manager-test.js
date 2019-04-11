@@ -1,4 +1,5 @@
-import { moduleFor, RenderingTest } from '../utils/test-case';
+import { moduleFor, RenderingTestCase, runTask } from 'internal-test-helpers';
+
 import { Object as EmberObject } from '@ember/-internals/runtime';
 import { set, setProperties, computed } from '@ember/-internals/metal';
 import {
@@ -24,60 +25,78 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
     },
   });
 
-  class ComponentManagerTest extends RenderingTest {
+  /* eslint-disable */
+  function createBasicManager(owner) {
+    return BasicComponentManager.create({ owner });
+  }
+
+  function createInstrumentedManager(owner) {
+    return InstrumentedComponentManager.create({ owner });
+  }
+  /* eslint-enable */
+
+  let InstrumentedComponentManager;
+
+  class ComponentManagerTest extends RenderingTestCase {
     constructor(assert) {
       super(...arguments);
 
-      this.registerComponentManager('basic', BasicComponentManager);
+      InstrumentedComponentManager = EmberObject.extend({
+        capabilities: capabilities('3.4', {
+          destructor: true,
+          asyncLifecycleCallbacks: true,
+        }),
 
-      this.registerComponentManager(
-        'instrumented-full',
-        EmberObject.extend({
-          capabilities: capabilities('3.4', {
-            destructor: true,
-            asyncLifecycleCallbacks: true,
-          }),
+        createComponent(factory, args) {
+          assert.step('createComponent');
+          return factory.create({ args });
+        },
 
-          createComponent(factory, args) {
-            assert.step('createComponent');
-            return factory.create({ args });
-          },
+        updateComponent(component, args) {
+          assert.step('updateComponent');
+          set(component, 'args', args);
+        },
 
-          updateComponent(component, args) {
-            assert.step('updateComponent');
-            set(component, 'args', args);
-          },
+        destroyComponent(component) {
+          assert.step('destroyComponent');
+          component.destroy();
+        },
 
-          destroyComponent(component) {
-            assert.step('destroyComponent');
-            component.destroy();
-          },
+        getContext(component) {
+          assert.step('getContext');
+          return component;
+        },
 
-          getContext(component) {
-            assert.step('getContext');
-            return component;
-          },
+        didCreateComponent(component) {
+          assert.step('didCreateComponent');
+          component.didRender();
+        },
 
-          didCreateComponent(component) {
-            assert.step('didCreateComponent');
-            component.didRender();
-          },
-
-          didUpdateComponent(component) {
-            assert.step('didUpdateComponent');
-            component.didUpdate();
-          },
-        })
-      );
+        didUpdateComponent(component) {
+          assert.step('didUpdateComponent');
+          component.didUpdate();
+        },
+      });
     }
   }
 
   moduleFor(
     'Component Manager - Curly Invocation',
     class extends ComponentManagerTest {
+      ['@test the string based version of setComponentManager is deprecated']() {
+        expectDeprecation(() => {
+          setComponentManager(
+            'basic',
+            EmberObject.extend({
+              greeting: 'hello',
+            })
+          );
+        }, 'Passing the name of the component manager to "setupComponentManager" is deprecated. Please pass a function that produces an instance of the manager.');
+      }
+
       ['@test it can render a basic component with custom component manager']() {
         let ComponentClass = setComponentManager(
-          'basic',
+          createBasicManager,
           EmberObject.extend({
             greeting: 'hello',
           })
@@ -112,9 +131,8 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
       }
 
       ['@test it can have no template context']() {
-        this.registerComponentManager(
-          'pseudo-template-only',
-          EmberObject.extend({
+        let ComponentClass = setComponentManager(() => {
+          return EmberObject.create({
             capabilities: capabilities('3.4'),
 
             createComponent() {
@@ -126,10 +144,8 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
             getContext() {
               return null;
             },
-          })
-        );
-
-        let ComponentClass = setComponentManager('pseudo-template-only', {});
+          });
+        }, {});
 
         this.registerComponent('foo-bar', {
           template: `<p>{{@greeting}} world</p>`,
@@ -142,9 +158,9 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
       }
 
       ['@test it can discover component manager through inheritance - ES Classes']() {
-        this.registerComponentManager(
-          'test',
-          EmberObject.extend({
+        class Base {}
+        setComponentManager(() => {
+          return EmberObject.create({
             capabilities: capabilities('3.4'),
 
             createComponent(Factory, args) {
@@ -156,11 +172,8 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
             getContext(component) {
               return component;
             },
-          })
-        );
-
-        class Base {}
-        setComponentManager('test', Base);
+          });
+        }, Base);
         class Child extends Base {}
         class Grandchild extends Child {
           constructor() {
@@ -180,7 +193,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
       }
 
       ['@test it can discover component manager through inheritance - Ember Object']() {
-        let Parent = setComponentManager('basic', EmberObject.extend());
+        let Parent = setComponentManager(createBasicManager, EmberObject.extend());
         let Child = Parent.extend();
         let Grandchild = Child.extend({
           init() {
@@ -204,25 +217,22 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
           greeting: 'goodbye',
         };
 
-        this.registerComponentManager(
-          'test',
-          EmberObject.extend({
-            capabilities: capabilities('3.4'),
-
-            createComponent(factory) {
-              return factory.create();
-            },
-
-            getContext() {
-              return customContext;
-            },
-
-            updateComponent() {},
-          })
-        );
-
         let ComponentClass = setComponentManager(
-          'test',
+          () => {
+            return EmberObject.create({
+              capabilities: capabilities('3.4'),
+
+              createComponent(factory) {
+                return factory.create();
+              },
+
+              getContext() {
+                return customContext;
+              },
+
+              updateComponent() {},
+            });
+          },
           EmberObject.extend({
             greeting: 'hello',
             count: 1234,
@@ -238,14 +248,14 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
 
         this.assertHTML(`<p>goodbye world </p>`);
 
-        this.runTask(() => set(customContext, 'greeting', 'sayonara'));
+        runTask(() => set(customContext, 'greeting', 'sayonara'));
 
         this.assertHTML(`<p>sayonara world </p>`);
       }
 
       ['@test it can set arguments on the component instance']() {
         let ComponentClass = setComponentManager(
-          'basic',
+          createBasicManager,
           EmberObject.extend({
             salutation: computed('args.named.firstName', 'args.named.lastName', function() {
               return this.args.named.firstName + ' ' + this.args.named.lastName;
@@ -265,7 +275,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
 
       ['@test arguments are updated if they change']() {
         let ComponentClass = setComponentManager(
-          'basic',
+          createBasicManager,
           EmberObject.extend({
             salutation: computed('args.named.firstName', 'args.named.lastName', function() {
               return this.args.named.firstName + ' ' + this.args.named.lastName;
@@ -285,7 +295,59 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
 
         this.assertHTML(`<p>Yehuda Katz</p>`);
 
-        this.runTask(() =>
+        runTask(() =>
+          setProperties(this.context, {
+            firstName: 'Chad',
+            lastName: 'Hietala',
+          })
+        );
+
+        this.assertHTML(`<p>Chad Hietala</p>`);
+      }
+
+      ['@test it can set positional params on the component instance']() {
+        let ComponentClass = setComponentManager(
+          createBasicManager,
+          EmberObject.extend({
+            salutation: computed('args.positional', function() {
+              return this.args.positional[0] + ' ' + this.args.positional[1];
+            }),
+          })
+        );
+
+        this.registerComponent('foo-bar', {
+          template: `<p>{{salutation}}</p>`,
+          ComponentClass,
+        });
+
+        this.render('{{foo-bar "Yehuda" "Katz"}}');
+
+        this.assertHTML(`<p>Yehuda Katz</p>`);
+      }
+
+      ['@test positional params are updated if they change']() {
+        let ComponentClass = setComponentManager(
+          createBasicManager,
+          EmberObject.extend({
+            salutation: computed('args.positional', function() {
+              return this.args.positional[0] + ' ' + this.args.positional[1];
+            }),
+          })
+        );
+
+        this.registerComponent('foo-bar', {
+          template: `<p>{{salutation}}</p>`,
+          ComponentClass,
+        });
+
+        this.render('{{foo-bar firstName lastName}}', {
+          firstName: 'Yehuda',
+          lastName: 'Katz',
+        });
+
+        this.assertHTML(`<p>Yehuda Katz</p>`);
+
+        runTask(() =>
           setProperties(this.context, {
             firstName: 'Chad',
             lastName: 'Hietala',
@@ -296,33 +358,30 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
       }
 
       ['@test it can opt-in to running destructor'](assert) {
-        this.registerComponentManager(
-          'test',
-          EmberObject.extend({
-            capabilities: capabilities('3.4', {
-              destructor: true,
-            }),
-
-            createComponent(factory) {
-              assert.step('createComponent');
-              return factory.create();
-            },
-
-            getContext(component) {
-              return component;
-            },
-
-            updateComponent() {},
-
-            destroyComponent(component) {
-              assert.step('destroyComponent');
-              component.destroy();
-            },
-          })
-        );
-
         let ComponentClass = setComponentManager(
-          'test',
+          () => {
+            return EmberObject.create({
+              capabilities: capabilities('3.4', {
+                destructor: true,
+              }),
+
+              createComponent(factory) {
+                assert.step('createComponent');
+                return factory.create();
+              },
+
+              getContext(component) {
+                return component;
+              },
+
+              updateComponent() {},
+
+              destroyComponent(component) {
+                assert.step('destroyComponent');
+                component.destroy();
+              },
+            });
+          },
           EmberObject.extend({
             greeting: 'hello',
             destroy() {
@@ -341,7 +400,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
 
         this.assertHTML(`<p>hello world</p>`);
 
-        this.runTask(() => this.context.set('show', false));
+        runTask(() => this.context.set('show', false));
 
         this.assertText('');
 
@@ -349,45 +408,42 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
       }
 
       ['@test it can opt-in to running async lifecycle hooks'](assert) {
-        this.registerComponentManager(
-          'test',
-          EmberObject.extend({
-            capabilities: capabilities('3.4', {
-              asyncLifecycleCallbacks: true,
-            }),
-
-            createComponent(factory, args) {
-              assert.step('createComponent');
-              return factory.create({ args });
-            },
-
-            updateComponent(component, args) {
-              assert.step('updateComponent');
-              set(component, 'args', args);
-            },
-
-            destroyComponent(component) {
-              assert.step('destroyComponent');
-              component.destroy();
-            },
-
-            getContext(component) {
-              assert.step('getContext');
-              return component;
-            },
-
-            didCreateComponent() {
-              assert.step('didCreateComponent');
-            },
-
-            didUpdateComponent() {
-              assert.step('didUpdateComponent');
-            },
-          })
-        );
-
         let ComponentClass = setComponentManager(
-          'test',
+          () => {
+            return EmberObject.create({
+              capabilities: capabilities('3.4', {
+                asyncLifecycleCallbacks: true,
+              }),
+
+              createComponent(factory, args) {
+                assert.step('createComponent');
+                return factory.create({ args });
+              },
+
+              updateComponent(component, args) {
+                assert.step('updateComponent');
+                set(component, 'args', args);
+              },
+
+              destroyComponent(component) {
+                assert.step('destroyComponent');
+                component.destroy();
+              },
+
+              getContext(component) {
+                assert.step('getContext');
+                return component;
+              },
+
+              didCreateComponent() {
+                assert.step('didCreateComponent');
+              },
+
+              didUpdateComponent() {
+                assert.step('didUpdateComponent');
+              },
+            });
+          },
           EmberObject.extend({
             greeting: 'hello',
           })
@@ -403,7 +459,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
         this.assertHTML(`<p>hello world</p>`);
         assert.verifySteps(['createComponent', 'getContext', 'didCreateComponent']);
 
-        this.runTask(() => this.context.set('name', 'max'));
+        runTask(() => this.context.set('name', 'max'));
         this.assertHTML(`<p>hello max</p>`);
         assert.verifySteps(['updateComponent', 'didUpdateComponent']);
       }
@@ -416,7 +472,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
       class extends ComponentManagerTest {
         ['@test it can render a basic component with custom component manager']() {
           let ComponentClass = setComponentManager(
-            'basic',
+            createBasicManager,
             EmberObject.extend({
               greeting: 'hello',
             })
@@ -434,7 +490,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
 
         ['@test it can set arguments on the component instance']() {
           let ComponentClass = setComponentManager(
-            'basic',
+            createBasicManager,
             EmberObject.extend({
               salutation: computed('args.named.firstName', 'args.named.lastName', function() {
                 return this.args.named.firstName + ' ' + this.args.named.lastName;
@@ -453,7 +509,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
         }
 
         ['@test it can pass attributes']() {
-          let ComponentClass = setComponentManager('basic', EmberObject.extend());
+          let ComponentClass = setComponentManager(createBasicManager, EmberObject.extend());
 
           this.registerComponent('foo-bar', {
             template: `<p ...attributes>Hello world!</p>`,
@@ -467,7 +523,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
 
         ['@test arguments are updated if they change']() {
           let ComponentClass = setComponentManager(
-            'basic',
+            createBasicManager,
             EmberObject.extend({
               salutation: computed('args.named.firstName', 'args.named.lastName', function() {
                 return this.args.named.firstName + ' ' + this.args.named.lastName;
@@ -487,7 +543,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
 
           this.assertHTML(`<p>Yehuda Katz</p>`);
 
-          this.runTask(() =>
+          runTask(() =>
             setProperties(this.context, {
               firstName: 'Chad',
               lastName: 'Hietala',
@@ -498,47 +554,46 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
         }
 
         ['@test updating attributes triggers didUpdateComponent'](assert) {
-          this.registerComponentManager(
-            'test',
-            EmberObject.extend({
-              capabilities: capabilities('3.4', {
-                destructor: true,
-                asyncLifecycleCallbacks: true,
-              }),
+          let TestManager = EmberObject.extend({
+            capabilities: capabilities('3.4', {
+              destructor: true,
+              asyncLifecycleCallbacks: true,
+            }),
 
-              createComponent(factory, args) {
-                assert.step('createComponent');
-                return factory.create({ args });
-              },
+            createComponent(factory, args) {
+              assert.step('createComponent');
+              return factory.create({ args });
+            },
 
-              updateComponent(component, args) {
-                assert.step('updateComponent');
-                set(component, 'args', args);
-              },
+            updateComponent(component, args) {
+              assert.step('updateComponent');
+              set(component, 'args', args);
+            },
 
-              destroyComponent(component) {
-                component.destroy();
-              },
+            destroyComponent(component) {
+              component.destroy();
+            },
 
-              getContext(component) {
-                assert.step('getContext');
-                return component;
-              },
+            getContext(component) {
+              assert.step('getContext');
+              return component;
+            },
 
-              didCreateComponent(component) {
-                assert.step('didCreateComponent');
-                component.didRender();
-              },
+            didCreateComponent(component) {
+              assert.step('didCreateComponent');
+              component.didRender();
+            },
 
-              didUpdateComponent(component) {
-                assert.step('didUpdateComponent');
-                component.didUpdate();
-              },
-            })
-          );
+            didUpdateComponent(component) {
+              assert.step('didUpdateComponent');
+              component.didUpdate();
+            },
+          });
 
           let ComponentClass = setComponentManager(
-            'test',
+            () => {
+              return TestManager.create();
+            },
             EmberObject.extend({
               didRender() {},
               didUpdate() {},
@@ -555,7 +610,7 @@ if (GLIMMER_CUSTOM_COMPONENT_MANAGER) {
           this.assertHTML(`<p data-test="foo">Hello world!</p>`);
           assert.verifySteps(['createComponent', 'getContext', 'didCreateComponent']);
 
-          this.runTask(() => this.context.set('value', 'bar'));
+          runTask(() => this.context.set('value', 'bar'));
           assert.verifySteps(['didUpdateComponent']);
         }
       }

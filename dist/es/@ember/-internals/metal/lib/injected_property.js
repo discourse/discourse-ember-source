@@ -44,7 +44,7 @@ function injectedPropertyGet(keyName) {
     let desc = descriptorFor(this, keyName);
     let owner = getOwner(this) || this.container; // fallback to `container` for backwards compat
     assert(`InjectedProperties should be defined with the inject computed property macros.`, desc && desc.type);
-    assert(`Attempting to lookup an injected property on an object without a container, ensure that the object was instantiated via a container.`, !!owner);
+    assert(`Attempting to lookup an injected property on an object without a container, ensure that the object was instantiated via a container.`, Boolean(owner));
     let specifier = `${desc.type}:${desc.name || keyName}`;
     return owner.lookup(specifier, {
         source: desc.source,

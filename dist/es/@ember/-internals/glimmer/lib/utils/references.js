@@ -236,7 +236,7 @@ export class SimpleHelperReference extends CachedReference {
         this.args = args;
     }
     compute() {
-        let { helper, args: { positional, named } } = this;
+        let { helper, args: { positional, named }, } = this;
         let positionalValue = positional.value();
         let namedValue = named.value();
         if (DEBUG) {
@@ -257,7 +257,7 @@ export class ClassBasedHelperReference extends CachedReference {
         this.args = args;
     }
     compute() {
-        let { instance, args: { positional, named } } = this;
+        let { instance, args: { positional, named }, } = this;
         let positionalValue = positional.value();
         let namedValue = named.value();
         if (DEBUG) {

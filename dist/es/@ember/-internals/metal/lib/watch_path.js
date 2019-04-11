@@ -11,7 +11,7 @@ export function watchPath(obj, keyPath, meta) {
 }
 export function unwatchPath(obj, keyPath, meta) {
     let m = meta === undefined ? peekMeta(obj) : meta;
-    if (m === undefined) {
+    if (m === null) {
         return;
     }
     let counter = m.peekWatching(keyPath);

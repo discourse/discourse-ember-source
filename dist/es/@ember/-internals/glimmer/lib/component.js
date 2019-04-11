@@ -27,11 +27,17 @@ export const BOUNDS = symbol('BOUNDS');
   The easiest way to create a `Component` is via
   a template. If you name a template
   `app/templates/components/my-foo.hbs`, you will be able to use
-  `{{my-foo}}` in other templates, which will make
+  `<MyFoo />` or `{{my-foo}}` in other templates, which will make
   an instance of the isolated component.
 
   ```app/templates/components/my-foo.hbs
-  {{person-profile person=currentUser}}
+  <PersonProfile @person={{this.currentUser}} />
+  ```
+
+  or
+
+  ```app/templates/components/my-foo.hbs
+  {{person-profile person=this.currentUser}}
   ```
 
   ```app/templates/components/person-profile.hbs
@@ -46,7 +52,15 @@ export const BOUNDS = symbol('BOUNDS');
   context of the surrounding context or outer controller:
 
   ```handlebars
-  {{#person-profile person=currentUser}}
+  <PersonProfile @person={{this.currentUser}}>
+    <p>Admin mode</p>
+    {{! Executed in the controller's context. }}
+  </PersonProfile>
+  ```
+
+  or
+  ```handlebars
+  {{#person-profile person=this.currentUser}}
     <p>Admin mode</p>
     {{! Executed in the controller's context. }}
   {{/person-profile}}
@@ -444,12 +458,21 @@ export const BOUNDS = symbol('BOUNDS');
 
   If you call the `person-profile` component like so:
 
-  ```
+ ```handlebars
+ <PersonProfile>
+     <h2>Chief Basket Weaver</h2>
+     <h3>Fisherman Industries</h3>
+ </PersonProfile>
+ ```
+
+ or
+
+ ```handlebars
   {{#person-profile}}
     <h2>Chief Basket Weaver</h2>
     <h3>Fisherman Industries</h3>
   {{/person-profile}}
-
+  ```
   It will result in the following HTML output:
 
   ```html
@@ -639,7 +662,7 @@ const Component = CoreView.extend(ChildViewsSupport, ViewStateSupport, ClassName
      visually challenged users navigate rich web applications.
 
      The full list of valid WAI-ARIA roles is available at:
-     [http://www.w3.org/TR/wai-aria/roles#roles_categorization](http://www.w3.org/TR/wai-aria/roles#roles_categorization)
+     [https://www.w3.org/TR/wai-aria/#roles_categorization](https://www.w3.org/TR/wai-aria/#roles_categorization)
 
      @property ariaRole
      @type String

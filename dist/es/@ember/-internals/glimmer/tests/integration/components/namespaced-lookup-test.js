@@ -1,11 +1,12 @@
-import { moduleFor, RenderingTest } from '../../utils/test-case';
+import { moduleFor, RenderingTestCase, runTask } from 'internal-test-helpers';
+
 import { EMBER_MODULE_UNIFICATION } from '@ember/canary-features';
 import { Component, helper } from '@ember/-internals/glimmer';
 
 if (EMBER_MODULE_UNIFICATION) {
   moduleFor(
     'Namespaced lookup',
-    class extends RenderingTest {
+    class extends RenderingTestCase {
       ['@test it can render a namespaced component']() {
         this.addTemplate(
           {
@@ -33,7 +34,7 @@ if (EMBER_MODULE_UNIFICATION) {
 
         this.assertText('namespaced template My property');
 
-        this.runTask(() => this.rerender());
+        runTask(() => this.rerender());
 
         this.assertText('namespaced template My property');
       }
@@ -63,7 +64,7 @@ if (EMBER_MODULE_UNIFICATION) {
 
         this.assertText('first namespaced template - second namespaced template');
 
-        this.runTask(() => this.rerender());
+        runTask(() => this.rerender());
 
         this.assertText('first namespaced template - second namespaced template');
       }
@@ -94,7 +95,7 @@ if (EMBER_MODULE_UNIFICATION) {
 
         this.assertText('un-namespaced addon template');
 
-        this.runTask(() => this.rerender());
+        runTask(() => this.rerender());
 
         this.assertText('un-namespaced addon template');
       }
@@ -122,7 +123,7 @@ if (EMBER_MODULE_UNIFICATION) {
 
         this.assertText('Nested namespaced component');
 
-        this.runTask(() => this.rerender());
+        runTask(() => this.rerender());
 
         this.assertText('Nested namespaced component');
       }
@@ -158,7 +159,7 @@ if (EMBER_MODULE_UNIFICATION) {
 
         this.assertText('my helper'); // component should be not found
 
-        this.runTask(() => this.rerender());
+        runTask(() => this.rerender());
 
         this.assertText('my helper');
       }
@@ -176,7 +177,7 @@ if (EMBER_MODULE_UNIFICATION) {
 
         this.assertText('my helper');
 
-        this.runTask(() => this.rerender());
+        runTask(() => this.rerender());
 
         this.assertText('my helper');
       }

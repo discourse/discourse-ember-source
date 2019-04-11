@@ -5,7 +5,7 @@ import { compile } from 'ember-template-compiler';
 import { Route, NoneLocation, HistoryLocation } from '@ember/-internals/routing';
 import Controller from '@ember/controller';
 import { Object as EmberObject, A as emberA } from '@ember/-internals/runtime';
-import { moduleFor, ApplicationTestCase, runDestroy } from 'internal-test-helpers';
+import { moduleFor, ApplicationTestCase, runDestroy, runTask } from 'internal-test-helpers';
 import { run } from '@ember/runloop';
 import { Mixin, computed, set, addObserver, observer } from '@ember/-internals/metal';
 import { getTextOf } from 'internal-test-helpers';
@@ -41,10 +41,20 @@ moduleFor(
       return this.applicationInstance.lookup(`controller:${name}`);
     }
 
-    handleURLAborts(assert, path) {
+    handleURLAborts(assert, path, deprecated) {
       run(() => {
         let router = this.applicationInstance.lookup('router:main');
-        router.handleURL(path).then(
+        let result;
+
+        if (deprecated !== undefined) {
+          expectDeprecation(() => {
+            result = router.handleURL(path);
+          });
+        } else {
+          result = router.handleURL(path);
+        }
+
+        result.then(
           function() {
             assert.ok(false, 'url: `' + path + '` was NOT to be handled');
           },
@@ -310,7 +320,7 @@ moduleFor(
           let text = this.$('p').text();
           assert.equal(text, 'THIS IS THE REAL HOME', 'the homepage template was rendered');
 
-          return this.runTask(() => this.appRouter.send('showAlert'));
+          return runTask(() => this.appRouter.send('showAlert'));
         })
         .then(() => {
           let text = this.$('.alert-box').text();
@@ -2749,33 +2759,15 @@ moduleFor(
     }
 
     ['@test Router `willTransition` hook passes in cancellable transition'](assert) {
-      // Should hit willTransition 3 times, once for the initial route, and then 2 more times
-      // for the two handleURL calls below
-      if (EMBER_ROUTING_ROUTER_SERVICE) {
-        assert.expect(7);
-
-        this.router.reopen({
-          init() {
-            this._super(...arguments);
-            this.on('routeWillChange', transition => {
-              assert.ok(true, 'routeWillChange was called');
-              if (transition.intent && transition.intent.url !== '/') {
-                transition.abort();
-              }
-            });
-          },
-        });
-      } else {
-        assert.expect(5);
-        this.router.reopen({
-          willTransition(_, _2, transition) {
-            assert.ok(true, 'willTransition was called');
-            if (transition.intent.url !== '/') {
-              transition.abort();
-            }
-          },
-        });
-      }
+      assert.expect(8);
+      this.router.reopen({
+        willTransition(_, _2, transition) {
+          assert.ok(true, 'willTransition was called');
+          if (transition.intent.url !== '/') {
+            transition.abort();
+          }
+        },
+      });
 
       this.router.map(function() {
         this.route('nork');
@@ -2809,10 +2801,14 @@ moduleFor(
         })
       );
 
-      return this.visit('/').then(() => {
-        this.handleURLAborts(assert, '/nork');
-        this.handleURLAborts(assert, '/about');
-      });
+      let deprecation = /You attempted to override the "willTransition" method which is deprecated\./;
+
+      return expectDeprecation(() => {
+        return this.visit('/').then(() => {
+          this.handleURLAborts(assert, '/nork', deprecation);
+          this.handleURLAborts(assert, '/about', deprecation);
+        });
+      }, deprecation);
     }
 
     ['@test Aborting/redirecting the transition in `willTransition` prevents LoadingRoute from being entered'](

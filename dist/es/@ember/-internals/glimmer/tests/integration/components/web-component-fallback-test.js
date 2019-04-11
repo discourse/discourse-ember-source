@@ -1,9 +1,10 @@
-import { moduleFor, RenderingTest } from '../../utils/test-case';
+import { moduleFor, RenderingTestCase, runTask } from 'internal-test-helpers';
+
 import { set } from '@ember/-internals/metal';
 
 moduleFor(
   'Components test: web component fallback',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test custom elements are rendered']() {
       let template = `<foo-bar some-attr="123">hello</foo-bar>`;
 
@@ -23,11 +24,11 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => set(this.context, 'name', 'Kris'));
+      runTask(() => set(this.context, 'name', 'Kris'));
 
       this.assertHTML(`<foo-bar some-attr="Kris">hello</foo-bar>`);
 
-      this.runTask(() => set(this.context, 'name', 'Robert'));
+      runTask(() => set(this.context, 'name', 'Robert'));
 
       this.assertHTML(`<foo-bar some-attr="Robert">hello</foo-bar>`);
     }

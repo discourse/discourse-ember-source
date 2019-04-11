@@ -1,7 +1,6 @@
 /**
 @module ember
 */
-import { get } from '@ember/-internals/metal';
 import { readOnly } from '@ember/object/computed';
 import { assign } from '@ember/polyfills';
 import Service from '@ember/service';
@@ -17,21 +16,20 @@ import Service from '@ember/service';
 */
 export default class RoutingService extends Service {
     hasRoute(routeName) {
-        return get(this, 'router').hasRoute(routeName);
+        return this.router.hasRoute(routeName);
     }
     transitionTo(routeName, models, queryParams, shouldReplace) {
-        let router = get(this, 'router');
-        let transition = router._doTransition(routeName, models, queryParams);
+        let transition = this.router._doTransition(routeName, models, queryParams);
         if (shouldReplace) {
             transition.method('replace');
         }
         return transition;
     }
     normalizeQueryParams(routeName, models, queryParams) {
-        get(this, 'router')._prepareQueryParams(routeName, models, queryParams);
+        this.router._prepareQueryParams(routeName, models, queryParams);
     }
     generateURL(routeName, models, queryParams) {
-        let router = get(this, 'router');
+        let router = this.router;
         // return early when the router microlib is not present, which is the case for {{link-to}} in integration tests
         if (!router._routerMicrolib) {
             return;
@@ -46,8 +44,7 @@ export default class RoutingService extends Service {
         });
     }
     isActiveForRoute(contexts, queryParams, routeName, routerState, isCurrentWhenSpecified) {
-        let router = get(this, 'router');
-        let handlers = router._routerMicrolib.recognizer.handlersFor(routeName);
+        let handlers = this.router._routerMicrolib.recognizer.handlersFor(routeName);
         let leafName = handlers[handlers.length - 1].handler;
         let maximumContexts = numberOfContextsAcceptedByHandler(routeName, handlers);
         // NOTE: any ugliness in the calculation of activeness is largely

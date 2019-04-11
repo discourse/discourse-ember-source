@@ -1,15 +1,21 @@
+import {
+  moduleFor,
+  RenderingTestCase,
+  classes,
+  strip,
+  runAppend,
+  runTask,
+} from 'internal-test-helpers';
+
 import { schedule } from '@ember/runloop';
 import { set, setProperties } from '@ember/-internals/metal';
 import { A as emberA } from '@ember/-internals/runtime';
-import { Component } from '../../utils/helpers';
-import { strip } from '../../utils/abstract-test-case';
-import { moduleFor, RenderingTest } from '../../utils/test-case';
 import { getViewId, getViewElement, jQueryDisabled } from '@ember/-internals/views';
-import { classes } from '../../utils/test-helpers';
 import { tryInvoke } from '@ember/-internals/utils';
-import { runAppend } from 'internal-test-helpers';
 
-class LifeCycleHooksTest extends RenderingTest {
+import { Component } from '../../utils/helpers';
+
+class LifeCycleHooksTest extends RenderingTestCase {
   constructor() {
     super(...arguments);
     this.hooks = [];
@@ -383,7 +389,7 @@ class LifeCycleHooksTest extends RenderingTest {
       ],
     });
 
-    this.runTask(() => this.components['the-bottom'].rerender());
+    runTask(() => this.components['the-bottom'].rerender());
 
     this.assertText('Twitter: @tomdale|Name: Tom Dale|Website: tomdale.net');
 
@@ -416,7 +422,7 @@ class LifeCycleHooksTest extends RenderingTest {
       nonInteractive: [],
     });
 
-    this.runTask(() => this.components['the-middle'].rerender());
+    runTask(() => this.components['the-middle'].rerender());
 
     this.assertText('Twitter: @tomdale|Name: Tom Dale|Website: tomdale.net');
 
@@ -444,7 +450,7 @@ class LifeCycleHooksTest extends RenderingTest {
       nonInteractive: [],
     });
 
-    this.runTask(() => this.components['the-top'].rerender());
+    runTask(() => this.components['the-top'].rerender());
 
     this.assertText('Twitter: @tomdale|Name: Tom Dale|Website: tomdale.net');
 
@@ -466,7 +472,7 @@ class LifeCycleHooksTest extends RenderingTest {
       nonInteractive: [],
     });
 
-    this.runTask(() => set(this.context, 'twitter', '@horsetomdale'));
+    runTask(() => set(this.context, 'twitter', '@horsetomdale'));
 
     this.assertText('Twitter: @horsetomdale|Name: Tom Dale|Website: tomdale.net');
 
@@ -637,7 +643,7 @@ class LifeCycleHooksTest extends RenderingTest {
       ],
     });
 
-    this.runTask(() => this.components['the-first-child'].rerender());
+    runTask(() => this.components['the-first-child'].rerender());
 
     this.assertText('Twitter: @tomdale|Name: Tom Dale|Website: tomdale.net');
 
@@ -665,7 +671,7 @@ class LifeCycleHooksTest extends RenderingTest {
       nonInteractive: [],
     });
 
-    this.runTask(() => this.components['the-second-child'].rerender());
+    runTask(() => this.components['the-second-child'].rerender());
 
     this.assertText('Twitter: @tomdale|Name: Tom Dale|Website: tomdale.net');
 
@@ -693,7 +699,7 @@ class LifeCycleHooksTest extends RenderingTest {
       nonInteractive: [],
     });
 
-    this.runTask(() => this.components['the-last-child'].rerender());
+    runTask(() => this.components['the-last-child'].rerender());
 
     this.assertText('Twitter: @tomdale|Name: Tom Dale|Website: tomdale.net');
 
@@ -721,7 +727,7 @@ class LifeCycleHooksTest extends RenderingTest {
       nonInteractive: [],
     });
 
-    this.runTask(() => this.components['the-parent'].rerender());
+    runTask(() => this.components['the-parent'].rerender());
 
     this.assertText('Twitter: @tomdale|Name: Tom Dale|Website: tomdale.net');
 
@@ -743,7 +749,7 @@ class LifeCycleHooksTest extends RenderingTest {
       nonInteractive: [],
     });
 
-    this.runTask(() =>
+    runTask(() =>
       setProperties(this.context, {
         twitter: '@horsetomdale',
         name: 'Horse Tom Dale',
@@ -938,7 +944,7 @@ class LifeCycleHooksTest extends RenderingTest {
       ],
     });
 
-    this.runTask(() => set(this.context, 'twitter', '@horsetomdale'));
+    runTask(() => set(this.context, 'twitter', '@horsetomdale'));
 
     this.assertText('Top: Middle: Bottom: @horsetomdale');
 
@@ -995,7 +1001,7 @@ class LifeCycleHooksTest extends RenderingTest {
       ],
     });
 
-    this.runTask(() => this.rerender());
+    runTask(() => this.rerender());
 
     this.assertText('Top: Middle: Bottom: @horsetomdale');
 
@@ -1140,7 +1146,7 @@ class LifeCycleHooksTest extends RenderingTest {
       this.assert.equal(this.component.childViews.length, 5, 'childViews precond');
     }
 
-    this.runTask(() => set(this.context, 'items', []));
+    runTask(() => set(this.context, 'items', []));
 
     // TODO: Is this correct? Should childViews be populated in non-interactive mode?
     if (this.isInteractive) {
@@ -1335,7 +1341,7 @@ moduleFor(
 
 moduleFor(
   'Run loop and lifecycle hooks',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test afterRender set']() {
       let ComponentClass = Component.extend({
         width: '5',
@@ -1353,7 +1359,7 @@ moduleFor(
 
       this.assertText('10');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('10');
     }
@@ -1376,7 +1382,7 @@ moduleFor(
 
       this.assertText('wat');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertText('wat');
     }
@@ -1416,9 +1422,9 @@ moduleFor(
           ParentDestroyedElements.push({
             id: this.itemId,
             name: 'parent-component',
-            hasParent: !!this.element.parentNode,
-            nextSibling: !!this.element.nextSibling,
-            previousSibling: !!this.element.previousSibling,
+            hasParent: Boolean(this.element.parentNode),
+            nextSibling: Boolean(this.element.nextSibling),
+            previousSibling: Boolean(this.element.previousSibling),
           });
         },
       });
@@ -1436,9 +1442,9 @@ moduleFor(
           ChildDestroyedElements.push({
             id: this.nestedId,
             name: 'nested-component',
-            hasParent: !!this.element.parentNode,
-            nextSibling: !!this.element.nextSibling,
-            previousSibling: !!this.element.previousSibling,
+            hasParent: Boolean(this.element.parentNode),
+            nextSibling: Boolean(this.element.nextSibling),
+            previousSibling: Boolean(this.element.previousSibling),
           });
         },
       });
@@ -1477,7 +1483,7 @@ moduleFor(
 
       this.assertText('1AB2AB3AB4AB5AB6AB7AB');
 
-      this.runTask(() => {
+      runTask(() => {
         array.removeAt(2);
         array.removeAt(2);
         set(this.context, 'model.shouldShow', false);
@@ -1595,7 +1601,7 @@ moduleFor(
 if (!jQueryDisabled) {
   moduleFor(
     'Run loop and lifecycle hooks - jQuery only',
-    class extends RenderingTest {
+    class extends RenderingTestCase {
       ['@test lifecycle hooks have proper access to this.$()'](assert) {
         assert.expect(6);
         let component;
@@ -1630,7 +1636,7 @@ if (!jQueryDisabled) {
         let { owner } = this;
         let comp = owner.lookup('component:foo-bar');
         runAppend(comp);
-        this.runTask(() => tryInvoke(component, 'destroy'));
+        runTask(() => tryInvoke(component, 'destroy'));
       }
     }
   );

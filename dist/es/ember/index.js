@@ -124,9 +124,6 @@ import Resolver from '@ember/application/globals-resolver';
 import ApplicationInstance from '@ember/application/instance';
 import Engine from '@ember/engine';
 import EngineInstance from '@ember/engine/instance';
-import Map from '@ember/map';
-import MapWithDefault from '@ember/map/with-default';
-import OrderedSet, { __OrderedSet__ } from '@ember/map/lib/ordered-set';
 import { assign, merge } from '@ember/polyfills';
 import { LOGGER, EMBER_EXTEND_PROTOTYPES } from '@ember/deprecated-features';
 
@@ -179,12 +176,6 @@ Ember.ApplicationInstance = ApplicationInstance;
 Ember.Engine = Engine;
 Ember.EngineInstance = EngineInstance;
 
-// ****@ember/map****
-Ember.OrderedSet = OrderedSet;
-Ember.__OrderedSet__ = __OrderedSet__;
-Ember.Map = Map;
-Ember.MapWithDefault = MapWithDefault;
-
 // ****@ember/polyfills****
 Ember.assign = assign;
 Ember.merge = merge;
@@ -199,7 +190,19 @@ Ember.canInvoke = utils.canInvoke;
 Ember.tryInvoke = utils.tryInvoke;
 Ember.wrap = utils.wrap;
 Ember.uuid = utils.uuid;
-Ember.NAME_KEY = utils.NAME_KEY;
+
+Object.defineProperty(Ember, 'NAME_KEY', {
+  enumerable: false,
+  get() {
+    deprecate('Using `Ember.NAME_KEY` is deprecated, override `.toString` instead', false, {
+      id: 'ember-name-key-usage',
+      until: '3.9.0',
+    });
+
+    return utils.NAME_KEY;
+  },
+});
+
 Ember._Cache = utils.Cache;
 
 // ****@ember/-internals/container****

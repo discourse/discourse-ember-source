@@ -77,7 +77,7 @@ const time = (() => {
     return fn
         ? fn.bind(perf)
         : () => {
-            return +new Date();
+            return Number(new Date());
         };
 })();
 export function instrument(name, p1, p2, p3) {

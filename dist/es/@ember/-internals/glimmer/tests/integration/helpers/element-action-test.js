@@ -1,16 +1,15 @@
-import { RenderingTest, moduleFor } from '../../utils/test-case';
-import { strip } from '../../utils/abstract-test-case';
-import { Component } from '../../utils/helpers';
+import { RenderingTestCase, moduleFor, strip, runTask } from 'internal-test-helpers';
+
 import { set } from '@ember/-internals/metal';
 import {
   subscribe as instrumentationSubscribe,
   reset as instrumentationReset,
 } from '@ember/instrumentation';
 import { EMBER_IMPROVED_INSTRUMENTATION } from '@ember/canary-features';
-
 import { Object as EmberObject, A as emberA } from '@ember/-internals/runtime';
-
 import { ActionManager } from '@ember/-internals/views';
+
+import { Component } from '../../utils/helpers';
 
 function getActionAttributes(element) {
   let attributes = element.attributes;
@@ -38,7 +37,7 @@ const isIE11 = !window.ActiveXObject && 'ActiveXObject' in window;
 if (EMBER_IMPROVED_INSTRUMENTATION) {
   moduleFor(
     'Helpers test: element action instrumentation',
-    class extends RenderingTest {
+    class extends RenderingTestCase {
       teardown() {
         super.teardown();
         instrumentationReset();
@@ -72,11 +71,11 @@ if (EMBER_IMPROVED_INSTRUMENTATION) {
 
         this.assert.equal(subscriberCallCount, 0, 'subscriber has not been called');
 
-        this.runTask(() => this.rerender());
+        runTask(() => this.rerender());
 
         this.assert.equal(subscriberCallCount, 0, 'subscriber has not been called');
 
-        this.runTask(() => {
+        runTask(() => {
           this.$('button').click();
         });
 
@@ -90,7 +89,7 @@ if (EMBER_IMPROVED_INSTRUMENTATION) {
 
 moduleFor(
   'Helpers test: element action',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     ['@test it can call an action on its enclosing component']() {
       let fooCallCount = 0;
 
@@ -111,17 +110,17 @@ moduleFor(
 
       this.assert.equal(fooCallCount, 0, 'foo has not been called');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assert.equal(fooCallCount, 0, 'foo has not been called');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
       this.assert.equal(fooCallCount, 1, 'foo has been called 1 time');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
@@ -154,21 +153,21 @@ moduleFor(
 
       this.assert.deepEqual(fooArgs, [], 'foo has not been called');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assert.deepEqual(fooArgs, [], 'foo has not been called');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
       this.assert.deepEqual(fooArgs, ['a'], 'foo has not been called');
 
-      this.runTask(() => {
+      runTask(() => {
         component.set('member', 'b');
       });
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
@@ -210,7 +209,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#show').trigger('mouseup');
       });
 
@@ -253,7 +252,7 @@ moduleFor(
 
       this.render('{{target-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
@@ -290,7 +289,7 @@ moduleFor(
           {{/target-component}}
         `);
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
@@ -329,17 +328,17 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
       this.assert.equal(firstEdit, 1);
 
-      this.runTask(() => {
+      runTask(() => {
         set(component, 'theTarget', second);
       });
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
@@ -370,13 +369,13 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a[data-ember-action]').trigger('click', { altKey: true });
       });
 
       this.assert.equal(editHandlerWasCalled, true, 'the event handler was called');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('div[data-ember-action]').trigger('click', { ctrlKey: true });
       });
 
@@ -412,13 +411,13 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a[data-ember-action]').trigger('click', { altKey: true });
       });
 
       this.assert.equal(editHandlerWasCalled, true, 'the event handler was called');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('div[data-ember-action]').trigger('click', { ctrlKey: true });
       });
 
@@ -453,7 +452,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a[data-ember-action]').trigger('click', { altKey: true });
       });
 
@@ -461,11 +460,11 @@ moduleFor(
 
       editHandlerWasCalled = false;
 
-      this.runTask(() => {
+      runTask(() => {
         component.set('acceptedKeys', '');
       });
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('div[data-ember-action]').click();
       });
 
@@ -504,7 +503,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#edit').click();
       });
 
@@ -518,7 +517,7 @@ moduleFor(
 
       editHandlerWasCalled = deleteHandlerWasCalled = originalHandlerWasCalled = false;
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#delete').click();
       });
 
@@ -532,7 +531,7 @@ moduleFor(
 
       editHandlerWasCalled = deleteHandlerWasCalled = originalHandlerWasCalled = false;
 
-      this.runTask(() => {
+      runTask(() => {
         this.wrap(component.element).click();
       });
 
@@ -573,7 +572,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#edit').click();
       });
 
@@ -583,7 +582,7 @@ moduleFor(
 
       editHandlerWasCalled = deleteHandlerWasCalled = originalHandlerWasCalled = false;
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#delete').click();
       });
 
@@ -593,7 +592,7 @@ moduleFor(
 
       editHandlerWasCalled = deleteHandlerWasCalled = originalHandlerWasCalled = false;
 
-      this.runTask(() => {
+      runTask(() => {
         this.wrap(component.element).click();
       });
 
@@ -635,7 +634,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#edit').click();
       });
 
@@ -645,7 +644,7 @@ moduleFor(
 
       editHandlerWasCalled = deleteHandlerWasCalled = originalHandlerWasCalled = false;
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#delete').click();
       });
 
@@ -655,7 +654,7 @@ moduleFor(
 
       editHandlerWasCalled = deleteHandlerWasCalled = originalHandlerWasCalled = false;
 
-      this.runTask(() => {
+      runTask(() => {
         this.wrap(component.element).click();
       });
 
@@ -692,7 +691,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#edit').click();
       });
 
@@ -701,11 +700,11 @@ moduleFor(
 
       editHandlerWasCalled = originalHandlerWasCalled = false;
 
-      this.runTask(() => {
+      runTask(() => {
         component.set('shouldBubble', true);
       });
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#edit').click();
       });
 
@@ -732,7 +731,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
@@ -759,7 +758,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
@@ -790,19 +789,19 @@ moduleFor(
 
       assert.ok(ActionManager.registeredActions[actionId], 'An action is registered');
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       assert.equal(this.$('a[data-ember-action]').length, 1, 'The element is still present');
 
       assert.ok(ActionManager.registeredActions[actionId], 'The action is still registered');
 
-      this.runTask(() => set(this.context, 'isActive', false));
+      runTask(() => set(this.context, 'isActive', false));
 
       assert.strictEqual(this.$('a[data-ember-action]').length, 0, 'The element is removed');
 
       assert.ok(!ActionManager.registeredActions[actionId], 'The action is unregistered');
 
-      this.runTask(() => set(this.context, 'isActive', true));
+      runTask(() => set(this.context, 'isActive', true));
 
       assert.equal(this.$('a[data-ember-action]').length, 1, 'The element is rendered');
 
@@ -829,7 +828,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
@@ -861,7 +860,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
@@ -893,7 +892,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
@@ -919,7 +918,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
@@ -969,7 +968,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('#edit').click();
       });
 
@@ -995,7 +994,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
@@ -1003,7 +1002,7 @@ moduleFor(
 
       editHandlerWasCalled = false;
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').trigger('mouseover');
       });
 
@@ -1031,7 +1030,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
@@ -1062,7 +1061,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
@@ -1146,7 +1145,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('input').trigger('keyup', { char: 'a', which: 65 });
       });
 
@@ -1190,11 +1189,11 @@ moduleFor(
       let test = this;
 
       let testBoundAction = propertyValue => {
-        test.runTask(() => {
+        runTask(() => {
           component.set('hookMeUp', propertyValue);
         });
 
-        test.runTask(() => {
+        runTask(() => {
           this.wrap(component.element)
             .findAll('#bound-param')
             .click();
@@ -1256,7 +1255,7 @@ moduleFor(
       let test = this;
 
       let testBoundAction = propertyValue => {
-        test.runTask(() => {
+        runTask(() => {
           this.wrap(component.element)
             .findAll(`#${propertyValue}`)
             .click();
@@ -1296,7 +1295,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').click();
       });
 
@@ -1347,13 +1346,13 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').trigger('click');
       });
 
       this.assert.ok(clickActionWasCalled, 'the clicked action was called');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('a').trigger('dblclick');
       });
 
@@ -1376,7 +1375,7 @@ moduleFor(
 
       let event;
 
-      this.runTask(() => {
+      runTask(() => {
         event = this.$('a').click()[0];
       });
 
@@ -1406,13 +1405,13 @@ moduleFor(
 
       let event;
 
-      this.runTask(() => {
+      runTask(() => {
         event = this.$('a').trigger(event)[0];
       });
 
       this.assert.equal(event.defaultPrevented, false, 'should not preventDefault');
 
-      this.runTask(() => {
+      runTask(() => {
         component.set('shouldPreventDefault', true);
         event = this.$('a').trigger('click')[0];
       });
@@ -1470,7 +1469,7 @@ moduleFor(
 
       this.render('{{outer-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
@@ -1501,25 +1500,25 @@ moduleFor(
 
       this.assertStableRerender();
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
       this.assertText('Clicked!');
 
-      this.runTask(() => {
+      runTask(() => {
         component.set('label', 'Dun clicked');
       });
 
       this.assertText('Dun clicked');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
       this.assertText('Clicked!');
 
-      this.runTask(() => {
+      runTask(() => {
         component.set('label', undefined);
       });
 
@@ -1545,7 +1544,7 @@ moduleFor(
         'Show (true)'
       );
       // We need to focus in to simulate an actual click.
-      this.runTask(() => {
+      runTask(() => {
         document.getElementById('ddButton').focus();
         document.getElementById('ddButton').click();
       });
@@ -1571,7 +1570,7 @@ moduleFor(
 
       this.render('{{example-component}}');
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 
@@ -1581,7 +1580,7 @@ moduleFor(
         "Element with action handler has properly updated it's conditional class"
       );
 
-      this.runTask(() => {
+      runTask(() => {
         this.$('button').click();
       });
 

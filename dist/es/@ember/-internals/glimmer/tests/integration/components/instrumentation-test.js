@@ -1,14 +1,16 @@
-import { moduleFor, RenderingTest } from '../../utils/test-case';
-import { Component } from '../../utils/helpers';
+import { moduleFor, RenderingTestCase, runTask } from 'internal-test-helpers';
+
 import { set } from '@ember/-internals/metal';
 import {
   subscribe as instrumentationSubscribe,
   reset as instrumentationReset,
 } from '@ember/instrumentation';
 
+import { Component } from '../../utils/helpers';
+
 moduleFor(
   'Components instrumentation',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     constructor() {
       super(...arguments);
 
@@ -92,26 +94,26 @@ moduleFor(
 
       this.assertEvents('after initial render', true);
 
-      this.runTask(() => this.rerender());
+      runTask(() => this.rerender());
 
       this.assertEvents('after no-op rerender');
 
-      this.runTask(() => set(this.context, 'foo', 'FOO'));
+      runTask(() => set(this.context, 'foo', 'FOO'));
 
       this.assertEvents('after updating top-level');
 
-      this.runTask(() => set(this.context, 'baz', 'BAZ'));
+      runTask(() => set(this.context, 'baz', 'BAZ'));
 
       this.assertEvents('after updating inner-most');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'bar', 'BAR');
         set(this.context, 'bat', 'BAT');
       });
 
       this.assertEvents('after updating the rest');
 
-      this.runTask(() => {
+      runTask(() => {
         set(this.context, 'foo', 'FOO');
         set(this.context, 'bar', 'BAR');
         set(this.context, 'baz', 'BAZ');

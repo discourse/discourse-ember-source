@@ -31,7 +31,7 @@ export function isWatching(obj, key) {
 }
 export function watcherCount(obj, key) {
     let meta = peekMeta(obj);
-    return (meta !== undefined && meta.peekWatching(key)) || 0;
+    return (meta !== null && meta.peekWatching(key)) || 0;
 }
 /**
   Stops watching a property on an object. Usually you will never call this method directly but instead

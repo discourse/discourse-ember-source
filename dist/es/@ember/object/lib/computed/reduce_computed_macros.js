@@ -2,13 +2,7 @@
 @module @ember/object
 */
 import { assert } from '@ember/debug';
-import {
-  get,
-  ComputedProperty,
-  addObserver,
-  removeObserver,
-  getProperties,
-} from '@ember/-internals/metal';
+import { get, ComputedProperty, addObserver, removeObserver } from '@ember/-internals/metal';
 import { compare, isArray, A as emberA, uniqBy as uniqByArray } from '@ember/-internals/runtime';
 
 function reduceMacro(dependentKey, callback, initialValue, name) {
@@ -547,7 +541,7 @@ export function uniqBy(dependentKey, propertyKey) {
   @static
   @param {String} propertyKey*
   @return {ComputedProperty} computes a new array with all the
-  unique elements from the dependent array
+  unique elements from one or more dependent arrays.
   @public
 */
 export let union = uniq;
@@ -581,33 +575,37 @@ export let union = uniq;
   @public
 */
 export function intersect(...args) {
-  return multiArrayMacro(args, function(dependentKeys) {
-    let arrays = dependentKeys.map(dependentKey => {
-      let array = get(this, dependentKey);
-      return isArray(array) ? array : [];
-    });
+  return multiArrayMacro(
+    args,
+    function(dependentKeys) {
+      let arrays = dependentKeys.map(dependentKey => {
+        let array = get(this, dependentKey);
+        return isArray(array) ? array : [];
+      });
 
-    let results = arrays.pop().filter(candidate => {
-      for (let i = 0; i < arrays.length; i++) {
-        let found = false;
-        let array = arrays[i];
-        for (let j = 0; j < array.length; j++) {
-          if (array[j] === candidate) {
-            found = true;
-            break;
+      let results = arrays.pop().filter(candidate => {
+        for (let i = 0; i < arrays.length; i++) {
+          let found = false;
+          let array = arrays[i];
+          for (let j = 0; j < array.length; j++) {
+            if (array[j] === candidate) {
+              found = true;
+              break;
+            }
+          }
+
+          if (found === false) {
+            return false;
           }
         }
 
-        if (found === false) {
-          return false;
-        }
-      }
+        return true;
+      });
 
-      return true;
-    }, 'intersect');
-
-    return emberA(results);
-  });
+      return emberA(results);
+    },
+    'intersect'
+  );
 }
 
 /**
@@ -710,18 +708,12 @@ export function collect(...dependentKeys) {
   return multiArrayMacro(
     dependentKeys,
     function() {
-      let properties = getProperties(this, dependentKeys);
-      let res = emberA();
-      for (let key in properties) {
-        if (properties.hasOwnProperty(key)) {
-          if (properties[key] === undefined) {
-            res.push(null);
-          } else {
-            res.push(properties[key]);
-          }
-        }
-      }
-      return res;
+      let res = dependentKeys.map(key => {
+        let val = get(this, key);
+        return val === undefined ? null : val;
+      });
+
+      return emberA(res);
     },
     'collect'
   );

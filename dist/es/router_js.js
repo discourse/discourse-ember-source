@@ -408,7 +408,7 @@ class Transition {
         return this;
     }
     // Alias 'trigger' as 'send'
-    send(ignoreFailure, _name, err, transition, handler) {
+    send(ignoreFailure = false, _name, err, transition, handler) {
         this.trigger(ignoreFailure, _name, err, transition, handler);
     }
     /**
@@ -424,7 +424,12 @@ class Transition {
       @param {String} name the name of the event to fire
       @public
      */
-    trigger(ignoreFailure, name, ...args) {
+    trigger(ignoreFailure = false, name, ...args) {
+        // TODO: Deprecate the current signature
+        if (typeof ignoreFailure === 'string') {
+            name = ignoreFailure;
+            ignoreFailure = false;
+        }
         this.router.triggerEvent(this[STATE_SYMBOL].routeInfos.slice(0, this.resolveIndex + 1), ignoreFailure, name, args);
     }
     /**
@@ -1295,13 +1300,9 @@ class Router {
             return this.activeTransition || new Transition(this, undefined, undefined);
         }
         if (isIntermediate) {
+            let transition = new Transition(this, undefined, undefined);
+            this.toReadOnlyInfos(transition, newState);
             this.setupContexts(newState);
-            let transition = this.activeTransition;
-            if (transition !== undefined && !transition.isCausedByAbortingTransition) {
-                transition = new Transition(this, undefined, undefined);
-                transition.from = transition.from;
-            }
-            this.toInfos(transition, newState.routeInfos);
             this.routeWillChange(transition);
             return this.activeTransition;
         }

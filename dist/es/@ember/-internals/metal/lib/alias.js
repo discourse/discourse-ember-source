@@ -32,9 +32,6 @@ export class AliasedProperty extends Descriptor {
     willWatch(obj, keyName, meta) {
         this.consume(obj, keyName, meta);
     }
-    didUnwatch(obj, keyName, meta) {
-        this.unconsume(obj, keyName, meta);
-    }
     get(obj, keyName) {
         let ret = get(obj, this.altKey);
         this.consume(obj, keyName, metaFor(obj));

@@ -51,7 +51,7 @@ export function MANDATORY_SETTER_FUNCTION(name) {
 export function DEFAULT_GETTER_FUNCTION(name) {
     return function GETTER_FUNCTION() {
         let meta = peekMeta(this);
-        if (meta !== undefined) {
+        if (meta !== null) {
             return meta.peekValues(name);
         }
     };
@@ -60,16 +60,14 @@ export function INHERITING_GETTER_FUNCTION(name) {
     function IGETTER_FUNCTION() {
         let meta = peekMeta(this);
         let val;
-        if (meta !== undefined) {
+        if (meta !== null) {
             val = meta.readInheritedValue('values', name);
+            if (val === UNDEFINED) {
+                let proto = Object.getPrototypeOf(this);
+                return proto === null ? undefined : proto[name];
+            }
         }
-        if (val === UNDEFINED) {
-            let proto = Object.getPrototypeOf(this);
-            return proto && proto[name];
-        }
-        else {
-            return val;
-        }
+        return val;
     }
     return Object.assign(IGETTER_FUNCTION, {
         isInheritingGetter: true,

@@ -24,4 +24,6 @@ task :default do
   FileUtils.mkdir_p("dist")
   FileUtils.cp_r("ember/dist/.", "dist/")
   FileUtils.rm_rf("ember")
+
+  FileUtils.cp_r("dist/legacy/.", "dist/")
 end

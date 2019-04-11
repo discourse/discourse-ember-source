@@ -1,26 +1,26 @@
-export default function setupQUnit(assertion, _qunitGlobal) {
-    let qunitGlobal = QUnit;
-    if (_qunitGlobal) {
-        qunitGlobal = _qunitGlobal;
-    }
-    let originalModule = qunitGlobal.module;
-    qunitGlobal.module = function (name, _options) {
-        let options = _options || {};
-        let originalSetup = options.setup || options.beforeEach || function () { };
-        let originalTeardown = options.teardown || options.afterEach || function () { };
-        delete options.setup;
-        delete options.teardown;
-        options.beforeEach = function () {
-            assertion.reset();
-            assertion.inject();
-            return originalSetup.apply(this, arguments);
-        };
-        options.afterEach = function () {
-            let result = originalTeardown.apply(this, arguments);
-            assertion.assert();
-            assertion.restore();
-            return result;
-        };
-        return originalModule(name, options);
+import { getDebugFunction, setDebugFunction } from '@ember/debug';
+import { setupAssertionHelpers } from './assertion';
+import { setupContainersCheck } from './containers';
+import { setupDeprecationHelpers } from './deprecation';
+import { setupNamespacesCheck } from './namespaces';
+import { setupRunLoopCheck } from './run-loop';
+import { setupWarningHelpers } from './warning';
+export default function setupQUnit({ runningProdBuild }) {
+    let env = {
+        runningProdBuild,
+        getDebugFunction,
+        setDebugFunction,
+    };
+    let originalModule = QUnit.module;
+    QUnit.module = function (name, callback) {
+        return originalModule(name, function (hooks) {
+            setupContainersCheck(hooks);
+            setupNamespacesCheck(hooks);
+            setupRunLoopCheck(hooks);
+            setupAssertionHelpers(hooks, env);
+            setupDeprecationHelpers(hooks, env);
+            setupWarningHelpers(hooks, env);
+            callback(hooks);
+        });
     };
 }

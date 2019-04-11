@@ -1,14 +1,16 @@
+import { moduleFor, ApplicationTestCase, RenderingTestCase, runTask } from 'internal-test-helpers';
+
 import Controller from '@ember/controller';
-import { moduleFor, ApplicationTest, RenderingTest } from '../../utils/test-case';
-import { Component } from '../../utils/helpers';
 import { getDebugFunction, setDebugFunction } from '@ember/debug';
+
+import { Component } from '../../utils/helpers';
 
 const originalDebug = getDebugFunction('debug');
 const noop = function() {};
 
 moduleFor(
   'Application test: actions',
-  class extends ApplicationTest {
+  class extends ApplicationTestCase {
     constructor() {
       setDebugFunction('debug', noop);
       super(...arguments);
@@ -40,7 +42,7 @@ moduleFor(
       );
 
       return this.visit('/').then(() => {
-        this.runTask(() => this.$('#handle-it').click());
+        runTask(() => this.$('#handle-it').click());
       });
     }
 
@@ -72,7 +74,7 @@ moduleFor(
       this.addTemplate('index', '<button id="handle-it" {{action "handleIt"}}>Click!</button>');
 
       return this.visit('/').then(() => {
-        this.runTask(() => this.$('#handle-it').click());
+        runTask(() => this.$('#handle-it').click());
       });
     }
   }
@@ -80,7 +82,7 @@ moduleFor(
 
 moduleFor(
   'Rendering test: non-interactive actions',
-  class extends RenderingTest {
+  class extends RenderingTestCase {
     getBootOptions() {
       return { isInteractive: false };
     }

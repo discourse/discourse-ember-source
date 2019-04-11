@@ -1,7 +1,6 @@
 module.exports = {
   classitems: [
     '$',
-    '@each',
     'A',
     'EXTEND_PROTOTYPES',
     'GUID_KEY',
@@ -62,7 +61,6 @@ module.exports = {
     'active',
     'activeClass',
     'adapter',
-    'add',
     'addArrayObserver',
     'addListener',
     'addObject',
@@ -157,7 +155,6 @@ module.exports = {
     'defer',
     'deferReadiness',
     'defineProperty',
-    'delete',
     'deleteMeta',
     'denodeify',
     'deprecate',
@@ -347,6 +344,7 @@ module.exports = {
     'merge',
     'mergedProperties',
     'meta',
+    'metadata',
     'metaForProperty',
     'method',
     'min',

@@ -1,5 +1,5 @@
 import { descriptorFor, peekMeta } from '@ember/-internals/meta';
-import { HAS_NATIVE_PROXY, toString } from '@ember/-internals/utils';
+import { HAS_NATIVE_PROXY, lookupDescriptor, toString } from '@ember/-internals/utils';
 import { assert } from '@ember/debug';
 import EmberError from '@ember/error';
 import { DEBUG } from '@glimmer/env';
@@ -45,10 +45,10 @@ export function set(obj, keyName, value, tolerant) {
     if (isPath(keyName)) {
         return setPath(obj, keyName, value, tolerant);
     }
-    let possibleDesc = descriptorFor(obj, keyName);
-    if (possibleDesc !== undefined) {
-        /* computed property */
-        possibleDesc.set(obj, keyName, value);
+    let meta = peekMeta(obj);
+    let descriptor = descriptorFor(obj, keyName, meta);
+    if (descriptor !== undefined) {
+        descriptor.set(obj, keyName, value);
         return value;
     }
     let currentValue;
@@ -66,7 +66,6 @@ export function set(obj, keyName, value, tolerant) {
         obj.setUnknownProperty(keyName, value);
     }
     else {
-        let meta = peekMeta(obj);
         if (DEBUG) {
             setWithMandatorySetter(meta, obj, keyName, value);
         }
@@ -81,7 +80,7 @@ export function set(obj, keyName, value, tolerant) {
 }
 if (DEBUG) {
     setWithMandatorySetter = (meta, obj, keyName, value) => {
-        if (meta !== undefined && meta.peekWatching(keyName) > 0) {
+        if (meta !== null && meta.peekWatching(keyName) > 0) {
             makeEnumerable(obj, keyName);
             meta.writeValue(obj, keyName, value);
         }
@@ -90,8 +89,10 @@ if (DEBUG) {
         }
     };
     makeEnumerable = (obj, key) => {
-        let desc = Object.getOwnPropertyDescriptor(obj, key);
-        if (desc && desc.set && desc.set.isMandatorySetter) {
+        let desc = lookupDescriptor(obj, key);
+        if (desc !== null &&
+            desc.set !== undefined &&
+            desc.set.isMandatorySetter) {
             desc.enumerable = true;
             Object.defineProperty(obj, key, desc);
         }
@@ -101,13 +102,12 @@ function setPath(root, path, value, tolerant) {
     let parts = path.split('.');
     let keyName = parts.pop();
     assert('Property set failed: You passed an empty path', keyName.trim().length > 0);
-    let newPath = parts.join('.');
-    let newRoot = getPath(root, newPath);
+    let newRoot = getPath(root, parts);
     if (newRoot !== null && newRoot !== undefined) {
         return set(newRoot, keyName, value);
     }
     else if (!tolerant) {
-        throw new EmberError(`Property set failed: object in path "${newPath}" could not be found.`);
+        throw new EmberError(`Property set failed: object in path "${parts.join('.')}" could not be found.`);
     }
 }
 /**

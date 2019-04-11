@@ -12,8 +12,8 @@ class InstructionEncoder {
         this.typePos = this.buffer.length - 1;
         for (let i = 2; i < arguments.length; i++) {
             let op = arguments[i];
-            if (typeof op === 'number' && op > 65535 /* MAX_SIZE */) {
-                    throw new Error(`Operand over 16-bits. Got ${op}.`);
+            if (typeof op === 'number' && op > 4294967295 /* MAX_SIZE */) {
+                    throw new Error(`Operand over 32-bits. Got ${op}.`);
                 }
             this.buffer.push(op);
         }

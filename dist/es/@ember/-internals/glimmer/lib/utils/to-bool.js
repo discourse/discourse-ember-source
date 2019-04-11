@@ -4,6 +4,6 @@ export default function toBool(predicate) {
         return predicate.length !== 0;
     }
     else {
-        return !!predicate;
+        return Boolean(predicate);
     }
 }

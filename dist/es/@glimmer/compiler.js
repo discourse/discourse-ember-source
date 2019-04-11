@@ -506,6 +506,9 @@ class JavaScriptCompiler {
         this.push([Ops.Yield, to, params]);
     }
     attrSplat(to) {
+        // consume (and disregard) the value pushed for the
+        // ...attributes attribute
+        this.popValue();
         this.push([Ops.AttrSplat, to]);
     }
     debugger(evalInfo) {
