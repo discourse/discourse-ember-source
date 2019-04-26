@@ -87,15 +87,15 @@ class ObjectIterator extends BoundedIterator {
     }
     static fromIndexable(obj, keyFor) {
         let keys = Object.keys(obj);
-        let values = [];
         let { length } = keys;
-        for (let i = 0; i < length; i++) {
-            values.push(get(obj, keys[i]));
-        }
         if (length === 0) {
             return EMPTY_ITERATOR;
         }
         else {
+            let values = [];
+            for (let i = 0; i < length; i++) {
+                values.push(get(obj, keys[i]));
+            }
             return new this(keys, values, length, keyFor);
         }
     }

@@ -1,7 +1,7 @@
 import { meta as metaFor, peekMeta } from '@ember/-internals/meta';
-import { inspect } from '@ember/-internals/utils';
+import { inspect, toString } from '@ember/-internals/utils';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
-import { assert, warn } from '@ember/debug';
+import { assert, deprecate, warn } from '@ember/debug';
 import EmberError from '@ember/error';
 import { getCachedValueFor, getCacheFor, getLastRevisionFor, peekCacheFor, setLastRevisionFor, } from './computed_cache';
 import { addDependentKeys, removeDependentKeys, } from './dependent_keys';
@@ -175,6 +175,11 @@ class ComputedProperty extends Descriptor {
       @public
     */
     volatile() {
+        deprecate('Setting a computed property as volatile has been deprecated. Instead, consider using a native getter with native class syntax.', false, {
+            id: 'computed-property.volatile',
+            until: '4.0.0',
+            url: 'https://emberjs.com/deprecations/v3.x#toc_computed-property-volatile',
+        });
         this._volatile = true;
         return this;
     }
@@ -237,6 +242,15 @@ class ComputedProperty extends Descriptor {
       @public
     */
     property(...passedArgs) {
+        deprecate('Setting dependency keys using the `.property()` modifier has been deprecated. Pass the dependency keys directly to computed as arguments instead. If you are using `.property()` on a computed property macro, consider refactoring your macro to receive additional dependent keys in its initial declaration.', false, {
+            id: 'computed-property.property',
+            until: '4.0.0',
+            url: 'https://emberjs.com/deprecations/v3.x#toc_computed-property-property',
+        });
+        this._property(...passedArgs);
+        return this;
+    }
+    _property(...passedArgs) {
         let args = [];
         function addArg(property) {
             warn(`Dependent keys containing @each only work one level deep. ` +
@@ -369,6 +383,11 @@ class ComputedProperty extends Descriptor {
         throw new EmberError(`Cannot set read-only property "${keyName}" on object: ${inspect(obj)}`);
     }
     clobberSet(obj, keyName, value) {
+        deprecate(`The ${toString(obj)}#${keyName} computed property was just overriden. This removes the computed property and replaces it with a plain value, and has been deprecated. If you want this behavior, consider defining a setter which does it manually.`, false, {
+            id: 'computed-property.override',
+            until: '4.0.0',
+            url: 'https://emberjs.com/deprecations/v3.x#toc_computed-property-override',
+        });
         let cachedValue = getCachedValueFor(obj, keyName);
         defineProperty(obj, keyName, null, cachedValue);
         set(obj, keyName, value);
@@ -517,7 +536,7 @@ export default function computed(...args) {
     let func = args.pop();
     let cp = new ComputedProperty(func);
     if (args.length > 0) {
-        cp.property(...args);
+        cp._property(...args);
     }
     return cp;
 }

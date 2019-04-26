@@ -1,26 +1,39 @@
 const SET_TIMEOUT = setTimeout;
 const NOOP = () => { };
-function buildPlatform(flush) {
-    let next;
-    let clearNext = NOOP;
-    if (typeof MutationObserver === 'function') {
+function buildNext(flush) {
+    // Using "promises first" here to:
+    //
+    // 1) Ensure more consistent experience on browsers that
+    //    have differently queued microtasks (separate queues for
+    //    MutationObserver vs Promises).
+    // 2) Ensure better debugging experiences (it shows up in Chrome
+    //    call stack as "Promise.then (async)") which is more consistent
+    //    with user expectations
+    //
+    // When Promise is unavailable use MutationObserver (mostly so that we
+    // still get microtasks on IE11), and when neither MutationObserver and
+    // Promise are present use a plain old setTimeout.
+    if (typeof Promise === 'function') {
+        const autorunPromise = Promise.resolve();
+        return () => autorunPromise.then(flush);
+    }
+    else if (typeof MutationObserver === 'function') {
         let iterations = 0;
         let observer = new MutationObserver(flush);
         let node = document.createTextNode('');
         observer.observe(node, { characterData: true });
-        next = () => {
+        return () => {
             iterations = ++iterations % 2;
             node.data = '' + iterations;
             return iterations;
         };
     }
-    else if (typeof Promise === 'function') {
-        const autorunPromise = Promise.resolve();
-        next = () => autorunPromise.then(flush);
-    }
     else {
-        next = () => SET_TIMEOUT(flush, 0);
+        return () => SET_TIMEOUT(flush, 0);
     }
+}
+function buildPlatform(flush) {
+    let clearNext = NOOP;
     return {
         setTimeout(fn, ms) {
             return setTimeout(fn, ms);
@@ -31,7 +44,7 @@ function buildPlatform(flush) {
         now() {
             return Date.now();
         },
-        next,
+        next: buildNext(flush),
         clearNext,
     };
 }
@@ -945,6 +958,8 @@ class Backburner {
     }
 }
 Backburner.Queue = Queue;
+Backburner.buildPlatform = buildPlatform;
+Backburner.buildNext = buildNext;
 
 export default Backburner;
 export { buildPlatform };

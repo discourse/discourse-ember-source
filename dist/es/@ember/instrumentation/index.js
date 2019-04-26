@@ -73,12 +73,7 @@ function populateListeners(name) {
 const time = (() => {
     let perf = 'undefined' !== typeof window ? window.performance || {} : {};
     let fn = perf.now || perf.mozNow || perf.webkitNow || perf.msNow || perf.oNow;
-    // fn.bind will be available in all the browsers that support the advanced window.performance... ;-)
-    return fn
-        ? fn.bind(perf)
-        : () => {
-            return Number(new Date());
-        };
+    return fn ? fn.bind(perf) : Date.now;
 })();
 export function instrument(name, p1, p2, p3) {
     let payload;

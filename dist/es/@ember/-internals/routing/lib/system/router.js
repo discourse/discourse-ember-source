@@ -1,9 +1,9 @@
-import { computed, defineProperty, get, set } from '@ember/-internals/metal';
+import { computed, get, notifyPropertyChange, set } from '@ember/-internals/metal';
 import { getOwner } from '@ember/-internals/owner';
 import { A as emberA, Evented, Object as EmberObject, typeOf } from '@ember/-internals/runtime';
 import { EMBER_ROUTING_ROUTER_SERVICE } from '@ember/canary-features';
 import { assert, deprecate, info } from '@ember/debug';
-import { HANDLER_INFOS, ROUTER_EVENTS, TRANSITION_STATE } from '@ember/deprecated-features';
+import { APP_CTRL_ROUTER_PROPS, HANDLER_INFOS, ROUTER_EVENTS, TRANSITION_STATE, } from '@ember/deprecated-features';
 import EmberError from '@ember/error';
 import { assign } from '@ember/polyfills';
 import { cancel, once, run, scheduleOnce } from '@ember/runloop';
@@ -1227,14 +1227,34 @@ function updatePaths(router) {
         // actually been entered at that point.
         return;
     }
-    if (!('currentPath' in appController)) {
-        defineProperty(appController, 'currentPath');
+    if (APP_CTRL_ROUTER_PROPS) {
+        if (!('currentPath' in appController)) {
+            Object.defineProperty(appController, 'currentPath', {
+                get() {
+                    deprecate('Accessing `currentPath` on `controller:application` is deprecated, use the `currentPath` property on `service:router` instead.', false, {
+                        id: 'application-controller.router-properties',
+                        until: '4.0.0',
+                        url: 'https://emberjs.com/deprecations/v3.x#toc_application-controller-router-properties',
+                    });
+                    return get(router, 'currentPath');
+                },
+            });
+        }
+        notifyPropertyChange(appController, 'currentPath');
+        if (!('currentRouteName' in appController)) {
+            Object.defineProperty(appController, 'currentRouteName', {
+                get() {
+                    deprecate('Accessing `currentRouteName` on `controller:application` is deprecated, use the `currentRouteName` property on `service:router` instead.', false, {
+                        id: 'application-controller.router-properties',
+                        until: '4.0.0',
+                        url: 'https://emberjs.com/deprecations/v3.x#toc_application-controller-router-properties',
+                    });
+                    return get(router, 'currentRouteName');
+                },
+            });
+        }
+        notifyPropertyChange(appController, 'currentRouteName');
     }
-    set(appController, 'currentPath', path);
-    if (!('currentRouteName' in appController)) {
-        defineProperty(appController, 'currentRouteName');
-    }
-    set(appController, 'currentRouteName', currentRouteName);
 }
 EmberRouter.reopenClass({
     /**
@@ -1418,16 +1438,19 @@ EmberRouter.reopen(Evented, {
       ```javascript
       import config from './config/environment';
       import EmberRouter from '@ember/routing/router';
+      import { inject as service } from '@ember/service';
   
       let Router = EmberRouter.extend({
         location: config.locationType,
   
+        router: service(),
+  
         didTransition: function() {
           this._super(...arguments);
   
-          return ga('send', 'pageview', {
-            'page': this.get('url'),
-            'title': this.get('url')
+          ga('send', 'pageview', {
+            page: this.router.currentURL,
+            title: this.router.currentRouteName,
           });
         }
       });

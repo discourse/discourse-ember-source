@@ -34,7 +34,7 @@
    @param {Array} options
    @return {Array} Array
    @category array-helper
-   @since 3.7.0
+   @since 3.8.0
    @public
  */
 export default function (_vm, args) {

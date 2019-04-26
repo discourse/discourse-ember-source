@@ -1,4 +1,4 @@
-import { computed, get, getProperties, isEmpty, set, setProperties } from '@ember/-internals/metal';
+import { computed, defineProperty, get, getProperties, isEmpty, set, setProperties, } from '@ember/-internals/metal';
 import { getOwner } from '@ember/-internals/owner';
 import { A as emberA, ActionHandler, Evented, Object as EmberObject, typeOf, } from '@ember/-internals/runtime';
 import { EMBER_ROUTING_BUILD_ROUTEINFO_METADATA, EMBER_ROUTING_ROUTER_SERVICE, } from '@ember/canary-features';
@@ -1941,22 +1941,27 @@ Route.reopen(ActionHandler, Evented, {
       @type {Object}
       @private
     */
-    store: computed(function () {
-        let owner = getOwner(this);
-        let routeName = this.routeName;
-        let namespace = get(this, '_router.namespace');
-        return {
-            find(name, value) {
-                let modelClass = owner.factoryFor(`model:${name}`);
-                assert(`You used the dynamic segment ${name}_id in your route ${routeName}, but ${namespace}.${classify(name)} did not exist and you did not override your route's \`model\` hook.`, Boolean(modelClass));
-                if (!modelClass) {
-                    return;
-                }
-                modelClass = modelClass.class;
-                assert(`${classify(name)} has no method \`find\`.`, typeof modelClass.find === 'function');
-                return modelClass.find(value);
-            },
-        };
+    store: computed({
+        get() {
+            let owner = getOwner(this);
+            let routeName = this.routeName;
+            let namespace = get(this, '_router.namespace');
+            return {
+                find(name, value) {
+                    let modelClass = owner.factoryFor(`model:${name}`);
+                    assert(`You used the dynamic segment ${name}_id in your route ${routeName}, but ${namespace}.${classify(name)} did not exist and you did not override your route's \`model\` hook.`, Boolean(modelClass));
+                    if (!modelClass) {
+                        return;
+                    }
+                    modelClass = modelClass.class;
+                    assert(`${classify(name)} has no method \`find\`.`, typeof modelClass.find === 'function');
+                    return modelClass.find(value);
+                },
+            };
+        },
+        set(key, value) {
+            defineProperty(this, key, null, value);
+        },
     }),
     /**
         @private

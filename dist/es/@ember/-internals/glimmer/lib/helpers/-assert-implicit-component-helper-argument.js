@@ -1,28 +1,25 @@
+import { assert } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
-class ComponentAssertionReference {
-    constructor(component, message) {
-        this.component = component;
-        this.message = message;
-        this.tag = component.tag;
-    }
-    value() {
-        let value = this.component.value();
-        if (typeof value === 'string') {
-            throw new TypeError(this.message);
+let helper;
+if (DEBUG) {
+    class ComponentAssertionReference {
+        constructor(component, message) {
+            this.component = component;
+            this.message = message;
+            this.tag = component.tag;
         }
-        return value;
+        value() {
+            let value = this.component.value();
+            assert(this.message, typeof value !== 'string');
+            return value;
+        }
+        get(property) {
+            return this.component.get(property);
+        }
     }
-    get(property) {
-        return this.component.get(property);
-    }
+    helper = (_vm, args) => new ComponentAssertionReference(args.positional.at(0), args.positional.at(1).value());
 }
-export default (_vm, args) => {
-    if (DEBUG) {
-        return new ComponentAssertionReference(args.positional.at(0), args.positional
-            .at(1)
-            .value());
-    }
-    else {
-        return args.positional.at(0);
-    }
-};
+else {
+    helper = (_vm, args) => args.positional.at(0);
+}
+export default helper;

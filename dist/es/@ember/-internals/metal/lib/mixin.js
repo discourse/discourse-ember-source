@@ -2,11 +2,13 @@
 @module @ember/object
 */
 import { descriptorFor, meta as metaFor, peekMeta } from '@ember/-internals/meta';
-import { getListeners, getObservers, guidFor, makeArray, NAME_KEY, ROOT, setObservers, wrap, } from '@ember/-internals/utils';
-import { assert } from '@ember/debug';
+import { getListeners, getObservers, getOwnPropertyDescriptors, guidFor, makeArray, NAME_KEY, ROOT, setObservers, wrap, } from '@ember/-internals/utils';
+import { assert, deprecate } from '@ember/debug';
+import { ALIAS_METHOD } from '@ember/deprecated-features';
 import { assign } from '@ember/polyfills';
 import { DEBUG } from '@glimmer/env';
 import { ComputedProperty } from './computed';
+import nativeDescriptor from './descriptor';
 import { addListener, removeListener } from './events';
 import expandProperties from './expand_properties';
 import { classToString, setUnprocessedMixins } from './namespace_search';
@@ -23,6 +25,30 @@ function isMethod(obj) {
         obj !== Array &&
         obj !== Date &&
         obj !== String);
+}
+function isAccessor(desc) {
+    return typeof desc.get === 'function' || typeof desc.set === 'function';
+}
+function extractAccessors(properties) {
+    if (properties !== undefined) {
+        let descriptors = getOwnPropertyDescriptors(properties);
+        let keys = Object.keys(descriptors);
+        let hasAccessors = keys.some(key => isAccessor(descriptors[key]));
+        if (hasAccessors) {
+            let extracted = {};
+            keys.forEach(key => {
+                let descriptor = descriptors[key];
+                if (isAccessor(descriptor)) {
+                    extracted[key] = nativeDescriptor(descriptor);
+                }
+                else {
+                    extracted[key] = properties[key];
+                }
+            });
+            return extracted;
+        }
+    }
+    return properties;
 }
 const CONTINUE = {};
 function mixinProperties(mixinsMeta, mixin) {
@@ -201,23 +227,26 @@ function mergeMixins(mixins, meta, descs, values, base, keys) {
         }
     }
 }
-function followMethodAlias(obj, _desc, descs, values) {
-    let altKey = _desc.methodName;
-    let possibleDesc;
-    let desc = descs[altKey];
-    let value = values[altKey];
-    if (desc !== undefined || value !== undefined) {
-        // do nothing
-    }
-    else if ((possibleDesc = descriptorFor(obj, altKey)) !== undefined) {
-        desc = possibleDesc;
-        value = undefined;
-    }
-    else {
-        desc = undefined;
-        value = obj[altKey];
-    }
-    return { desc, value };
+let followMethodAlias;
+if (ALIAS_METHOD) {
+    followMethodAlias = function (obj, alias, descs, values) {
+        let altKey = alias.methodName;
+        let possibleDesc;
+        let desc = descs[altKey];
+        let value = values[altKey];
+        if (desc !== undefined || value !== undefined) {
+            // do nothing
+        }
+        else if ((possibleDesc = descriptorFor(obj, altKey)) !== undefined) {
+            desc = possibleDesc;
+            value = undefined;
+        }
+        else {
+            desc = undefined;
+            value = obj[altKey];
+        }
+        return { desc, value };
+    };
 }
 function updateObserversAndListeners(obj, key, paths, updateMethod) {
     if (paths) {
@@ -258,10 +287,12 @@ export function applyMixin(obj, mixins) {
         }
         desc = descs[key];
         value = values[key];
-        while (desc && desc instanceof Alias) {
-            let followed = followMethodAlias(obj, desc, descs, values);
-            desc = followed.desc;
-            value = followed.value;
+        if (ALIAS_METHOD) {
+            while (value && value instanceof AliasImpl) {
+                let followed = followMethodAlias(obj, value, descs, values);
+                desc = followed.desc;
+                value = followed.value;
+            }
         }
         if (desc === undefined && value === undefined) {
             continue;
@@ -371,7 +402,7 @@ export function mixin(obj, ...args) {
 */
 export default class Mixin {
     constructor(mixins, properties) {
-        this.properties = properties;
+        this.properties = extractAccessors(properties);
         this.mixins = buildMixinsArray(mixins);
         this.ownerConstructor = undefined;
         this._without = undefined;
@@ -535,20 +566,13 @@ function _keys(mixin, ret = new Set(), seen = new Set()) {
     }
     return ret;
 }
-class Alias extends Descriptor {
-    constructor(methodName) {
-        super();
-        this.methodName = methodName;
-    }
-    teardown(_obj, _keyName, _meta) {
-        throw new Error('Method not implemented.');
-    }
-    get(_obj, _keyName) {
-        throw new Error('Method not implemented.');
-    }
-    set(_obj, _keyName, _value) {
-        throw new Error('Method not implemented.');
-    }
+let AliasImpl;
+if (ALIAS_METHOD) {
+    AliasImpl = class AliasImpl {
+        constructor(methodName) {
+            this.methodName = methodName;
+        }
+    };
 }
 /**
   Makes a method available via an additional name.
@@ -575,12 +599,21 @@ class Alias extends Descriptor {
 
   @method aliasMethod
   @static
+  @deprecated Use a shared utility method instead
   @for @ember/object
   @param {String} methodName name of the method to alias
   @public
 */
-export function aliasMethod(methodName) {
-    return new Alias(methodName);
+export let aliasMethod;
+if (ALIAS_METHOD) {
+    aliasMethod = function aliasMethod(methodName) {
+        deprecate(`You attempted to alias '${methodName}, but aliasMethod has been deprecated. Consider extracting the method into a shared utility function.`, false, {
+            id: 'object.alias-method',
+            until: '4.0.0',
+            url: 'https://emberjs.com/deprecations/v3.x#toc_object-alias-method',
+        });
+        return new AliasImpl(methodName);
+    };
 }
 // ..........................................................
 // OBSERVER HELPER

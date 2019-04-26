@@ -11,7 +11,8 @@ function makeTag() {
     return DirtyableTag.create();
 }
 export function tagForProperty(object, propertyKey, _meta) {
-    if (typeof object !== 'object' || object === null) {
+    let objectType = typeof object;
+    if (objectType !== 'function' && (objectType !== 'object' || object === null)) {
         return CONSTANT_TAG;
     }
     let meta = _meta === undefined ? metaFor(object) : _meta;

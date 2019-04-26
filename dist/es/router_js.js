@@ -78,7 +78,7 @@ function log(router, ...args) {
     if (!router.log) {
         return;
     }
-    if (arguments.length === 2) {
+    if (args.length === 2) {
         let [sequence, msg] = args;
         router.log('Transition #' + sequence + ': ' + msg);
     }
@@ -667,6 +667,7 @@ class InternalRouteInfo {
         }
     }
     updateRoute(route) {
+        route._internalName = this.name;
         return (this.route = route);
     }
     runBeforeModelHook(transition) {
@@ -976,7 +977,7 @@ class NamedTransitionIntent extends TransitionIntent {
         // Pivot handlers are provided for refresh transitions
         if (this.pivotHandler) {
             for (i = 0, len = parsedHandlers.length; i < len; ++i) {
-                if (parsedHandlers[i].handler === this.pivotHandler.routeName) {
+                if (parsedHandlers[i].handler === this.pivotHandler._internalName) {
                     invalidateIndex = i;
                     break;
                 }

@@ -3,6 +3,7 @@ import { getOwner } from '@ember/-internals/owner';
 import { EMBER_MODULE_UNIFICATION } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { ComputedProperty } from './computed';
+import { defineProperty } from './properties';
 /**
  @module ember
  @private
@@ -20,7 +21,7 @@ import { ComputedProperty } from './computed';
 */
 export default class InjectedProperty extends ComputedProperty {
     constructor(type, name, options) {
-        super(injectedPropertyGet);
+        super(injectedPropertyDesc);
         this.type = type;
         this.name = name;
         if (EMBER_MODULE_UNIFICATION) {
@@ -40,14 +41,19 @@ export default class InjectedProperty extends ComputedProperty {
         }
     }
 }
-function injectedPropertyGet(keyName) {
-    let desc = descriptorFor(this, keyName);
-    let owner = getOwner(this) || this.container; // fallback to `container` for backwards compat
-    assert(`InjectedProperties should be defined with the inject computed property macros.`, desc && desc.type);
-    assert(`Attempting to lookup an injected property on an object without a container, ensure that the object was instantiated via a container.`, Boolean(owner));
-    let specifier = `${desc.type}:${desc.name || keyName}`;
-    return owner.lookup(specifier, {
-        source: desc.source,
-        namespace: desc.namespace,
-    });
-}
+const injectedPropertyDesc = {
+    get(keyName) {
+        let desc = descriptorFor(this, keyName);
+        let owner = getOwner(this) || this.container; // fallback to `container` for backwards compat
+        assert(`InjectedProperties should be defined with the inject computed property macros.`, desc && desc.type);
+        assert(`Attempting to lookup an injected property on an object without a container, ensure that the object was instantiated via a container.`, Boolean(owner));
+        let specifier = `${desc.type}:${desc.name || keyName}`;
+        return owner.lookup(specifier, {
+            source: desc.source,
+            namespace: desc.namespace,
+        });
+    },
+    set(keyName, value) {
+        defineProperty(this, keyName, null, value);
+    },
+};

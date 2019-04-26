@@ -125,7 +125,7 @@ import ApplicationInstance from '@ember/application/instance';
 import Engine from '@ember/engine';
 import EngineInstance from '@ember/engine/instance';
 import { assign, merge } from '@ember/polyfills';
-import { LOGGER, EMBER_EXTEND_PROTOTYPES } from '@ember/deprecated-features';
+import { LOGGER, EMBER_EXTEND_PROTOTYPES, JQUERY_INTEGRATION } from '@ember/deprecated-features';
 
 // ****@ember/-internals/environment****
 
@@ -560,9 +560,27 @@ Object.defineProperty(Ember, 'TEMPLATES', {
 Ember.VERSION = VERSION;
 
 // ****@ember/-internals/views****
-if (!views.jQueryDisabled) {
-  Ember.$ = views.jQuery;
+if (JQUERY_INTEGRATION && !views.jQueryDisabled) {
+  Object.defineProperty(Ember, '$', {
+    get() {
+      deprecate(
+        "Using Ember.$() has been deprecated, use `import jQuery from 'jquery';` instead",
+        false,
+        {
+          id: 'ember-views.curly-components.jquery-element',
+          until: '4.0.0',
+          url: 'https://emberjs.com/deprecations/v3.x#toc_jquery-apis',
+        }
+      );
+
+      return views.jQuery;
+    },
+
+    configurable: true,
+    enumerable: true,
+  });
 }
+
 Ember.ViewUtils = {
   isSimpleClick: views.isSimpleClick,
   getViewElement: views.getViewElement,

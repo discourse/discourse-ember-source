@@ -198,30 +198,23 @@ export class Meta {
     forEachInDeps(subkey, fn) {
         let pointer = this;
         let seen;
-        let calls;
         while (pointer !== null) {
             let map = pointer._deps;
             if (map !== undefined) {
                 let innerMap = map[subkey];
                 if (innerMap !== undefined) {
+                    seen = seen === undefined ? new Set() : seen;
                     for (let innerKey in innerMap) {
-                        seen = seen === undefined ? new Set() : seen;
                         if (!seen.has(innerKey)) {
                             seen.add(innerKey);
                             if (innerMap[innerKey] > 0) {
-                                calls = calls || [];
-                                calls.push(innerKey);
+                                fn(innerKey);
                             }
                         }
                     }
                 }
             }
             pointer = pointer.parent;
-        }
-        if (calls !== undefined) {
-            for (let i = 0; i < calls.length; i++) {
-                fn(calls[i]);
-            }
         }
     }
     writableTags() {
@@ -333,8 +326,8 @@ export class Meta {
         while (pointer !== null) {
             let map = pointer._descriptors;
             if (map !== undefined) {
+                seen = seen === undefined ? new Set() : seen;
                 map.forEach((value, key) => {
-                    seen = seen === undefined ? new Set() : seen;
                     if (!seen.has(key)) {
                         seen.add(key);
                         if (value !== UNDEFINED) {
@@ -705,7 +698,7 @@ export function descriptorFor(obj, keyName, _meta) {
 /**
   Check whether a value is a CP descriptor.
 
-  @method descriptorFor
+  @method isDescriptor
   @param {any} possibleDesc the value to check
   @return {boolean}
   @private

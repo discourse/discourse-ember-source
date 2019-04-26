@@ -1,3 +1,4 @@
+import { ENV } from '@ember/-internals/environment';
 import { runInTransaction, setHasViews } from '@ember/-internals/metal';
 import { fallbackViewRegistry, getViewElement, getViewId, setViewElement, } from '@ember/-internals/views';
 import { assert } from '@ember/debug';
@@ -145,7 +146,7 @@ let loops = 0;
 function loopEnd() {
     for (let i = 0; i < renderers.length; i++) {
         if (!renderers[i]._isValid()) {
-            if (loops > 10) {
+            if (loops > ENV._RERENDER_LOOP_LIMIT) {
                 loops = 0;
                 // TODO: do something better
                 renderers[i].destroy();

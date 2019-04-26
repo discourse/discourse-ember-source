@@ -5,7 +5,6 @@ import AssertReservedNamedArguments from './assert-reserved-named-arguments';
 import AssertSplattributeExpressions from './assert-splattribute-expression';
 import DeprecateSendAction from './deprecate-send-action';
 import TransformActionSyntax from './transform-action-syntax';
-import TransformAngleBracketComponents from './transform-angle-bracket-components';
 import TransformAttrsIntoArgs from './transform-attrs-into-args';
 import TransformComponentInvocation from './transform-component-invocation';
 import TransformEachInIntoEach from './transform-each-in-into-each';
@@ -15,12 +14,9 @@ import TransformInlineLinkTo from './transform-inline-link-to';
 import TransformInputTypeSyntax from './transform-input-type-syntax';
 import TransformOldClassBindingSyntax from './transform-old-class-binding-syntax';
 import TransformQuotedBindingsIntoJustBindings from './transform-quoted-bindings-into-just-bindings';
-import TransformTopLevelComponents from './transform-top-level-components';
 import { SEND_ACTION } from '@ember/deprecated-features';
 const transforms = [
     TransformComponentInvocation,
-    TransformAngleBracketComponents,
-    TransformTopLevelComponents,
     TransformInlineLinkTo,
     TransformOldClassBindingSyntax,
     TransformQuotedBindingsIntoJustBindings,

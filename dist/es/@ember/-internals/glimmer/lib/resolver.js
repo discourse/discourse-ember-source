@@ -100,8 +100,6 @@ export default class RuntimeResolver {
      * Called while executing Append Op.PushDynamicComponentManager if string
      */
     lookupComponentDefinition(name, meta) {
-        assert('You cannot use `textarea` as a component name.', name !== 'textarea');
-        assert('You cannot use `input` as a component name.', name !== 'input');
         let handle = this.lookupComponentHandle(name, meta);
         if (handle === null) {
             assert(`Could not find component named "${name}" (no component or template with that name was found)`);
@@ -214,7 +212,7 @@ export default class RuntimeResolver {
         return (vm, args) => {
             const helper = factory.create();
             if (isSimpleHelper(helper)) {
-                return new SimpleHelperReference(helper.compute, args.capture());
+                return SimpleHelperReference.create(helper.compute, args.capture());
             }
             vm.newDestroyable(helper);
             return ClassBasedHelperReference.create(helper, args.capture());
@@ -253,6 +251,8 @@ export default class RuntimeResolver {
         return { name, namespace };
     }
     _lookupComponentDefinition(_name, meta) {
+        assert('You cannot use `textarea` as a component name.', _name !== 'textarea');
+        assert('You cannot use `input` as a component name.', _name !== 'input');
         let name = _name;
         let namespace = undefined;
         if (EMBER_MODULE_UNIFICATION) {

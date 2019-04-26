@@ -1,3 +1,3 @@
 module Ember
-  VERSION = '3.8.0.1'.freeze
+  VERSION = '3.9.0.0'.freeze
 end
