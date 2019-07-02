@@ -1,7 +1,6 @@
 /**
 @module ember
 */
-
 import { context } from '@ember/-internals/environment';
 import { get, Mixin, computed } from '@ember/-internals/metal';
 import { assert } from '@ember/debug';
@@ -17,19 +16,21 @@ doing more complex event handling in Components.
 @extends Mixin
 @private
 */
+
 export default Mixin.create({
   target: null,
   action: null,
   actionContext: null,
-
-  actionContextObject: computed('actionContext', function() {
+  actionContextObject: computed('actionContext', function () {
     let actionContext = get(this, 'actionContext');
 
     if (typeof actionContext === 'string') {
       let value = get(this, actionContext);
+
       if (value === undefined) {
         value = get(context.lookup, actionContext);
       }
+
       return value;
     } else {
       return actionContext;
@@ -39,11 +40,9 @@ export default Mixin.create({
   /**
   Send an `action` with an `actionContext` to a `target`. The action, actionContext
   and target will be retrieved from properties of the object. For example:
-
-  ```javascript
+   ```javascript
   import { alias } from '@ember/object/computed';
-
-  App.SaveButtonView = Ember.View.extend(Ember.TargetActionSupport, {
+   App.SaveButtonView = Ember.View.extend(Ember.TargetActionSupport, {
     target: alias('controller'),
     action: 'save',
     actionContext: alias('context'),
@@ -53,11 +52,9 @@ export default Mixin.create({
     }
   });
   ```
-
-  The `target`, `action`, and `actionContext` can be provided as properties of
+   The `target`, `action`, and `actionContext` can be provided as properties of
   an optional object argument to `triggerAction` as well.
-
-  ```javascript
+   ```javascript
   App.SaveButtonView = Ember.View.extend(Ember.TargetActionSupport, {
     click() {
       this.triggerAction({
@@ -69,15 +66,12 @@ export default Mixin.create({
     }
   });
   ```
-
-  The `actionContext` defaults to the object you are mixing `TargetActionSupport` into.
+   The `actionContext` defaults to the object you are mixing `TargetActionSupport` into.
   But `target` and `action` must be specified either as properties or with the argument
   to `triggerAction`, or a combination:
-
-  ```javascript
+   ```javascript
   import { alias } from '@ember/object/computed';
-
-  App.SaveButtonView = Ember.View.extend(Ember.TargetActionSupport, {
+   App.SaveButtonView = Ember.View.extend(Ember.TargetActionSupport, {
     target: alias('controller'),
     click() {
       this.triggerAction({
@@ -87,14 +81,17 @@ export default Mixin.create({
     }
   });
   ```
-
-  @method triggerAction
+   @method triggerAction
   @param opts {Object} (optional, with the optional keys action, target and/or actionContext)
   @return {Boolean} true if the action was sent successfully and did not return false
   @private
   */
   triggerAction(opts = {}) {
-    let { action, target, actionContext } = opts;
+    let {
+      action,
+      target,
+      actionContext
+    } = opts;
     action = action || get(this, 'action');
     target = target || getTarget(this);
 
@@ -108,10 +105,7 @@ export default Mixin.create({
       if (target.send) {
         ret = target.send(...[action].concat(actionContext));
       } else {
-        assert(
-          `The action '${action}' did not exist on ${target}`,
-          typeof target[action] === 'function'
-        );
+        assert(`The action '${action}' did not exist on ${target}`, typeof target[action] === 'function');
         ret = target[action](...[].concat(actionContext));
       }
 
@@ -121,14 +115,17 @@ export default Mixin.create({
     }
 
     return false;
-  },
+  }
+
 });
 
 function getTarget(instance) {
   let target = get(instance, 'target');
+
   if (target) {
     if (typeof target === 'string') {
       let value = get(instance, target);
+
       if (value === undefined) {
         value = get(context.lookup, target);
       }

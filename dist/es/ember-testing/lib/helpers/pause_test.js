@@ -3,9 +3,7 @@
 */
 import { RSVP } from '@ember/-internals/runtime';
 import { assert, info } from '@ember/debug';
-
 let resume;
-
 /**
  Resumes a test paused by `pauseTest`.
 
@@ -13,12 +11,12 @@ let resume;
  @return {void}
  @public
 */
+
 export function resumeTest() {
   assert('Testing has not been paused. There is nothing to resume.', resume);
   resume();
   resume = undefined;
 }
-
 /**
  Pauses the current test - this is useful for debugging while testing or for test-driving.
  It allows you to inspect the state of your application at any point.
@@ -56,9 +54,9 @@ export function resumeTest() {
  @return {Object} A promise that will never resolve
  @public
 */
+
 export function pauseTest() {
   info('Testing paused. Use `resumeTest()` to continue.');
-
   return new RSVP.Promise(resolve => {
     resume = resolve;
   }, 'TestAdapter paused promise');

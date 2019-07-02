@@ -1,6 +1,7 @@
 /**
 @module ember
 */
+
 /**
   Simulates a key event, e.g. `keypress`, `keydown`, `keyup` with the desired keyCode
   Example:
@@ -31,6 +32,6 @@ export default function keyEvent(app, selector, contextOrType, typeOrKeyCode, ke
 
   return app.testHelpers.triggerEvent(selector, context, type, {
     keyCode,
-    which: keyCode,
+    which: keyCode
   });
 }

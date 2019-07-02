@@ -181,7 +181,7 @@ function detectImplementation(options) {
             implementation = 'history';
         }
         else if (currentPath.substr(0, 2) === '/#') {
-            history.replaceState({ path: historyPath }, undefined, historyPath);
+            history.replaceState({ path: historyPath }, '', historyPath);
             implementation = 'history';
         }
         else {

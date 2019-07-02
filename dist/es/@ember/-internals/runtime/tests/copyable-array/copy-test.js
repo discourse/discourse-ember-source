@@ -7,6 +7,7 @@ class CopyTest extends AbstractTestCase {
     let copy = obj.copy();
     this.assert.ok(this.isEqual(obj, copy), 'old object and new object should be equivalent');
   }
+
 }
 
 runArrayTests('copy', CopyTest, 'CopyableNativeArray', 'CopyableArray');

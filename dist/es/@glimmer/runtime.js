@@ -1,4 +1,4 @@
-import { initializeGuid, fillNulls, unreachable, dict, Stack, LinkedList, EMPTY_ARRAY, ListSlice, isSerializationFirstNode } from '@glimmer/util';
+import { initializeGuid, fillNulls, unreachable, dict, Stack, LinkedList, EMPTY_ARRAY, ListSlice } from '@glimmer/util';
 import { ConstReference, CachedReference, combineTagged, isConst, CONSTANT_TAG, isModified, ReferenceCache, isConstTag, ReferenceIterator, IteratorSynchronizer, combine, UpdatableTag, combineSlice, INITIAL } from '@glimmer/reference';
 import { Register } from '@glimmer/vm';
 import { Stack as Stack$1 } from '@glimmer/low-level';
@@ -857,7 +857,7 @@ APPEND_OPCODES.add(73 /* PushDynamicComponentInstance */, vm => {
     }
     stack.push({ definition, capabilities, manager, state: null, handle: null, table: null });
 });
-APPEND_OPCODES.add(74 /* PushCurriedComponent */, (vm, { op1: _meta }) => {
+APPEND_OPCODES.add(74 /* PushCurriedComponent */, (vm, {}) => {
     let stack = vm.stack;
     let component = stack.pop().value();
     let definition;
@@ -3761,6 +3761,10 @@ const MINIMAL_CAPABILITIES = {
     createInstance: false
 };
 
+const SERIALIZATION_FIRST_NODE_STRING = '%+b:0%';
+function isSerializationFirstNode(node) {
+    return node.nodeValue === SERIALIZATION_FIRST_NODE_STRING;
+}
 class RehydratingCursor extends Cursor {
     constructor(element, nextSibling, startingBlockDepth) {
         super(element, nextSibling);
@@ -4116,4 +4120,4 @@ function rehydrationBuilder(env, cursor) {
     return RehydrateBuilder.forInitialRender(env, cursor);
 }
 
-export { renderMain, renderComponent, NULL_REFERENCE, UNDEFINED_REFERENCE, PrimitiveReference, ConditionalReference, setDebuggerCallback, resetDebuggerCallback, getDynamicVar, VM as LowLevelVM, UpdatingVM, RenderResult, SimpleDynamicAttribute, DynamicAttribute, EMPTY_ARGS, Scope, Environment, DefaultEnvironment, DEFAULT_CAPABILITIES, MINIMAL_CAPABILITIES, CurriedComponentDefinition, isCurriedComponentDefinition, curry, helper$1 as DOMChanges, SVG_NAMESPACE, DOMChanges as IDOMChanges, DOMTreeConstruction, isWhitespace, normalizeProperty, NewElementBuilder, clientBuilder, rehydrationBuilder, RehydrateBuilder, ConcreteBounds, Cursor, capabilityFlagsFrom, hasCapability };
+export { renderMain, renderComponent, NULL_REFERENCE, UNDEFINED_REFERENCE, PrimitiveReference, ConditionalReference, setDebuggerCallback, resetDebuggerCallback, getDynamicVar, VM as LowLevelVM, UpdatingVM, RenderResult, SimpleDynamicAttribute, DynamicAttribute, EMPTY_ARGS, Scope, Environment, DefaultEnvironment, DEFAULT_CAPABILITIES, MINIMAL_CAPABILITIES, CurriedComponentDefinition, isCurriedComponentDefinition, curry, helper$1 as DOMChanges, SVG_NAMESPACE, DOMChanges as IDOMChanges, DOMTreeConstruction, isWhitespace, normalizeProperty, NewElementBuilder, clientBuilder, rehydrationBuilder, RehydrateBuilder, SERIALIZATION_FIRST_NODE_STRING, isSerializationFirstNode, ConcreteBounds, Cursor, capabilityFlagsFrom, hasCapability };

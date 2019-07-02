@@ -1,19 +1,12 @@
 /**
 @module @ember/engine
 */
-
 import { guidFor } from '@ember/-internals/utils';
-import {
-  Object as EmberObject,
-  ContainerProxyMixin,
-  RegistryProxyMixin,
-  RSVP,
-} from '@ember/-internals/runtime';
+import { Object as EmberObject, ContainerProxyMixin, RegistryProxyMixin, RSVP } from '@ember/-internals/runtime';
 import { assert } from '@ember/debug';
 import EmberError from '@ember/error';
 import { Registry, privatize as P } from '@ember/-internals/container';
 import { getEngineParent, setEngineParent } from './lib/engine-parent';
-
 /**
   The `EngineInstance` encapsulates all of the stateful aspects of a
   running `Engine`.
@@ -28,8 +21,7 @@ import { getEngineParent, setEngineParent } from './lib/engine-parent';
 const EngineInstance = EmberObject.extend(RegistryProxyMixin, ContainerProxyMixin, {
   /**
     The base `Engine` for which this is an instance.
-
-    @property {Engine} engine
+     @property {Engine} engine
     @private
   */
   base: null,
@@ -38,35 +30,31 @@ const EngineInstance = EmberObject.extend(RegistryProxyMixin, ContainerProxyMixi
     this._super(...arguments);
 
     guidFor(this);
-
     let base = this.base;
 
     if (!base) {
       base = this.application;
       this.base = base;
-    }
-
-    // Create a per-instance registry that will use the application's registry
+    } // Create a per-instance registry that will use the application's registry
     // as a fallback for resolving registrations.
-    let registry = (this.__registry__ = new Registry({
-      fallback: base.__registry__,
-    }));
 
-    // Create a per-instance container from the instance's registry
-    this.__container__ = registry.container({ owner: this });
 
+    let registry = this.__registry__ = new Registry({
+      fallback: base.__registry__
+    }); // Create a per-instance container from the instance's registry
+
+    this.__container__ = registry.container({
+      owner: this
+    });
     this._booted = false;
   },
 
   /**
     Initialize the `EngineInstance` and return a promise that resolves
     with the instance itself when the boot process is complete.
-
-    The primary task here is to run any registered instance initializers.
-
-    See the documentation on `BootOptions` for the options it takes.
-
-    @public
+     The primary task here is to run any registered instance initializers.
+     See the documentation on `BootOptions` for the options it takes.
+     @public
     @method boot
     @param options {Object}
     @return {Promise<EngineInstance,Error>}
@@ -77,7 +65,6 @@ const EngineInstance = EmberObject.extend(RegistryProxyMixin, ContainerProxyMixi
     }
 
     this._bootPromise = new RSVP.Promise(resolve => resolve(this._bootSync(options)));
-
     return this._bootPromise;
   },
 
@@ -86,33 +73,23 @@ const EngineInstance = EmberObject.extend(RegistryProxyMixin, ContainerProxyMixi
     synchronous – specifically, a lot of tests assume the last call to
     `app.advanceReadiness()` or `app.reset()` will result in a new instance
     being fully-booted when the current runloop completes.
-
-    We would like new code (like the `visit` API) to stop making this
+     We would like new code (like the `visit` API) to stop making this
     assumption, so we created the asynchronous version above that returns a
     promise. But until we have migrated all the code, we would have to expose
     this method for use *internally* in places where we need to boot an instance
     synchronously.
-
-    @private
+     @private
   */
   _bootSync(options) {
     if (this._booted) {
       return this;
     }
 
-    assert(
-      "An engine instance's parent must be set via `setEngineParent(engine, parent)` prior to calling `engine.boot()`.",
-      getEngineParent(this)
-    );
-
+    assert("An engine instance's parent must be set via `setEngineParent(engine, parent)` prior to calling `engine.boot()`.", getEngineParent(this));
     this.cloneParentDependencies();
-
     this.setupRegistry(options);
-
     this.base.runInstanceInitializers(this);
-
     this._booted = true;
-
     return this;
   },
 
@@ -122,26 +99,23 @@ const EngineInstance = EmberObject.extend(RegistryProxyMixin, ContainerProxyMixi
 
   /**
    Unregister a factory.
-
-   Overrides `RegistryProxy#unregister` in order to clear any cached instances
+    Overrides `RegistryProxy#unregister` in order to clear any cached instances
    of the unregistered factory.
-
-   @public
+    @public
    @method unregister
    @param {String} fullName
    */
   unregister(fullName) {
     this.__container__.reset(fullName);
+
     this._super(...arguments);
   },
 
   /**
     Build a new `EngineInstance` that's a child of this instance.
-
-    Engines must be registered by name with their parent engine
+     Engines must be registered by name with their parent engine
     (or application).
-
-    @private
+     @private
     @method buildChildEngineInstance
     @param name {String} the registered name of the engine.
     @param options {Object} options provided to the engine instance.
@@ -151,54 +125,41 @@ const EngineInstance = EmberObject.extend(RegistryProxyMixin, ContainerProxyMixi
     let Engine = this.lookup(`engine:${name}`);
 
     if (!Engine) {
-      throw new EmberError(
-        `You attempted to mount the engine '${name}', but it is not registered with its parent.`
-      );
+      throw new EmberError(`You attempted to mount the engine '${name}', but it is not registered with its parent.`);
     }
 
     let engineInstance = Engine.buildInstance(options);
-
     setEngineParent(engineInstance, this);
-
     return engineInstance;
   },
 
   /**
     Clone dependencies shared between an engine instance and its parent.
-
-    @private
+     @private
     @method cloneParentDependencies
   */
   cloneParentDependencies() {
     let parent = getEngineParent(this);
-
     let registrations = ['route:basic', 'service:-routing', 'service:-glimmer-environment'];
-
     registrations.forEach(key => this.register(key, parent.resolveRegistration(key)));
-
     let env = parent.lookup('-environment:main');
-    this.register('-environment:main', env, { instantiate: false });
-
-    let singletons = [
-      'router:main',
-      P`-bucket-cache:main`,
-      '-view-registry:main',
-      `renderer:-${env.isInteractive ? 'dom' : 'inert'}`,
-      'service:-document',
-      P`template-compiler:main`,
-    ];
+    this.register('-environment:main', env, {
+      instantiate: false
+    });
+    let singletons = ['router:main', P`-bucket-cache:main`, '-view-registry:main', `renderer:-${env.isInteractive ? 'dom' : 'inert'}`, 'service:-document', P`template-compiler:main`];
 
     if (env.isInteractive) {
       singletons.push('event_dispatcher:main');
     }
 
-    singletons.forEach(key => this.register(key, parent.lookup(key), { instantiate: false }));
-
+    singletons.forEach(key => this.register(key, parent.lookup(key), {
+      instantiate: false
+    }));
     this.inject('view', '_environment', '-environment:main');
     this.inject('route', '_environment', '-environment:main');
-  },
-});
+  }
 
+});
 EngineInstance.reopenClass({
   /**
    @private
@@ -222,7 +183,7 @@ EngineInstance.reopenClass({
       registry.injection('view', 'renderer', 'renderer:-inert');
       registry.injection('component', 'renderer', 'renderer:-inert');
     }
-  },
-});
+  }
 
+});
 export default EngineInstance;

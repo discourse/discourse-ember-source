@@ -1,24 +1,8 @@
 /**
 @module @ember/object
 */
-
-import {
-  get,
-  getWithDefault,
-  set,
-  getProperties,
-  setProperties,
-  Mixin,
-  hasListeners,
-  beginPropertyChanges,
-  notifyPropertyChange,
-  endPropertyChanges,
-  addObserver,
-  removeObserver,
-  getCachedValueFor,
-} from '@ember/-internals/metal';
+import { get, getWithDefault, set, getProperties, setProperties, Mixin, hasListeners, beginPropertyChanges, notifyPropertyChange, endPropertyChanges, addObserver, removeObserver, getCachedValueFor } from '@ember/-internals/metal';
 import { assert } from '@ember/debug';
-
 /**
   ## Overview
 
@@ -89,44 +73,35 @@ import { assert } from '@ember/debug';
   @class Observable
   @public
 */
+
 export default Mixin.create({
   /**
     Retrieves the value of a property from the object.
-
-    This method is usually similar to using `object[keyName]` or `object.keyName`,
+     This method is usually similar to using `object[keyName]` or `object.keyName`,
     however it supports both computed properties and the unknownProperty
     handler.
-
-    Because `get` unifies the syntax for accessing all these kinds
+     Because `get` unifies the syntax for accessing all these kinds
     of properties, it can make many refactorings easier, such as replacing a
     simple property with a computed property, or vice versa.
-
-    ### Computed Properties
-
-    Computed properties are methods defined with the `property` modifier
+     ### Computed Properties
+     Computed properties are methods defined with the `property` modifier
     declared at the end, such as:
-
-    ```javascript
+     ```javascript
     import { computed } from '@ember/object';
-
-    fullName: computed('firstName', 'lastName', function() {
+     fullName: computed('firstName', 'lastName', function() {
       return this.get('firstName') + ' ' + this.get('lastName');
     })
     ```
-
-    When you call `get` on a computed property, the function will be
+     When you call `get` on a computed property, the function will be
     called and the return value will be returned instead of the function
     itself.
-
-    ### Unknown Properties
-
-    Likewise, if you try to call `get` on a property whose value is
+     ### Unknown Properties
+     Likewise, if you try to call `get` on a property whose value is
     `undefined`, the `unknownProperty()` method will be called on the object.
     If this method returns any value other than `undefined`, it will be returned
     instead. This allows you to implement "virtual" properties that are
     not defined upfront.
-
-    @method get
+     @method get
     @param {String} keyName The property to retrieve
     @return {Object} The property value or undefined.
     @public
@@ -138,20 +113,16 @@ export default Mixin.create({
   /**
     To get the values of multiple properties at once, call `getProperties`
     with a list of strings or an array:
-
-    ```javascript
+     ```javascript
     record.getProperties('firstName', 'lastName', 'zipCode');
     // { firstName: 'John', lastName: 'Doe', zipCode: '10011' }
     ```
-
-    is equivalent to:
-
-    ```javascript
+     is equivalent to:
+     ```javascript
     record.getProperties(['firstName', 'lastName', 'zipCode']);
     // { firstName: 'John', lastName: 'Doe', zipCode: '10011' }
     ```
-
-    @method getProperties
+     @method getProperties
     @param {String...|Array} list of keys to get
     @return {Object}
     @public
@@ -162,43 +133,34 @@ export default Mixin.create({
 
   /**
     Sets the provided key or path to the value.
-
-    ```javascript
+     ```javascript
     record.set("key", value);
     ```
-
-    This method is generally very similar to calling `object["key"] = value` or
+     This method is generally very similar to calling `object["key"] = value` or
     `object.key = value`, except that it provides support for computed
     properties, the `setUnknownProperty()` method and property observers.
-
-    ### Computed Properties
-
-    If you try to set a value on a key that has a computed property handler
+     ### Computed Properties
+     If you try to set a value on a key that has a computed property handler
     defined (see the `get()` method for an example), then `set()` will call
     that method, passing both the value and key instead of simply changing
     the value itself. This is useful for those times when you need to
     implement a property that is composed of one or more member
     properties.
-
-    ### Unknown Properties
-
-    If you try to set a value on a key that is undefined in the target
+     ### Unknown Properties
+     If you try to set a value on a key that is undefined in the target
     object, then the `setUnknownProperty()` handler will be called instead. This
     gives you an opportunity to implement complex "virtual" properties that
     are not predefined on the object. If `setUnknownProperty()` returns
     undefined, then `set()` will simply set the value on the object.
-
-    ### Property Observers
-
-    In addition to changing the property, `set()` will also register a property
+     ### Property Observers
+     In addition to changing the property, `set()` will also register a property
     change with the object. Unless you have placed this call inside of a
     `beginPropertyChanges()` and `endPropertyChanges(),` any "local" observers
     (i.e. observer methods declared on the same object), will be called
     immediately. Any "remote" observers (i.e. observer methods declared on
     another object) will be placed in a queue and called at a later time in a
     coalesced manner.
-
-    @method set
+     @method set
     @param {String} keyName The property to set
     @param {Object} value The value to set or `null`.
     @return {Object} The passed value
@@ -212,12 +174,10 @@ export default Mixin.create({
     Sets a list of properties at once. These properties are set inside
     a single `beginPropertyChanges` and `endPropertyChanges` batch, so
     observers will be buffered.
-
-    ```javascript
+     ```javascript
     record.setProperties({ firstName: 'Charles', lastName: 'Jolley' });
     ```
-
-    @method setProperties
+     @method setProperties
     @param {Object} hash the hash of keys and values to set
     @return {Object} The passed in hash
     @public
@@ -228,16 +188,14 @@ export default Mixin.create({
 
   /**
     Begins a grouping of property changes.
-
-    You can use this method to group property changes so that notifications
+     You can use this method to group property changes so that notifications
     will not be sent until the changes are finished. If you plan to make a
     large number of changes to an object at one time, you should call this
     method at the beginning of the changes to begin deferring change
     notifications. When you are done making changes, call
     `endPropertyChanges()` to deliver the deferred change notifications and end
     deferring.
-
-    @method beginPropertyChanges
+     @method beginPropertyChanges
     @return {Observable}
     @private
   */
@@ -248,15 +206,13 @@ export default Mixin.create({
 
   /**
     Ends a grouping of property changes.
-
-    You can use this method to group property changes so that notifications
+     You can use this method to group property changes so that notifications
     will not be sent until the changes are finished. If you plan to make a
     large number of changes to an object at one time, you should call
     `beginPropertyChanges()` at the beginning of the changes to defer change
     notifications. When you are done making changes, call this method to
     deliver the deferred change notifications and end deferring.
-
-    @method endPropertyChanges
+     @method endPropertyChanges
     @return {Observable}
     @private
   */
@@ -267,13 +223,11 @@ export default Mixin.create({
 
   /**
     Notify the observer system that a property has just changed.
-
-    Sometimes you need to change a value directly or indirectly without
+     Sometimes you need to change a value directly or indirectly without
     actually calling `get()` or `set()` on it. In this case, you can use this
     method instead. Calling this method will notify all observers that the
     property has potentially changed value.
-
-    @method notifyPropertyChange
+     @method notifyPropertyChange
     @param {String} keyName The property key to be notified about.
     @return {Observable}
     @public
@@ -285,15 +239,12 @@ export default Mixin.create({
 
   /**
     Adds an observer on a property.
-
-    This is the core method used to register an observer for a property.
-
-    Once you call this method, any time the key's value is set, your observer
+     This is the core method used to register an observer for a property.
+     Once you call this method, any time the key's value is set, your observer
     will be notified. Note that the observers are triggered any time the
     value is set, regardless of whether it has actually changed. Your
     observer should be prepared to handle that.
-
-    There are two common invocation patterns for `.addObserver()`:
+     There are two common invocation patterns for `.addObserver()`:
     
     - Passing two arguments:
       - the name of the property to observe (as a string)
@@ -304,61 +255,47 @@ export default Mixin.create({
         function on)
       - the name of the function to invoke on the target object
         (as a string).
-
-    ```app/components/my-component.js
+     ```app/components/my-component.js
     import Component from '@ember/component';
-
-    export default Component.extend({
+     export default Component.extend({
       init() {
         this._super(...arguments);
-
-        // the following are equivalent:
-
-        // using three arguments
+         // the following are equivalent:
+         // using three arguments
         this.addObserver('foo', this, 'fooDidChange');
-
-        // using two arguments
+         // using two arguments
         this.addObserver('foo', (...args) => {
           this.fooDidChange(...args);
         });
       },
-
-      fooDidChange() {
+       fooDidChange() {
         // your custom logic code
       }
     });
     ```
-
-    ### Observer Methods
-
-    Observer methods have the following signature:
-
-    ```app/components/my-component.js
+     ### Observer Methods
+     Observer methods have the following signature:
+     ```app/components/my-component.js
     import Component from '@ember/component';
-
-    export default Component.extend({
+     export default Component.extend({
       init() {
         this._super(...arguments);
         this.addObserver('foo', this, 'fooDidChange');
       },
-
-      fooDidChange(sender, key, value, rev) {
+       fooDidChange(sender, key, value, rev) {
         // your code
       }
     });
     ```
-
-    The `sender` is the object that changed. The `key` is the property that
+     The `sender` is the object that changed. The `key` is the property that
     changes. The `value` property is currently reserved and unused. The `rev`
     is the last property revision of the object when it changed, which you can
     use to detect if the key value has really changed or not.
-
-    Usually you will not need the value or revision parameters at
+     Usually you will not need the value or revision parameters at
     the end. In this case, it is common to write observer methods that take
     only a sender and key value as parameters or, if you aren't interested in
     any of these values, to write an observer that has no parameters at all.
-
-    @method addObserver
+     @method addObserver
     @param {String} key The key to observe
     @param {Object} target The target object to invoke
     @param {String|Function} method The method to invoke
@@ -374,8 +311,7 @@ export default Mixin.create({
     Remove an observer you have previously registered on this object. Pass
     the same key, target, and method you passed to `addObserver()` and your
     target will no longer receive notifications.
-
-    @method removeObserver
+     @method removeObserver
     @param {String} key The key to observe
     @param {Object} target The target object to invoke
     @param {String|Function} method The method to invoke
@@ -392,8 +328,7 @@ export default Mixin.create({
     particular key. You can use this method to potentially defer performing
     an expensive action until someone begins observing a particular property
     on the object.
-
-    @method hasObserverFor
+     @method hasObserverFor
     @param {String} key Key to check
     @return {Boolean}
     @private
@@ -405,12 +340,10 @@ export default Mixin.create({
   /**
     Retrieves the value of a property, or a default value in the case that the
     property returns `undefined`.
-
-    ```javascript
+     ```javascript
     person.getWithDefault('lastName', 'Doe');
     ```
-
-    @method getWithDefault
+     @method getWithDefault
     @param {String} keyName The name of the property to retrieve
     @param {Object} defaultValue The value to return if the property value is undefined
     @return {Object} The property value or the defaultValue.
@@ -422,57 +355,45 @@ export default Mixin.create({
 
   /**
     Set the value of a property to the current value plus some amount.
-
-    ```javascript
+     ```javascript
     person.incrementProperty('age');
     team.incrementProperty('score', 2);
     ```
-
-    @method incrementProperty
+     @method incrementProperty
     @param {String} keyName The name of the property to increment
     @param {Number} increment The amount to increment by. Defaults to 1
     @return {Number} The new property value
     @public
   */
   incrementProperty(keyName, increment = 1) {
-    assert(
-      'Must pass a numeric value to incrementProperty',
-      !isNaN(parseFloat(increment)) && isFinite(increment)
-    );
+    assert('Must pass a numeric value to incrementProperty', !isNaN(parseFloat(increment)) && isFinite(increment));
     return set(this, keyName, (parseFloat(get(this, keyName)) || 0) + increment);
   },
 
   /**
     Set the value of a property to the current value minus some amount.
-
-    ```javascript
+     ```javascript
     player.decrementProperty('lives');
     orc.decrementProperty('health', 5);
     ```
-
-    @method decrementProperty
+     @method decrementProperty
     @param {String} keyName The name of the property to decrement
     @param {Number} decrement The amount to decrement by. Defaults to 1
     @return {Number} The new property value
     @public
   */
   decrementProperty(keyName, decrement = 1) {
-    assert(
-      'Must pass a numeric value to decrementProperty',
-      !isNaN(parseFloat(decrement)) && isFinite(decrement)
-    );
+    assert('Must pass a numeric value to decrementProperty', !isNaN(parseFloat(decrement)) && isFinite(decrement));
     return set(this, keyName, (get(this, keyName) || 0) - decrement);
   },
 
   /**
     Set the value of a boolean property to the opposite of its
     current value.
-
-    ```javascript
+     ```javascript
     starship.toggleProperty('warpDriveEngaged');
     ```
-
-    @method toggleProperty
+     @method toggleProperty
     @param {String} keyName The name of the property to toggle
     @return {Boolean} The new property value
     @public
@@ -486,13 +407,13 @@ export default Mixin.create({
     This allows you to inspect the value of a computed property
     without accidentally invoking it if it is intended to be
     generated lazily.
-
-    @method cacheFor
+     @method cacheFor
     @param {String} keyName
     @return {Object} The cached value of the computed property, if any
     @public
   */
   cacheFor(keyName) {
     return getCachedValueFor(this, keyName);
-  },
+  }
+
 });

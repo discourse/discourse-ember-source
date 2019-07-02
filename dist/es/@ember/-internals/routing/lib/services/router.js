@@ -1,5 +1,4 @@
 import { Evented } from '@ember/-internals/runtime';
-import { EMBER_ROUTING_ROUTER_SERVICE } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { readOnly } from '@ember/object/computed';
 import Service from '@ember/service';
@@ -15,6 +14,12 @@ if (DEBUG) {
             Object.freeze(transition.to);
         }
     };
+}
+function cleanURL(url, rootURL) {
+    if (rootURL === '/') {
+        return url;
+    }
+    return url.substr(rootURL.length, url.length);
 }
 /**
    The Router service is the public API that provides access to the router.
@@ -46,6 +51,21 @@ if (DEBUG) {
    @class RouterService
  */
 export default class RouterService extends Service {
+    init() {
+        super.init(...arguments);
+        this._router.on('routeWillChange', (transition) => {
+            if (DEBUG) {
+                freezeRouteInfo(transition);
+            }
+            this.trigger('routeWillChange', transition);
+        });
+        this._router.on('routeDidChange', (transition) => {
+            if (DEBUG) {
+                freezeRouteInfo(transition);
+            }
+            this.trigger('routeDidChange', transition);
+        });
+    }
     /**
        Transition the application into another route. The route may
        be either a single route or route path:
@@ -99,7 +119,60 @@ export default class RouterService extends Service {
         return this.transitionTo(...arguments).method('replace');
     }
     /**
-       Generate a URL based on the supplied route name.
+      Generate a URL based on the supplied route name and optionally a model. The
+      URL is returned as a string that can be used for any purpose.
+  
+      In this example, the URL for the `author.books` route for a given author
+      is copied to the clipboard.
+  
+      ```app/components/copy-link.js
+      import Component from '@ember/component';
+      import {inject as service} from '@ember/service';
+  
+      export default Component.extend({
+        router: service('router'),
+        clipboard: service('clipboard')
+  
+        // Provided in the template
+        // { id: 'tomster', name: 'Tomster' }
+        author: null,
+  
+        copyBooksURL() {
+          if (this.author) {
+            const url = this.router.urlFor('author.books', this.author);
+            this.clipboard.set(url);
+            // Clipboard now has /author/tomster/books
+          }
+        }
+      });
+      ```
+  
+      Just like with `transitionTo` and `replaceWith`, `urlFor` can also handle
+      query parameters.
+  
+      ```app/components/copy-link.js
+      import Component from '@ember/component';
+      import {inject as service} from '@ember/service';
+  
+      export default Component.extend({
+        router: service('router'),
+        clipboard: service('clipboard')
+  
+        // Provided in the template
+        // { id: 'tomster', name: 'Tomster' }
+        author: null,
+  
+        copyOnlyEmberBooksURL() {
+          if (this.author) {
+            const url = this.router.urlFor('author.books', this.author, {
+              queryParams: { filter: 'emberjs' }
+            });
+            this.clipboard.set(url);
+            // Clipboard now has /author/tomster/books?filter=emberjs
+          }
+        }
+      });
+      ```
   
        @method urlFor
        @param {String} routeName the name of the route
@@ -138,8 +211,38 @@ export default class RouterService extends Service {
         }
         return true;
     }
+    /**
+       Takes a string URL and returns a `RouteInfo` for the leafmost route represented
+       by the URL. Returns `null` if the URL is not recognized. This method expects to
+       receive the actual URL as seen by the browser including the app's `rootURL`.
+  
+        @method recognize
+        @param {String} url
+        @public
+      */
+    recognize(url) {
+        assert(`You must pass a url that begins with the application's rootURL "${this.rootURL}"`, url.indexOf(this.rootURL) === 0);
+        let internalURL = cleanURL(url, this.rootURL);
+        return this._router._routerMicrolib.recognize(internalURL);
+    }
+    /**
+      Takes a string URL and returns a promise that resolves to a
+      `RouteInfoWithAttributes` for the leafmost route represented by the URL.
+      The promise rejects if the URL is not recognized or an unhandled exception
+      is encountered. This method expects to receive the actual URL as seen by
+      the browser including the app's `rootURL`.
+  
+        @method recognizeAndLoad
+        @param {String} url
+        @public
+     */
+    recognizeAndLoad(url) {
+        assert(`You must pass a url that begins with the application's rootURL "${this.rootURL}"`, url.indexOf(this.rootURL) === 0);
+        let internalURL = cleanURL(url, this.rootURL);
+        return this._router._routerMicrolib.recognizeAndLoad(internalURL);
+    }
 }
-RouterService.reopen({
+RouterService.reopen(Evented, {
     /**
        Name of the current route.
   
@@ -196,13 +299,32 @@ RouterService.reopen({
      */
     currentURL: readOnly('_router.currentURL'),
     /**
-      The `location` property determines the type of URL's that your
+      The `location` property determines the type of URLs your
       application will use.
+  
       The following location types are currently available:
       * `auto`
       * `hash`
       * `history`
       * `none`
+  
+      You can pass a location type to force a particular `location` API
+      implementation to be used in your application. For example, to set
+      the `history` type:
+  
+      ```config/environment.js
+      'use strict';
+  
+      module.exports = function(environment) {
+        let ENV = {
+          modulePrefix: 'router-service',
+          environment,
+          rootURL: '/',
+          locationType: 'history',
+          ...
+        }
+      }
+      ```
   
       @property location
       @default 'hash'
@@ -238,73 +360,15 @@ RouterService.reopen({
       @public
     */
     rootURL: readOnly('_router.rootURL'),
+    /**
+       A `RouteInfo` that represents the current leaf route.
+       It is guaranteed to change whenever a route transition
+       happens (even when that transition only changes parameters
+       and doesn't change the active route)
+  
+       @property currentRoute
+       @type RouteInfo
+       @public
+     */
+    currentRoute: readOnly('_router.currentRoute'),
 });
-if (EMBER_ROUTING_ROUTER_SERVICE) {
-    const cleanURL = function (url, rootURL) {
-        if (rootURL === '/') {
-            return url;
-        }
-        return url.substr(rootURL.length, url.length);
-    };
-    RouterService.reopen(Evented, {
-        init() {
-            this._super(...arguments);
-            this._router.on('routeWillChange', (transition) => {
-                if (DEBUG) {
-                    freezeRouteInfo(transition);
-                }
-                this.trigger('routeWillChange', transition);
-            });
-            this._router.on('routeDidChange', (transition) => {
-                if (DEBUG) {
-                    freezeRouteInfo(transition);
-                }
-                this.trigger('routeDidChange', transition);
-            });
-        },
-        /**
-         A `RouteInfo` that represents the current leaf route.
-         It is guaranteed to change whenever a route transition
-         happens (even when that transition only changes parameters
-         and doesn't change the active route)
-    
-         @property currentRoute
-         @type RouteInfo
-         @category ember-routing-router-service
-         @public
-       */
-        currentRoute: readOnly('_router.currentRoute'),
-        /**
-         Takes a string URL and returns a `RouteInfo` for the leafmost route represented
-         by the URL. Returns `null` if the URL is not recognized. This method expects to
-         receive the actual URL as seen by the browser including the app's `rootURL`.
-    
-          @method recognize
-          @param {String} url
-          @category ember-routing-router-service
-          @public
-        */
-        recognize(url) {
-            assert(`You must pass a url that begins with the application's rootURL "${this.rootURL}"`, url.indexOf(this.rootURL) === 0);
-            let internalURL = cleanURL(url, this.rootURL);
-            return this._router._routerMicrolib.recognize(internalURL);
-        },
-        /**
-          Takes a string URL and returns a promise that resolves to a
-          `RouteInfoWithAttributes` for the leafmost route represented by the URL.
-          The promise rejects if the URL is not recognized or an unhandled exception
-          is encountered. This method expects to receive the actual URL as seen by
-          the browser including the app's `rootURL`.
-    
-            @method recognizeAndLoad
-            @param {String} url
-            @category ember-routing-router-service
-            @public
-         */
-        recognizeAndLoad(url) {
-            assert(`You must pass a url that begins with the application's rootURL "${this.rootURL}"`, url.indexOf(this.rootURL) === 0);
-            let internalURL = cleanURL(url, this.rootURL);
-            return this._router._routerMicrolib.recognizeAndLoad(internalURL);
-        },
-    });
-}

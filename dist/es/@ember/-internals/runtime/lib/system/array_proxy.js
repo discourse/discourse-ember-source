@@ -1,25 +1,14 @@
 /**
 @module @ember/array
 */
-
-import {
-  get,
-  objectAt,
-  alias,
-  PROPERTY_DID_CHANGE,
-  addArrayObserver,
-  removeArrayObserver,
-  replace,
-} from '@ember/-internals/metal';
+import { get, objectAt, alias, PROPERTY_DID_CHANGE, addArrayObserver, removeArrayObserver, replace } from '@ember/-internals/metal';
 import EmberObject from './object';
 import { isArray, MutableArray } from '../mixins/array';
 import { assert } from '@ember/debug';
-
 const ARRAY_OBSERVER_MAPPING = {
   willChange: '_arrangedContentArrayWillChange',
-  didChange: '_arrangedContentArrayDidChange',
+  didChange: '_arrangedContentArrayDidChange'
 };
-
 /**
   An ArrayProxy wraps any other object that implements `Array` and/or
   `MutableArray,` forwarding all requests. This makes it very useful for
@@ -80,39 +69,35 @@ const ARRAY_OBSERVER_MAPPING = {
   @uses MutableArray
   @public
 */
+
 export default class ArrayProxy extends EmberObject {
   init() {
     super.init(...arguments);
-
     /*
       `this._objectsDirtyIndex` determines which indexes in the `this._objects`
       cache are dirty.
-
-      If `this._objectsDirtyIndex === -1` then no indexes are dirty.
+       If `this._objectsDirtyIndex === -1` then no indexes are dirty.
       Otherwise, an index `i` is dirty if `i >= this._objectsDirtyIndex`.
-
-      Calling `objectAt` with a dirty index will cause the `this._objects`
+       Calling `objectAt` with a dirty index will cause the `this._objects`
       cache to be recomputed.
     */
+
     this._objectsDirtyIndex = 0;
     this._objects = null;
-
     this._lengthDirty = true;
     this._length = 0;
-
     this._arrangedContent = null;
+
     this._addArrangedContentArrayObsever();
   }
 
   willDestroy() {
     this._removeArrangedContentArrayObsever();
   }
-
   /**
     The content array. Must be an object that implements `Array` and/or
     `MutableArray.`
-
-    @property content
+     @property content
     @type EmberArray
     @public
   */
@@ -121,36 +106,30 @@ export default class ArrayProxy extends EmberObject {
     Should actually retrieve the object at the specified index from the
     content. You can override this method in subclasses to transform the
     content item to something new.
-
-    This method will only be called if content is non-`null`.
-
-    @method objectAtContent
+     This method will only be called if content is non-`null`.
+     @method objectAtContent
     @param {Number} idx The index to retrieve.
     @return {Object} the value or undefined if none found
     @public
   */
+
+
   objectAtContent(idx) {
     return objectAt(get(this, 'arrangedContent'), idx);
-  }
-
-  // See additional docs for `replace` from `MutableArray`:
+  } // See additional docs for `replace` from `MutableArray`:
   // https://www.emberjs.com/api/ember/3.3/classes/MutableArray/methods/replace?anchor=replace
+
+
   replace(idx, amt, objects) {
-    assert(
-      'Mutating an arranged ArrayProxy is not allowed',
-      get(this, 'arrangedContent') === get(this, 'content')
-    );
+    assert('Mutating an arranged ArrayProxy is not allowed', get(this, 'arrangedContent') === get(this, 'content'));
     this.replaceContent(idx, amt, objects);
   }
-
   /**
     Should actually replace the specified objects on the content array.
     You can override this method in subclasses to transform the content item
     into something new.
-
-    This method will only be called if content is non-`null`.
-
-    @method replaceContent
+     This method will only be called if content is non-`null`.
+     @method replaceContent
     @param {Number} idx The starting index
     @param {Number} amt The number of items to remove from the content.
     @param {EmberArray} objects Optional array of objects to insert or null if no
@@ -158,11 +137,13 @@ export default class ArrayProxy extends EmberObject {
     @return {void}
     @public
   */
+
+
   replaceContent(idx, amt, objects) {
     get(this, 'content').replace(idx, amt, objects);
-  }
+  } // Overriding objectAt is not supported.
 
-  // Overriding objectAt is not supported.
+
   objectAt(idx) {
     if (this._objects === null) {
       this._objects = [];
@@ -170,8 +151,9 @@ export default class ArrayProxy extends EmberObject {
 
     if (this._objectsDirtyIndex !== -1 && idx >= this._objectsDirtyIndex) {
       let arrangedContent = get(this, 'arrangedContent');
+
       if (arrangedContent) {
-        let length = (this._objects.length = get(arrangedContent, 'length'));
+        let length = this._objects.length = get(arrangedContent, 'length');
 
         for (let i = this._objectsDirtyIndex; i < length; i++) {
           this._objects[i] = this.objectAtContent(i);
@@ -179,13 +161,14 @@ export default class ArrayProxy extends EmberObject {
       } else {
         this._objects.length = 0;
       }
+
       this._objectsDirtyIndex = -1;
     }
 
     return this._objects[idx];
-  }
+  } // Overriding length is not supported.
 
-  // Overriding length is not supported.
+
   get length() {
     if (this._lengthDirty) {
       let arrangedContent = get(this, 'arrangedContent');
@@ -209,6 +192,7 @@ export default class ArrayProxy extends EmberObject {
     }
 
     let content = get(this, 'content');
+
     if (content) {
       replace(content, value, removedCount, added);
 
@@ -223,11 +207,13 @@ export default class ArrayProxy extends EmberObject {
       let newLength = arrangedContent ? get(arrangedContent, 'length') : 0;
 
       this._removeArrangedContentArrayObsever();
+
       this.arrayContentWillChange(0, oldLength, newLength);
 
       this._invalidate();
 
       this.arrayContentDidChange(0, oldLength, newLength);
+
       this._addArrangedContentArrayObsever();
     } else if (key === 'content') {
       this._invalidate();
@@ -236,15 +222,11 @@ export default class ArrayProxy extends EmberObject {
 
   _addArrangedContentArrayObsever() {
     let arrangedContent = get(this, 'arrangedContent');
+
     if (arrangedContent) {
       assert("Can't set ArrayProxy's content to itself", arrangedContent !== this);
-      assert(
-        `ArrayProxy expects an Array or ArrayProxy, but you passed ${typeof arrangedContent}`,
-        isArray(arrangedContent) || arrangedContent.isDestroyed
-      );
-
+      assert(`ArrayProxy expects an Array or ArrayProxy, but you passed ${typeof arrangedContent}`, isArray(arrangedContent) || arrangedContent.isDestroyed);
       addArrayObserver(arrangedContent, this, ARRAY_OBSERVER_MAPPING);
-
       this._arrangedContent = arrangedContent;
     }
   }
@@ -259,8 +241,8 @@ export default class ArrayProxy extends EmberObject {
 
   _arrangedContentArrayDidChange(proxy, idx, removedCnt, addedCnt) {
     this.arrayContentWillChange(idx, removedCnt, addedCnt);
-
     let dirtyIndex = idx;
+
     if (dirtyIndex < 0) {
       let length = get(this._arrangedContent, 'length');
       dirtyIndex += length + removedCnt - addedCnt;
@@ -271,7 +253,6 @@ export default class ArrayProxy extends EmberObject {
     }
 
     this._lengthDirty = true;
-
     this.arrayContentDidChange(idx, removedCnt, addedCnt);
   }
 
@@ -279,16 +260,15 @@ export default class ArrayProxy extends EmberObject {
     this._objectsDirtyIndex = 0;
     this._lengthDirty = true;
   }
-}
 
+}
 ArrayProxy.reopen(MutableArray, {
   /**
     The array that the proxy pretends to be. In the default `ArrayProxy`
     implementation, this and `content` are the same. Subclasses of `ArrayProxy`
     can override this property to provide things like sorting and filtering.
-
-    @property arrangedContent
+     @property arrangedContent
     @public
   */
-  arrangedContent: alias('content'),
+  arrangedContent: alias('content')
 });

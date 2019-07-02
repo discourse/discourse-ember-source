@@ -51,11 +51,6 @@ function ensureGuid(object) {
     return object._guid || initializeGuid(object);
 }
 
-const SERIALIZATION_FIRST_NODE_STRING = '%+b:0%';
-function isSerializationFirstNode(node) {
-    return node.nodeValue === SERIALIZATION_FIRST_NODE_STRING;
-}
-
 function dict() {
     return Object.create(null);
 }
@@ -186,4 +181,4 @@ const EMPTY_SLICE = new ListSlice(null, null);
 
 const EMPTY_ARRAY = Object.freeze([]);
 
-export { debugAssert as assert, assign, fillNulls, ensureGuid, initializeGuid, isSerializationFirstNode, SERIALIZATION_FIRST_NODE_STRING, Stack, DictSet, dict, EMPTY_SLICE, LinkedList, ListNode, ListSlice, EMPTY_ARRAY, unwrap, expect, unreachable };
+export { debugAssert as assert, assign, fillNulls, ensureGuid, initializeGuid, Stack, DictSet, dict, EMPTY_SLICE, LinkedList, ListNode, ListSlice, EMPTY_ARRAY, unwrap, expect, unreachable };

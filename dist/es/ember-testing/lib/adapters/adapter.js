@@ -3,7 +3,6 @@ import { Object as EmberObject } from '@ember/-internals/runtime';
 function K() {
   return this;
 }
-
 /**
  @module @ember/test
 */
@@ -15,22 +14,21 @@ function K() {
   @class TestAdapter
   @public
 */
+
+
 export default EmberObject.extend({
   /**
     This callback will be called whenever an async operation is about to start.
-
-    Override this to call your framework's methods that handle async
+     Override this to call your framework's methods that handle async
     operations.
-
-    @public
+     @public
     @method asyncStart
   */
   asyncStart: K,
 
   /**
     This callback will be called whenever an async operation has completed.
-
-    @public
+     @public
     @method asyncEnd
   */
   asyncEnd: K,
@@ -39,20 +37,18 @@ export default EmberObject.extend({
     Override this method with your testing framework's false assertion.
     This function is called whenever an exception occurs causing the testing
     promise to fail.
-
-    QUnit example:
-
-    ```javascript
+     QUnit example:
+     ```javascript
       exception: function(error) {
         ok(false, error);
       };
     ```
-
-    @public
+     @public
     @method exception
     @param {String} error The exception to be raised.
   */
   exception(error) {
     throw error;
-  },
+  }
+
 });

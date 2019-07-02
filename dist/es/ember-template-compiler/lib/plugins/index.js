@@ -10,28 +10,31 @@ import TransformComponentInvocation from './transform-component-invocation';
 import TransformEachInIntoEach from './transform-each-in-into-each';
 import TransformHasBlockSyntax from './transform-has-block-syntax';
 import TransformInElement from './transform-in-element';
-import TransformInlineLinkTo from './transform-inline-link-to';
 import TransformInputTypeSyntax from './transform-input-type-syntax';
+import TransformLinkTo from './transform-link-to';
 import TransformOldClassBindingSyntax from './transform-old-class-binding-syntax';
 import TransformQuotedBindingsIntoJustBindings from './transform-quoted-bindings-into-just-bindings';
+import { EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS } from '@ember/canary-features';
 import { SEND_ACTION } from '@ember/deprecated-features';
 const transforms = [
     TransformComponentInvocation,
-    TransformInlineLinkTo,
     TransformOldClassBindingSyntax,
     TransformQuotedBindingsIntoJustBindings,
     AssertReservedNamedArguments,
     TransformActionSyntax,
-    TransformInputTypeSyntax,
     TransformAttrsIntoArgs,
     TransformEachInIntoEach,
     TransformHasBlockSyntax,
     AssertLocalVariableShadowingHelperInvocation,
+    TransformLinkTo,
     AssertInputHelperWithoutBlock,
     TransformInElement,
     AssertIfHelperWithoutArguments,
     AssertSplattributeExpressions,
 ];
+if (!EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
+    transforms.push(TransformInputTypeSyntax);
+}
 if (SEND_ACTION) {
     transforms.push(DeprecateSendAction);
 }

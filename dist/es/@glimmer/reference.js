@@ -121,10 +121,10 @@ class CachedTag extends RevisionTag {
         this.lastValue = null;
     }
     value() {
-        let { lastChecked, lastValue } = this;
+        let { lastChecked } = this;
         if (lastChecked !== $REVISION) {
             this.lastChecked = $REVISION;
-            this.lastValue = lastValue = this.compute();
+            this.lastValue = this.compute();
         }
         return this.lastValue;
     }

@@ -1,28 +1,16 @@
-import { didRender, get, set, tagFor, tagForProperty, watchKey } from '@ember/-internals/metal';
+import { didRender, get, getCurrentTracker, set, setCurrentTracker, tagFor, tagForProperty, watchKey, } from '@ember/-internals/metal';
 import { isProxy, symbol } from '@ember/-internals/utils';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
+import { debugFreeze } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
 import { combine, CONSTANT_TAG, ConstReference, DirtyableTag, isConst, TagWrapper, UpdatableTag, } from '@glimmer/reference';
-import { ConditionalReference as GlimmerConditionalReference, PrimitiveReference, } from '@glimmer/runtime';
+import { ConditionalReference as GlimmerConditionalReference, PrimitiveReference, UNDEFINED_REFERENCE, } from '@glimmer/runtime';
+import { unreachable } from '@glimmer/util';
 import { RECOMPUTE_TAG } from '../helper';
 import emberToBool from './to-bool';
 export const UPDATE = symbol('UPDATE');
 export const INVOKE = symbol('INVOKE');
 export const ACTION = symbol('ACTION');
-let maybeFreeze;
-if (DEBUG) {
-    // gaurding this in a DEBUG gaurd (as well as all invocations)
-    // so that it is properly stripped during the minification's
-    // dead code elimination
-    maybeFreeze = (obj) => {
-        // re-freezing an already frozen object introduces a significant
-        // performance penalty on Chrome (tested through 59).
-        //
-        // See: https://bugs.chromium.org/p/v8/issues/detail?id=6450
-        if (!Object.isFrozen(obj)) {
-            Object.freeze(obj);
-        }
-    };
-}
 class EmberPathReference {
     get(key) {
         return PropertyReference.create(this, key);
@@ -31,22 +19,25 @@ class EmberPathReference {
 export class CachedReference extends EmberPathReference {
     constructor() {
         super();
-        this._lastRevision = null;
-        this._lastValue = null;
+        this.lastRevision = null;
+        this.lastValue = null;
     }
     value() {
-        let { tag, _lastRevision, _lastValue } = this;
-        if (_lastRevision === null || !tag.validate(_lastRevision)) {
-            _lastValue = this._lastValue = this.compute();
-            this._lastRevision = tag.value();
+        let { tag, lastRevision, lastValue } = this;
+        if (lastRevision === null || !tag.validate(lastRevision)) {
+            lastValue = this.lastValue = this.compute();
+            this.lastRevision = tag.value();
         }
-        return _lastValue;
+        return lastValue;
     }
 }
 export class RootReference extends ConstReference {
     constructor(value) {
         super(value);
         this.children = Object.create(null);
+    }
+    static create(value) {
+        return valueToRef(value);
     }
     get(propertyKey) {
         let ref = this.children[propertyKey];
@@ -58,24 +49,24 @@ export class RootReference extends ConstReference {
 }
 let TwoWayFlushDetectionTag;
 if (DEBUG) {
-    TwoWayFlushDetectionTag = class {
-        static create(tag, key, ref) {
-            return new TagWrapper(tag.type, new TwoWayFlushDetectionTag(tag, key, ref));
-        }
+    TwoWayFlushDetectionTag = class TwoWayFlushDetectionTag {
         constructor(tag, key, ref) {
             this.tag = tag;
-            this.parent = null;
             this.key = key;
             this.ref = ref;
+            this.parent = null;
+        }
+        static create(tag, key, ref) {
+            return new TagWrapper(tag.type, new TwoWayFlushDetectionTag(tag, key, ref));
         }
         value() {
             return this.tag.value();
         }
         validate(ticket) {
-            let { parent, key } = this;
+            let { parent, key, ref } = this;
             let isValid = this.tag.validate(ticket);
             if (isValid && parent) {
-                didRender(parent, key, this.ref);
+                didRender(parent, key, ref);
             }
             return isValid;
         }
@@ -88,7 +79,7 @@ if (DEBUG) {
 export class PropertyReference extends CachedReference {
     static create(parentReference, propertyKey) {
         if (isConst(parentReference)) {
-            return new RootPropertyReference(parentReference.value(), propertyKey);
+            return valueKeyToRef(parentReference.value(), propertyKey);
         }
         else {
             return new NestedPropertyReference(parentReference, propertyKey);
@@ -101,69 +92,104 @@ export class PropertyReference extends CachedReference {
 export class RootPropertyReference extends PropertyReference {
     constructor(parentValue, propertyKey) {
         super();
-        this._parentValue = parentValue;
-        this._propertyKey = propertyKey;
-        if (DEBUG) {
-            this.tag = TwoWayFlushDetectionTag.create(tagForProperty(parentValue, propertyKey), propertyKey, this);
+        this.parentValue = parentValue;
+        this.propertyKey = propertyKey;
+        if (EMBER_METAL_TRACKED_PROPERTIES) {
+            this.propertyTag = UpdatableTag.create(CONSTANT_TAG);
         }
         else {
-            this.tag = tagForProperty(parentValue, propertyKey);
+            this.propertyTag = UpdatableTag.create(tagForProperty(parentValue, propertyKey));
+        }
+        if (DEBUG) {
+            this.tag = TwoWayFlushDetectionTag.create(this.propertyTag, propertyKey, this);
+        }
+        else {
+            this.tag = this.propertyTag;
         }
         if (DEBUG) {
             watchKey(parentValue, propertyKey);
         }
     }
     compute() {
-        let { _parentValue, _propertyKey } = this;
+        let { parentValue, propertyKey } = this;
         if (DEBUG) {
-            this.tag.inner.didCompute(_parentValue);
+            this.tag.inner.didCompute(parentValue);
         }
-        return get(_parentValue, _propertyKey);
+        let parent = null;
+        let tracker = null;
+        if (EMBER_METAL_TRACKED_PROPERTIES) {
+            parent = getCurrentTracker();
+            tracker = setCurrentTracker();
+        }
+        let ret = get(parentValue, propertyKey);
+        if (EMBER_METAL_TRACKED_PROPERTIES) {
+            setCurrentTracker(parent);
+            let tag = tracker.combine();
+            if (parent)
+                parent.add(tag);
+            this.propertyTag.inner.update(tag);
+        }
+        return ret;
     }
     [UPDATE](value) {
-        set(this._parentValue, this._propertyKey, value);
+        set(this.parentValue, this.propertyKey, value);
     }
 }
 export class NestedPropertyReference extends PropertyReference {
     constructor(parentReference, propertyKey) {
         super();
+        this.parentReference = parentReference;
+        this.propertyKey = propertyKey;
         let parentReferenceTag = parentReference.tag;
-        let parentObjectTag = UpdatableTag.create(CONSTANT_TAG);
-        this._parentReference = parentReference;
-        this._parentObjectTag = parentObjectTag;
-        this._propertyKey = propertyKey;
+        let propertyTag = (this.propertyTag = UpdatableTag.create(CONSTANT_TAG));
         if (DEBUG) {
-            let tag = combine([parentReferenceTag, parentObjectTag]);
+            let tag = combine([parentReferenceTag, propertyTag]);
             this.tag = TwoWayFlushDetectionTag.create(tag, propertyKey, this);
         }
         else {
-            this.tag = combine([parentReferenceTag, parentObjectTag]);
+            this.tag = combine([parentReferenceTag, propertyTag]);
         }
     }
     compute() {
-        let { _parentReference, _parentObjectTag, _propertyKey } = this;
-        let parentValue = _parentReference.value();
-        _parentObjectTag.inner.update(tagForProperty(parentValue, _propertyKey));
-        let parentValueType = typeof parentValue;
-        if (parentValueType === 'string' && _propertyKey === 'length') {
-            return parentValue.length;
+        let { parentReference, propertyTag, propertyKey } = this;
+        let _parentValue = parentReference.value();
+        let parentValueType = typeof _parentValue;
+        if (parentValueType === 'string' && propertyKey === 'length') {
+            return _parentValue.length;
         }
-        if ((parentValueType === 'object' && parentValue !== null) || parentValueType === 'function') {
+        if ((parentValueType === 'object' && _parentValue !== null) || parentValueType === 'function') {
+            let parentValue = _parentValue;
             if (DEBUG) {
-                watchKey(parentValue, _propertyKey);
+                watchKey(parentValue, propertyKey);
             }
             if (DEBUG) {
                 this.tag.inner.didCompute(parentValue);
             }
-            return get(parentValue, _propertyKey);
+            let parent = null;
+            let tracker = null;
+            if (EMBER_METAL_TRACKED_PROPERTIES) {
+                parent = getCurrentTracker();
+                tracker = setCurrentTracker();
+            }
+            let ret = get(parentValue, propertyKey);
+            if (EMBER_METAL_TRACKED_PROPERTIES) {
+                setCurrentTracker(parent);
+                let tag = tracker.combine();
+                if (parent)
+                    parent.add(tag);
+                propertyTag.inner.update(tag);
+            }
+            else {
+                propertyTag.inner.update(tagForProperty(parentValue, propertyKey));
+            }
+            return ret;
         }
         else {
             return undefined;
         }
     }
     [UPDATE](value) {
-        let parent = this._parentReference.value();
-        set(parent, this._propertyKey, value);
+        set(this.parentReference.value() /* let the other side handle the error */, this.propertyKey, value);
     }
 }
 export class UpdatableReference extends EmberPathReference {
@@ -187,10 +213,7 @@ export class ConditionalReference extends GlimmerConditionalReference {
     static create(reference) {
         if (isConst(reference)) {
             let value = reference.value();
-            if (isProxy(value)) {
-                return new RootPropertyReference(value, 'isTruthy');
-            }
-            else {
+            if (!isProxy(value)) {
                 return PrimitiveReference.create(emberToBool(value));
             }
         }
@@ -204,7 +227,7 @@ export class ConditionalReference extends GlimmerConditionalReference {
     toBool(predicate) {
         if (isProxy(predicate)) {
             this.objectTag.inner.update(tagForProperty(predicate, 'isTruthy'));
-            return get(predicate, 'isTruthy');
+            return Boolean(get(predicate, 'isTruthy'));
         }
         else {
             this.objectTag.inner.update(tagFor(predicate));
@@ -213,14 +236,20 @@ export class ConditionalReference extends GlimmerConditionalReference {
     }
 }
 export class SimpleHelperReference extends CachedReference {
+    constructor(helper, args) {
+        super();
+        this.helper = helper;
+        this.args = args;
+        this.tag = args.tag;
+    }
     static create(helper, args) {
         if (isConst(args)) {
             let { positional, named } = args;
             let positionalValue = positional.value();
             let namedValue = named.value();
             if (DEBUG) {
-                maybeFreeze(positionalValue);
-                maybeFreeze(namedValue);
+                debugFreeze(positionalValue);
+                debugFreeze(namedValue);
             }
             let result = helper(positionalValue, namedValue);
             return valueToRef(result);
@@ -229,40 +258,34 @@ export class SimpleHelperReference extends CachedReference {
             return new SimpleHelperReference(helper, args);
         }
     }
-    constructor(helper, args) {
-        super();
-        this.tag = args.tag;
-        this.helper = helper;
-        this.args = args;
-    }
     compute() {
         let { helper, args: { positional, named }, } = this;
         let positionalValue = positional.value();
         let namedValue = named.value();
         if (DEBUG) {
-            maybeFreeze(positionalValue);
-            maybeFreeze(namedValue);
+            debugFreeze(positionalValue);
+            debugFreeze(namedValue);
         }
         return helper(positionalValue, namedValue);
     }
 }
 export class ClassBasedHelperReference extends CachedReference {
-    static create(instance, args) {
-        return new ClassBasedHelperReference(instance, args);
-    }
     constructor(instance, args) {
         super();
-        this.tag = combine([instance[RECOMPUTE_TAG], args.tag]);
         this.instance = instance;
         this.args = args;
+        this.tag = combine([instance[RECOMPUTE_TAG], args.tag]);
+    }
+    static create(instance, args) {
+        return new ClassBasedHelperReference(instance, args);
     }
     compute() {
         let { instance, args: { positional, named }, } = this;
         let positionalValue = positional.value();
         let namedValue = named.value();
         if (DEBUG) {
-            maybeFreeze(positionalValue);
-            maybeFreeze(namedValue);
+            debugFreeze(positionalValue);
+            debugFreeze(namedValue);
         }
         return instance.compute(positionalValue, namedValue);
     }
@@ -270,9 +293,9 @@ export class ClassBasedHelperReference extends CachedReference {
 export class InternalHelperReference extends CachedReference {
     constructor(helper, args) {
         super();
-        this.tag = args.tag;
         this.helper = helper;
         this.args = args;
+        this.tag = args.tag;
     }
     compute() {
         let { helper, args } = this;
@@ -284,16 +307,14 @@ export class UnboundReference extends ConstReference {
         return valueToRef(value, false);
     }
     get(key) {
-        return valueToRef(get(this.inner, key), false);
+        return valueToRef(this.inner[key], false);
     }
 }
 export class ReadonlyReference extends CachedReference {
     constructor(inner) {
         super();
         this.inner = inner;
-    }
-    get tag() {
-        return this.inner.tag;
+        this.tag = inner.tag;
     }
     get [INVOKE]() {
         return this.inner[INVOKE];
@@ -312,14 +333,86 @@ export function referenceFromParts(root, parts) {
     }
     return reference;
 }
-export function valueToRef(value, bound = true) {
-    if (value !== null && typeof value === 'object') {
+function isObject(value) {
+    return value !== null && typeof value === 'object';
+}
+function isFunction(value) {
+    return typeof value === 'function';
+}
+function isPrimitive(value) {
+    if (DEBUG) {
+        let type = typeof value;
+        return (value === undefined ||
+            value === null ||
+            type === 'boolean' ||
+            type === 'number' ||
+            type === 'string');
+    }
+    else {
+        return true;
+    }
+}
+function valueToRef(value, bound = true) {
+    if (isObject(value)) {
         // root of interop with ember objects
         return bound ? new RootReference(value) : new UnboundReference(value);
     }
-    // ember doesn't do observing with functions
-    if (typeof value === 'function') {
+    else if (isFunction(value)) {
+        // ember doesn't do observing with functions
         return new UnboundReference(value);
     }
-    return PrimitiveReference.create(value);
+    else if (isPrimitive(value)) {
+        return PrimitiveReference.create(value);
+    }
+    else if (DEBUG) {
+        let type = typeof value;
+        let output;
+        try {
+            output = String(value);
+        }
+        catch (e) {
+            output = null;
+        }
+        if (output) {
+            throw unreachable(`[BUG] Unexpected ${type} (${output})`);
+        }
+        else {
+            throw unreachable(`[BUG] Unexpected ${type}`);
+        }
+    }
+    else {
+        throw unreachable();
+    }
+}
+function valueKeyToRef(value, key) {
+    if (isObject(value)) {
+        // root of interop with ember objects
+        return new RootPropertyReference(value, key);
+    }
+    else if (isFunction(value)) {
+        // ember doesn't do observing with functions
+        return new UnboundReference(value[key]);
+    }
+    else if (isPrimitive(value)) {
+        return UNDEFINED_REFERENCE;
+    }
+    else if (DEBUG) {
+        let type = typeof value;
+        let output;
+        try {
+            output = String(value);
+        }
+        catch (e) {
+            output = null;
+        }
+        if (output) {
+            throw unreachable(`[BUG] Unexpected ${type} (${output})`);
+        }
+        else {
+            throw unreachable(`[BUG] Unexpected ${type}`);
+        }
+    }
+    else {
+        throw unreachable();
+    }
 }

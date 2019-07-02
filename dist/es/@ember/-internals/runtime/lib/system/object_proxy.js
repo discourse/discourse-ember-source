@@ -1,6 +1,5 @@
 import FrameworkObject from './object';
 import _ProxyMixin from '../mixins/-proxy';
-
 /**
   `ObjectProxy` forwards all properties not defined by the proxy itself
   to a proxied `content` object.
@@ -77,5 +76,6 @@ import _ProxyMixin from '../mixins/-proxy';
   @uses Ember.ProxyMixin
   @public
 */
+
 export default class ObjectProxy extends FrameworkObject {}
 ObjectProxy.PrototypeMixin.reopen(_ProxyMixin);

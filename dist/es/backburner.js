@@ -492,7 +492,7 @@ class Backburner {
         };
         this._timerTimeoutId = null;
         this._timers = [];
-        this._autorun = null;
+        this._autorun = false;
         this._autorunStack = null;
         this.queueNames = queueNames;
         this.options = options || {};
@@ -508,10 +508,10 @@ class Backburner {
         this._boundAutorunEnd = () => {
             autorunsCompletedCount++;
             // if the autorun was already flushed, do nothing
-            if (this._autorun === null) {
+            if (this._autorun === false) {
                 return;
             }
-            this._autorun = null;
+            this._autorun = false;
             this._autorunStack = null;
             this._end(true /* fromAutorun */);
         };
@@ -561,7 +561,7 @@ class Backburner {
         let options = this.options;
         let previousInstance = this.currentInstance;
         let current;
-        if (this._autorun !== null) {
+        if (this._autorun !== false) {
             current = previousInstance;
             this._cancelAutorun();
         }
@@ -733,7 +733,7 @@ class Backburner {
         this._cancelAutorun();
     }
     hasTimers() {
-        return this._timers.length > 0 || this._autorun !== null;
+        return this._timers.length > 0 || this._autorun;
     }
     cancel(timer) {
         cancelCount++;
@@ -788,7 +788,8 @@ class Backburner {
             if (!finallyAlreadyCalled) {
                 finallyAlreadyCalled = true;
                 if (result === 1 /* Pause */) {
-                    this._scheduleAutorun();
+                    const plannedNextQueue = this.queueNames[currentInstance.queueNameIndex];
+                    this._scheduleAutorun(plannedNextQueue);
                 }
                 else {
                     this.currentInstance = null;
@@ -837,9 +838,9 @@ class Backburner {
         }
     }
     _cancelAutorun() {
-        if (this._autorun !== null) {
-            this._platform.clearNext(this._autorun);
-            this._autorun = null;
+        if (this._autorun) {
+            this._platform.clearNext();
+            this._autorun = false;
             this._autorunStack = null;
         }
     }
@@ -947,14 +948,21 @@ class Backburner {
         if (currentInstance === null) {
             this._autorunStack = this.DEBUG ? new Error() : undefined;
             currentInstance = this.begin();
-            this._scheduleAutorun();
+            this._scheduleAutorun(this.queueNames[0]);
         }
         return currentInstance;
     }
-    _scheduleAutorun() {
+    _scheduleAutorun(plannedNextQueue) {
         autorunsCreatedCount++;
         const next = this._platform.next;
-        this._autorun = next();
+        const flush = this.options.flush;
+        if (flush) {
+            flush(plannedNextQueue, next);
+        }
+        else {
+            next();
+        }
+        this._autorun = true;
     }
 }
 Backburner.Queue = Queue;

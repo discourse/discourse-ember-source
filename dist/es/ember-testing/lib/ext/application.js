@@ -5,15 +5,13 @@ import TestPromise, { resolve, getLastPromise } from '../test/promise';
 import run from '../test/run';
 import { invokeInjectHelpersCallbacks } from '../test/on_inject_helpers';
 import { asyncStart, asyncEnd } from '../test/adapter';
-
 EmberApplication.reopen({
   /**
    This property contains the testing helpers for the current application. These
    are created once you call `injectTestHelpers` on your `Application`
    instance. The included helpers are also available on the `window` object by
    default, but can be used from this object on the individual application also.
-
-    @property testHelpers
+     @property testHelpers
     @type {Object}
     @default {}
     @public
@@ -23,11 +21,9 @@ EmberApplication.reopen({
   /**
    This property will contain the original methods that were registered
    on the `helperContainer` before `injectTestHelpers` is called.
-
-   When `removeTestHelpers` is called, these methods are restored to the
+    When `removeTestHelpers` is called, these methods are restored to the
    `helperContainer`.
-
-    @property originalMethods
+     @property originalMethods
     @type {Object}
     @default {}
     @private
@@ -39,8 +35,7 @@ EmberApplication.reopen({
   This property indicates whether or not this application is currently in
   testing mode. This is set when `setupForTesting` is called on the current
   application.
-
-  @property testing
+   @property testing
   @type {Boolean}
   @default false
   @since 1.3.0
@@ -55,31 +50,25 @@ EmberApplication.reopen({
     (preventing both accidental leaking of state between tests and interference
     with your testing framework). `setupForTesting` should only be called after
     setting a custom `router` class (for example `App.Router = Router.extend(`).
-
-    Example:
-
-    ```
+     Example:
+     ```
     App.setupForTesting();
     ```
-
-    @method setupForTesting
+     @method setupForTesting
     @public
   */
   setupForTesting() {
     setupForTesting();
-
     this.testing = true;
-
     this.resolveRegistration('router:main').reopen({
-      location: 'none',
+      location: 'none'
     });
   },
 
   /**
     This will be used as the container to inject the test helpers into. By
     default the helpers are injected into `window`.
-
-    @property helperContainer
+     @property helperContainer
     @type {Object} The object to be used for test helpers.
     @default window
     @since 1.2.0
@@ -93,16 +82,13 @@ EmberApplication.reopen({
     to `window`. If a function of the same name has already been defined it will be cached
     (so that it can be reset if the helper is removed with `unregisterHelper` or
     `removeTestHelpers`).
-
-    Any callbacks registered with `onInjectHelpers` will be called once the
+     Any callbacks registered with `onInjectHelpers` will be called once the
     helpers have been injected.
-
-    Example:
+     Example:
     ```
     App.injectTestHelpers();
     ```
-
-    @method injectTestHelpers
+     @method injectTestHelpers
     @public
   */
   injectTestHelpers(helperContainer) {
@@ -115,11 +101,13 @@ EmberApplication.reopen({
     this.reopen({
       willDestroy() {
         this._super(...arguments);
-        this.removeTestHelpers();
-      },
-    });
 
+        this.removeTestHelpers();
+      }
+
+    });
     this.testHelpers = {};
+
     for (let name in helpers) {
       this.originalMethods[name] = this.helperContainer[name];
       this.testHelpers[name] = this.helperContainer[name] = helper(this, name);
@@ -132,14 +120,11 @@ EmberApplication.reopen({
   /**
     This removes all helpers that have been registered, and resets and functions
     that were overridden by the helpers.
-
-    Example:
-
-    ```javascript
+     Example:
+     ```javascript
     App.removeTestHelpers();
     ```
-
-    @public
+     @public
     @method removeTestHelpers
   */
   removeTestHelpers() {
@@ -153,18 +138,18 @@ EmberApplication.reopen({
       delete this.testHelpers[name];
       delete this.originalMethods[name];
     }
-  },
-});
+  }
 
-// This method is no longer needed
+}); // This method is no longer needed
 // But still here for backwards compatibility
 // of helper chaining
+
 function protoWrap(proto, name, callback, isAsync) {
-  proto[name] = function(...args) {
+  proto[name] = function (...args) {
     if (isAsync) {
       return callback.apply(this, args);
     } else {
-      return this.then(function() {
+      return this.then(function () {
         return callback.apply(this, args);
       });
     }
@@ -174,17 +159,17 @@ function protoWrap(proto, name, callback, isAsync) {
 function helper(app, name) {
   let fn = helpers[name].method;
   let meta = helpers[name].meta;
+
   if (!meta.wait) {
     return (...args) => fn.apply(app, [app, ...args]);
   }
 
   return (...args) => {
-    let lastPromise = run(() => resolve(getLastPromise()));
-
-    // wait for last helper's promise to resolve and then
+    let lastPromise = run(() => resolve(getLastPromise())); // wait for last helper's promise to resolve and then
     // execute. To be safe, we need to tell the adapter we're going
     // asynchronous here, because fn may not be invoked before we
     // return.
+
     asyncStart();
     return lastPromise.then(() => fn.apply(app, [app, ...args])).finally(asyncEnd);
   };

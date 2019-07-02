@@ -6,7 +6,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   3.9.0
+ * @version   3.10.0
  */
 
 /*globals process */
@@ -363,7 +363,12 @@ enifed("@ember/debug/index", ["exports", "@ember/-internals/browser-environment"
               func = args[2];
           return function () {
             deprecate(message, false, options);
-            return func.apply(this, arguments);
+
+            for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+              args[_key2] = arguments[_key2];
+            }
+
+            return func.apply(this, args);
           };
         } else {
           var _message = args[0],
@@ -410,7 +415,13 @@ enifed("@ember/debug/index", ["exports", "@ember/-internals/browser-environment"
         Object.seal(obj);
       });
       setDebugFunction('debugFreeze', function debugFreeze(obj) {
-        Object.freeze(obj);
+        // re-freezing an already frozen object introduces a significant
+        // performance penalty on Chrome (tested through 59).
+        //
+        // See: https://bugs.chromium.org/p/v8/issues/detail?id=6450
+        if (!Object.isFrozen(obj)) {
+          Object.freeze(obj);
+        }
       });
       setDebugFunction('deprecate', _deprecate2.default);
       setDebugFunction('warn', _warn2.default);

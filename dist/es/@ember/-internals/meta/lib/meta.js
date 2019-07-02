@@ -677,39 +677,6 @@ export const meta = function meta(obj) {
 if (DEBUG) {
     meta._counters = counters;
 }
-/**
-  Returns the CP descriptor assocaited with `obj` and `keyName`, if any.
-
-  @method descriptorFor
-  @param {Object} obj the object to check
-  @param {String} keyName the key to check
-  @return {Descriptor}
-  @private
-*/
-export function descriptorFor(obj, keyName, _meta) {
-    assert('Cannot call `descriptorFor` on null', obj !== null);
-    assert('Cannot call `descriptorFor` on undefined', obj !== undefined);
-    assert(`Cannot call \`descriptorFor\` on ${typeof obj}`, typeof obj === 'object' || typeof obj === 'function');
-    let meta = _meta === undefined ? peekMeta(obj) : _meta;
-    if (meta !== null) {
-        return meta.peekDescriptors(keyName);
-    }
-}
-/**
-  Check whether a value is a CP descriptor.
-
-  @method isDescriptor
-  @param {any} possibleDesc the value to check
-  @return {boolean}
-  @private
-*/
-export function isDescriptor(possibleDesc) {
-    // TODO make this return `possibleDesc is Descriptor`
-    return (possibleDesc !== undefined &&
-        possibleDesc !== null &&
-        typeof possibleDesc === 'object' &&
-        possibleDesc.isDescriptor === true);
-}
 export { counters };
 function indexOfListener(listeners, event, target, method) {
     for (let i = listeners.length - 1; i >= 0; i--) {

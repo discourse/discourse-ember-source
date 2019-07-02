@@ -3,7 +3,6 @@ import { addObserver } from '@ember/-internals/metal';
 import EmberError from '@ember/error';
 import { DEBUG } from '@glimmer/env';
 import hasElement from './has_element';
-
 const inDOM = assign({}, hasElement, {
   enter(view) {
     // Register the view for event handling. This hash is used by
@@ -19,7 +18,7 @@ const inDOM = assign({}, hasElement, {
 
   exit(view) {
     view.renderer.unregister(view);
-  },
-});
+  }
 
+});
 export default Object.freeze(inDOM);

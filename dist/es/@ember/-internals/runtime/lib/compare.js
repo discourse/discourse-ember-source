@@ -1,6 +1,5 @@
 import { typeOf } from './type-of';
 import Comparable from './mixins/comparable';
-
 const TYPE_ORDER = {
   undefined: 0,
   null: 1,
@@ -12,10 +11,8 @@ const TYPE_ORDER = {
   instance: 7,
   function: 8,
   class: 9,
-  date: 10,
-};
-
-//
+  date: 10
+}; //
 // the spaceship operator
 //
 //                      `. ___
@@ -32,11 +29,11 @@ const TYPE_ORDER = {
 //                                |       `._    `.    \
 //                                `._________`-.   `.   `.___
 //                                              SSt  `------'`
+
 function spaceship(a, b) {
   let diff = a - b;
   return (diff > 0) - (diff < 0);
 }
-
 /**
  @module @ember/utils
 */
@@ -87,6 +84,8 @@ function spaceship(a, b) {
  @return {Number} -1 if v < w, 0 if v = w and 1 if v > w.
  @public
 */
+
+
 export default function compare(v, w) {
   if (v === w) {
     return 0;
@@ -107,9 +106,9 @@ export default function compare(v, w) {
 
   if (res !== 0) {
     return res;
-  }
+  } // types are equal - so we have to check values now
 
-  // types are equal - so we have to check values now
+
   switch (type1) {
     case 'boolean':
     case 'number':
@@ -118,26 +117,30 @@ export default function compare(v, w) {
     case 'string':
       return spaceship(v.localeCompare(w), 0);
 
-    case 'array': {
-      let vLen = v.length;
-      let wLen = w.length;
-      let len = Math.min(vLen, wLen);
+    case 'array':
+      {
+        let vLen = v.length;
+        let wLen = w.length;
+        let len = Math.min(vLen, wLen);
 
-      for (let i = 0; i < len; i++) {
-        let r = compare(v[i], w[i]);
-        if (r !== 0) {
-          return r;
-        }
+        for (let i = 0; i < len; i++) {
+          let r = compare(v[i], w[i]);
+
+          if (r !== 0) {
+            return r;
+          }
+        } // all elements are equal now
+        // shorter array should be ordered first
+
+
+        return spaceship(vLen, wLen);
       }
 
-      // all elements are equal now
-      // shorter array should be ordered first
-      return spaceship(vLen, wLen);
-    }
     case 'instance':
       if (Comparable.detect(v)) {
         return v.compare(v, w);
       }
+
       return 0;
 
     case 'date':

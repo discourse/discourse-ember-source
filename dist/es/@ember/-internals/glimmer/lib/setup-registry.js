@@ -1,17 +1,20 @@
 import { hasDOM } from '@ember/-internals/browser-environment';
 import { privatize as P } from '@ember/-internals/container';
 import { ENV } from '@ember/-internals/environment';
+import { EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS } from '@ember/canary-features';
 import Component from './component';
 import Checkbox from './components/checkbox';
+import Input from './components/input';
 import LinkToComponent from './components/link-to';
-import TextArea from './components/text_area';
-import TextField from './components/text_field';
+import TextField from './components/text-field';
+import TextArea from './components/textarea';
 import { clientBuilder, DOMChanges, DOMTreeConstruction, NodeDOMTreeConstruction, rehydrationBuilder, serializeBuilder, } from './dom';
 import Environment from './environment';
 import loc from './helpers/loc';
 import { InertRenderer, InteractiveRenderer } from './renderer';
 import TemplateCompiler from './template-compiler';
 import ComponentTemplate from './templates/component';
+import InputTemplate from './templates/input';
 import OutletTemplate from './templates/outlet';
 import RootTemplate from './templates/root';
 import OutletView from './views/outlet';
@@ -68,9 +71,16 @@ export function setupEngineRegistry(registry) {
     registry.optionsForType('helper', { instantiate: false });
     registry.register('helper:loc', loc);
     registry.register('component:-text-field', TextField);
-    registry.register('component:-text-area', TextArea);
     registry.register('component:-checkbox', Checkbox);
     registry.register('component:link-to', LinkToComponent);
+    if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
+        registry.register('component:input', Input);
+        registry.register('template:components/input', InputTemplate);
+        registry.register('component:textarea', TextArea);
+    }
+    else {
+        registry.register('component:-text-area', TextArea);
+    }
     if (!ENV._TEMPLATE_ONLY_GLIMMER_COMPONENTS) {
         registry.register(P `component:-default`, Component);
     }

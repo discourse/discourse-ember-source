@@ -10,7 +10,6 @@ export { default as getTextOf } from './lib/get-text-of';
 export { equalsElement, classes, styles, regex } from './lib/matchers';
 export { runAppend, runDestroy, runTask, runTaskNext, runLoopSettled } from './lib/run';
 export { getContext, setContext, unsetContext } from './lib/test-context';
-
 export { default as AbstractTestCase } from './lib/test-cases/abstract';
 export { default as AbstractApplicationTestCase } from './lib/test-cases/abstract-application';
 export { default as ApplicationTestCase } from './lib/test-cases/application';
@@ -19,14 +18,7 @@ export { default as AbstractRenderingTestCase } from './lib/test-cases/abstract-
 export { default as RenderingTestCase } from './lib/test-cases/rendering';
 export { default as RouterTestCase } from './lib/test-cases/router';
 export { default as AutobootApplicationTestCase } from './lib/test-cases/autoboot-application';
-export {
-  default as DefaultResolverApplicationTestCase,
-} from './lib/test-cases/default-resolver-application';
-
-export {
-  default as TestResolver,
-  ModuleBasedResolver as ModuleBasedTestResolver,
-} from './lib/test-resolver';
-
+export { default as DefaultResolverApplicationTestCase } from './lib/test-cases/default-resolver-application';
+export { default as TestResolver, ModuleBasedResolver as ModuleBasedTestResolver } from './lib/test-resolver';
 export { isIE11, isEdge } from './lib/browser-detect';
 export { verifyInjection, verifyRegistration } from './lib/registry-check';

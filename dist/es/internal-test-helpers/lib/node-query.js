@@ -1,8 +1,6 @@
 /* global Node */
-
 import { assert } from '@ember/debug';
 import { fireEvent, focus, matches } from './system/synthetic-events';
-
 export default class NodeQuery {
   static query(selector, context = document) {
     assert(`Invalid second parameter to NodeQuery.query`, context && context instanceof Node);
@@ -22,23 +20,19 @@ export default class NodeQuery {
     }
 
     this.length = nodes.length;
-
     Object.freeze(this);
   }
 
   find(selector) {
     assertSingle(this);
-
     return this[0].querySelector(selector);
   }
 
   findAll(selector) {
     let nodes = [];
-
     this.nodes.forEach(node => {
       nodes.push(...node.querySelectorAll(selector));
     });
-
     return new NodeQuery(nodes);
   }
 
@@ -64,7 +58,6 @@ export default class NodeQuery {
     }
 
     assertSingle(this);
-
     return this.nodes[0].getAttribute(name);
   }
 
@@ -74,13 +67,11 @@ export default class NodeQuery {
     }
 
     assertSingle(this);
-
     return this.nodes[0][name];
   }
 
   setProp(name, value) {
-    this.nodes.forEach(node => (node[name] = value));
-
+    this.nodes.forEach(node => node[name] = value);
     return this;
   }
 
@@ -99,13 +90,12 @@ export default class NodeQuery {
   hasClass(className) {
     return this.is(`.${className}`);
   }
+
 }
 
 function assertSingle(nodeQuery) {
   if (nodeQuery.length !== 1) {
-    throw new Error(
-      `attr(name) called on a NodeQuery with ${this.nodes.length} elements. Expected one element.`
-    );
+    throw new Error(`attr(name) called on a NodeQuery with ${this.nodes.length} elements. Expected one element.`);
   }
 }
 

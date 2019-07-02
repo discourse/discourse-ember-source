@@ -4,12 +4,12 @@ function generateTokens(containerOrHTML) {
   if (typeof containerOrHTML === 'string') {
     return {
       tokens: tokenize(containerOrHTML),
-      html: containerOrHTML,
+      html: containerOrHTML
     };
   } else {
     return {
       tokens: tokenize(containerOrHTML.innerHTML),
-      html: containerOrHTML.innerHTML,
+      html: containerOrHTML.innerHTML
     };
   }
 }
@@ -21,9 +21,11 @@ function normalizeTokens(tokens) {
         if (a[0] > b[0]) {
           return 1;
         }
+
         if (a[0] < b[0]) {
           return -1;
         }
+
         return 0;
       });
     }
@@ -33,11 +35,11 @@ function normalizeTokens(tokens) {
 export default function equalTokens(actualContainer, expectedHTML, message = null) {
   let actual = generateTokens(actualContainer);
   let expected = generateTokens(expectedHTML);
-
   normalizeTokens(actual.tokens);
   normalizeTokens(expected.tokens);
-
-  let { assert } = QUnit.config.current;
+  let {
+    assert
+  } = QUnit.config.current;
   let equiv = QUnit.equiv(actual.tokens, expected.tokens);
 
   if (equiv && expected.html !== actual.html) {
@@ -47,7 +49,7 @@ export default function equalTokens(actualContainer, expectedHTML, message = nul
       result: QUnit.equiv(actual.tokens, expected.tokens),
       actual: actual.html,
       expected: expected.html,
-      message,
+      message
     });
   }
 }

@@ -9,11 +9,7 @@ class LastIndexOfTests extends AbstractTestCase {
     let len = 3;
 
     for (let idx = 0; idx < len; idx++) {
-      this.assert.equal(
-        obj.lastIndexOf(expected[idx]),
-        idx,
-        `obj.lastIndexOf(${expected[idx]}) should match idx`
-      );
+      this.assert.equal(obj.lastIndexOf(expected[idx]), idx, `obj.lastIndexOf(${expected[idx]}) should match idx`);
     }
   }
 
@@ -23,11 +19,7 @@ class LastIndexOfTests extends AbstractTestCase {
     let len = 3;
 
     for (let idx = 0; idx < len; idx++) {
-      this.assert.equal(
-        obj.lastIndexOf(expected[idx], len),
-        idx,
-        `obj.lastIndexOfs(${expected[idx]}) should match idx`
-      );
+      this.assert.equal(obj.lastIndexOf(expected[idx], len), idx, `obj.lastIndexOfs(${expected[idx]}) should match idx`);
     }
   }
 
@@ -37,42 +29,28 @@ class LastIndexOfTests extends AbstractTestCase {
     let len = 3;
 
     for (let idx = 0; idx < len; idx++) {
-      this.assert.equal(
-        obj.lastIndexOf(expected[idx], len + 1),
-        idx,
-        `obj.lastIndexOf(${expected[idx]}) should match idx`
-      );
+      this.assert.equal(obj.lastIndexOf(expected[idx], len + 1), idx, `obj.lastIndexOf(${expected[idx]}) should match idx`);
     }
   }
 
   '@test should return -1 when no match is found'() {
     let obj = this.newObject(newFixture(3));
     let foo = {};
-
     this.assert.equal(obj.lastIndexOf(foo), -1, 'obj.lastIndexOf(foo) should be -1');
   }
 
   '@test should return -1 when no match is found even startAt search location is equal to length'() {
     let obj = this.newObject(newFixture(3));
     let foo = {};
-
-    this.assert.equal(
-      obj.lastIndexOf(foo, get(obj, 'length')),
-      -1,
-      'obj.lastIndexOf(foo) should be -1'
-    );
+    this.assert.equal(obj.lastIndexOf(foo, get(obj, 'length')), -1, 'obj.lastIndexOf(foo) should be -1');
   }
 
   '@test should return -1 when no match is found even startAt search location is greater than length'() {
     let obj = this.newObject(newFixture(3));
     let foo = {};
-
-    this.assert.equal(
-      obj.lastIndexOf(foo, get(obj, 'length') + 1),
-      -1,
-      'obj.lastIndexOf(foo) should be -1'
-    );
+    this.assert.equal(obj.lastIndexOf(foo, get(obj, 'length') + 1), -1, 'obj.lastIndexOf(foo) should be -1');
   }
+
 }
 
 runArrayTests('lastIndexOf', LastIndexOfTests);

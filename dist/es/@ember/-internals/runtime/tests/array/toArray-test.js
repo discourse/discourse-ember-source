@@ -6,6 +6,7 @@ class ToArrayTests extends AbstractTestCase {
     let obj = this.newObject();
     this.assert.deepEqual(obj.toArray(), this.toArray(obj));
   }
+
 }
 
 runArrayTests('toArray', ToArrayTests);

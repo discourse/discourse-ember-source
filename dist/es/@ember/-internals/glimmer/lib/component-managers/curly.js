@@ -1,9 +1,8 @@
 import { privatize as P } from '@ember/-internals/container';
-import { get } from '@ember/-internals/metal';
 import { getOwner } from '@ember/-internals/owner';
 import { guidFor } from '@ember/-internals/utils';
-import { addChildView, setViewElement } from '@ember/-internals/views';
-import { assert } from '@ember/debug';
+import { addChildView, setElementView, setViewElement, } from '@ember/-internals/views';
+import { assert, debugFreeze } from '@ember/debug';
 import { _instrumentStart } from '@ember/instrumentation';
 import { assign } from '@ember/polyfills';
 import { DEBUG } from '@glimmer/env';
@@ -50,6 +49,8 @@ function applyAttributeBindings(element, attributeBindings, component, operation
     }
 }
 const DEFAULT_LAYOUT = P `template:components/-default`;
+const EMPTY_POSITIONAL_ARGS = [];
+debugFreeze(EMPTY_POSITIONAL_ARGS);
 export default class CurlyComponentManager extends AbstractManager {
     getLayout(state, _resolver) {
         return {
@@ -59,7 +60,8 @@ export default class CurlyComponentManager extends AbstractManager {
         };
     }
     templateFor(component, resolver) {
-        let layout = get(component, 'layout');
+        let { layout, layoutName } = component;
+        let owner = getOwner(component);
         if (layout !== undefined) {
             // This needs to be cached by template.id
             if (isTemplateFactory(layout)) {
@@ -70,8 +72,6 @@ export default class CurlyComponentManager extends AbstractManager {
                 return layout;
             }
         }
-        let owner = getOwner(component);
-        let layoutName = get(component, 'layoutName');
         if (layoutName) {
             let template = owner.lookup('template:' + layoutName);
             if (template) {
@@ -99,6 +99,17 @@ export default class CurlyComponentManager extends AbstractManager {
         return state.capabilities;
     }
     prepareArgs(state, args) {
+        if (args.named.has('__ARGS__')) {
+            let __args__ = args.named.get('__ARGS__').value();
+            let prepared = {
+                positional: EMPTY_POSITIONAL_ARGS,
+                named: Object.assign({}, args.named.capture().map, __args__),
+            };
+            if (DEBUG) {
+                delete prepared.named.__ARGS__;
+            }
+            return prepared;
+        }
         const { positionalParams } = state.ComponentClass.class;
         // early exits
         if (positionalParams === undefined ||
@@ -205,6 +216,7 @@ export default class CurlyComponentManager extends AbstractManager {
     }
     didCreateElement({ component, classRef, environment }, element, operations) {
         setViewElement(component, element);
+        setElementView(element, component);
         let { attributeBindings, classNames, classNameBindings } = component;
         if (attributeBindings && attributeBindings.length) {
             applyAttributeBindings(element, attributeBindings, component, operations);
@@ -215,7 +227,7 @@ export default class CurlyComponentManager extends AbstractManager {
             IsVisibleBinding.install(element, component, operations);
         }
         if (classRef) {
-            const ref = new SimpleClassNameBindingReference(classRef, classRef['_propertyKey']);
+            const ref = new SimpleClassNameBindingReference(classRef, classRef['propertyKey']);
             operations.setAttribute('class', ref, false, null);
         }
         if (classNames && classNames.length) {

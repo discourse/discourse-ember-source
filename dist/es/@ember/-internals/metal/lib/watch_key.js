@@ -1,6 +1,7 @@
-import { descriptorFor, isDescriptor, meta as metaFor, peekMeta, UNDEFINED, } from '@ember/-internals/meta';
+import { meta as metaFor, peekMeta, UNDEFINED } from '@ember/-internals/meta';
 import { lookupDescriptor } from '@ember/-internals/utils';
 import { DEBUG } from '@glimmer/env';
+import { descriptorForProperty, isClassicDecorator } from './descriptor_map';
 import { DEFAULT_GETTER_FUNCTION, INHERITING_GETTER_FUNCTION, MANDATORY_SETTER_FUNCTION, } from './properties';
 let handleMandatorySetter;
 export function watchKey(obj, keyName, _meta) {
@@ -9,7 +10,7 @@ export function watchKey(obj, keyName, _meta) {
     meta.writeWatching(keyName, count + 1);
     if (count === 0) {
         // activate watching first time
-        let possibleDesc = descriptorFor(obj, keyName, meta);
+        let possibleDesc = descriptorForProperty(obj, keyName, meta);
         if (possibleDesc !== undefined && possibleDesc.willWatch !== undefined) {
             possibleDesc.willWatch(obj, keyName, meta);
         }
@@ -32,7 +33,7 @@ if (DEBUG) {
         let descriptor = lookupDescriptor(obj, keyName);
         let hasDescriptor = descriptor !== null;
         let possibleDesc = hasDescriptor && descriptor.value;
-        if (isDescriptor(possibleDesc)) {
+        if (isClassicDecorator(possibleDesc)) {
             return;
         }
         let configurable = hasDescriptor ? descriptor.configurable : true;
@@ -66,7 +67,7 @@ export function unwatchKey(obj, keyName, _meta) {
     let count = meta.peekWatching(keyName);
     if (count === 1) {
         meta.writeWatching(keyName, 0);
-        let possibleDesc = descriptorFor(obj, keyName, meta);
+        let possibleDesc = descriptorForProperty(obj, keyName, meta);
         let isDescriptor = possibleDesc !== undefined;
         if (isDescriptor && possibleDesc.didUnwatch !== undefined) {
             possibleDesc.didUnwatch(obj, keyName, meta);

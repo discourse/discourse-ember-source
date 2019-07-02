@@ -1,5 +1,4 @@
 export const callbacks = [];
-
 /**
   Used to register callbacks to be fired whenever `App.injectTestHelpers`
   is called.
@@ -27,10 +26,10 @@ export const callbacks = [];
   @method onInjectHelpers
   @param {Function} callback The function to be called.
 */
+
 export function onInjectHelpers(callback) {
   callbacks.push(callback);
 }
-
 export function invokeInjectHelpersCallbacks(app) {
   for (let i = 0; i < callbacks.length; i++) {
     callbacks[i](app);

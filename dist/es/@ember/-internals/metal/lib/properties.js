@@ -1,38 +1,11 @@
 /**
 @module @ember/object
 */
-import { descriptorFor, meta as metaFor, peekMeta, UNDEFINED } from '@ember/-internals/meta';
+import { meta as metaFor, peekMeta, UNDEFINED } from '@ember/-internals/meta';
 import { assert } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
+import { descriptorForProperty, isClassicDecorator } from './descriptor_map';
 import { overrideChains } from './property_events';
-// ..........................................................
-// DESCRIPTOR
-//
-/**
-  Objects of this type can implement an interface to respond to requests to
-  get and set. The default implementation handles simple properties.
-
-  @class Descriptor
-  @private
-*/
-export class Descriptor {
-    constructor() {
-        this.isDescriptor = true;
-        this.enumerable = true;
-        this.configurable = true;
-    }
-    setup(obj, keyName, meta) {
-        Object.defineProperty(obj, keyName, {
-            enumerable: this.enumerable,
-            configurable: this.configurable,
-            get: DESCRIPTOR_GETTER_FUNCTION(keyName, this),
-        });
-        meta.writeDescriptors(keyName, this);
-    }
-    teardown(_obj, keyName, meta) {
-        meta.removeDescriptors(keyName);
-    }
-}
 // ..........................................................
 // DEFINING PROPERTIES API
 //
@@ -72,11 +45,6 @@ export function INHERITING_GETTER_FUNCTION(name) {
     return Object.assign(IGETTER_FUNCTION, {
         isInheritingGetter: true,
     });
-}
-function DESCRIPTOR_GETTER_FUNCTION(name, descriptor) {
-    return function CPGETTER_FUNCTION() {
-        return descriptor.get(this, name);
-    };
 }
 /**
   NOTE: This is a low-level method used by other parts of the API. You almost
@@ -131,7 +99,7 @@ export function defineProperty(obj, keyName, desc, data, meta) {
         meta = metaFor(obj);
     }
     let watching = meta.peekWatching(keyName) > 0;
-    let previousDesc = descriptorFor(obj, keyName, meta);
+    let previousDesc = descriptorForProperty(obj, keyName, meta);
     let wasDescriptor = previousDesc !== undefined;
     if (wasDescriptor) {
         previousDesc.teardown(obj, keyName, meta);
@@ -147,9 +115,17 @@ export function defineProperty(obj, keyName, desc, data, meta) {
         enumerable = false;
     }
     let value;
-    if (desc instanceof Descriptor) {
+    if (isClassicDecorator(desc)) {
+        let propertyDesc;
+        if (DEBUG) {
+            propertyDesc = desc(obj, keyName, undefined, meta, true);
+        }
+        else {
+            propertyDesc = desc(obj, keyName, undefined, meta);
+        }
+        Object.defineProperty(obj, keyName, propertyDesc);
+        // pass the decorator function forward for backwards compat
         value = desc;
-        desc.setup(obj, keyName, meta);
     }
     else if (desc === undefined || desc === null) {
         value = data;

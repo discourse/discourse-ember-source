@@ -1,47 +1,23 @@
 /**
   @module @ember/object
 */
-
 import { FACTORY_FOR } from '@ember/-internals/container';
 import { assign, _WeakSet as WeakSet } from '@ember/polyfills';
-import {
-  guidFor,
-  getName,
-  setName,
-  makeArray,
-  HAS_NATIVE_PROXY,
-  isInternalSymbol,
-} from '@ember/-internals/utils';
+import { guidFor, getName, setName, makeArray, HAS_NATIVE_PROXY, isInternalSymbol } from '@ember/-internals/utils';
 import { schedule } from '@ember/runloop';
-import { descriptorFor, meta, peekMeta, deleteMeta } from '@ember/-internals/meta';
-import {
-  PROXY_CONTENT,
-  finishChains,
-  sendEvent,
-  Mixin,
-  applyMixin,
-  defineProperty,
-  ComputedProperty,
-  InjectedProperty,
-  classToString,
-} from '@ember/-internals/metal';
+import { meta, peekMeta, deleteMeta } from '@ember/-internals/meta';
+import { PROXY_CONTENT, finishChains, sendEvent, Mixin, applyMixin, defineProperty, descriptorForProperty, classToString, isClassicDecorator, DEBUG_INJECTION_FUNCTIONS } from '@ember/-internals/metal';
 import ActionHandler from '../mixins/action_handler';
 import { assert, deprecate } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
-
 const reopen = Mixin.prototype.reopen;
-
 const wasApplied = new WeakSet();
-
 const factoryMap = new WeakMap();
-
 const prototypeMixinMap = new WeakMap();
-
 const DELAY_INIT = Object.freeze({});
-
 let initCalled; // only used in debug builds to enable the proxy trap
-
 // using DEBUG here to avoid the extraneous variable when not needed
+
 if (DEBUG) {
   initCalled = new WeakSet();
 }
@@ -50,46 +26,21 @@ function initialize(obj, properties) {
   let m = meta(obj);
 
   if (properties !== undefined) {
-    assert(
-      'EmberObject.create only accepts objects.',
-      typeof properties === 'object' && properties !== null
-    );
-
-    assert(
-      'EmberObject.create no longer supports mixing in other ' +
-        'definitions, use .extend & .create separately instead.',
-      !(properties instanceof Mixin)
-    );
-
+    assert('EmberObject.create only accepts objects.', typeof properties === 'object' && properties !== null);
+    assert('EmberObject.create no longer supports mixing in other ' + 'definitions, use .extend & .create separately instead.', !(properties instanceof Mixin));
     let concatenatedProperties = obj.concatenatedProperties;
     let mergedProperties = obj.mergedProperties;
-    let hasConcatenatedProps =
-      concatenatedProperties !== undefined && concatenatedProperties.length > 0;
+    let hasConcatenatedProps = concatenatedProperties !== undefined && concatenatedProperties.length > 0;
     let hasMergedProps = mergedProperties !== undefined && mergedProperties.length > 0;
-
     let keyNames = Object.keys(properties);
 
     for (let i = 0; i < keyNames.length; i++) {
       let keyName = keyNames[i];
       let value = properties[keyName];
-
-      assert(
-        'EmberObject.create no longer supports defining computed ' +
-          'properties. Define computed properties using extend() or reopen() ' +
-          'before calling create().',
-        !(value instanceof ComputedProperty)
-      );
-      assert(
-        'EmberObject.create no longer supports defining methods that call _super.',
-        !(typeof value === 'function' && value.toString().indexOf('._super') !== -1)
-      );
-      assert(
-        '`actions` must be provided at extend time, not at create time, ' +
-          'when Ember.ActionHandler is used (i.e. views, controllers & routes).',
-        !(keyName === 'actions' && ActionHandler.detect(obj))
-      );
-
-      let possibleDesc = descriptorFor(obj, keyName, m);
+      assert('EmberObject.create no longer supports defining computed ' + 'properties. Define computed properties using extend() or reopen() ' + 'before calling create().', !isClassicDecorator(value));
+      assert('EmberObject.create no longer supports defining methods that call _super.', !(typeof value === 'function' && value.toString().indexOf('._super') !== -1));
+      assert('`actions` must be provided at extend time, not at create time, ' + 'when Ember.ActionHandler is used (i.e. views, controllers & routes).', !(keyName === 'actions' && ActionHandler.detect(obj)));
+      let possibleDesc = descriptorForProperty(obj, keyName, m);
       let isDescriptor = possibleDesc !== undefined;
 
       if (!isDescriptor) {
@@ -120,20 +71,19 @@ function initialize(obj, properties) {
         }
       }
     }
-  }
+  } // using DEBUG here to avoid the extraneous variable when not needed
 
-  // using DEBUG here to avoid the extraneous variable when not needed
+
   if (DEBUG) {
     initCalled.add(obj);
   }
-  obj.init(properties);
 
-  // re-enable chains
+  obj.init(properties); // re-enable chains
+
   m.unsetInitializing();
   finishChains(m);
   sendEvent(obj, 'init', undefined, undefined, undefined, m);
 }
-
 /**
   `CoreObject` is the base class for all Ember constructs. It establishes a
   class system based on Ember's Mixin system, and provides the basis for the
@@ -195,6 +145,8 @@ function initialize(obj, properties) {
   @class CoreObject
   @public
 */
+
+
 class CoreObject {
   static _initFactory(factory) {
     factoryMap.set(this, factory);
@@ -203,53 +155,29 @@ class CoreObject {
   constructor(properties) {
     // pluck off factory
     let initFactory = factoryMap.get(this.constructor);
+
     if (initFactory !== undefined) {
       factoryMap.delete(this.constructor);
       FACTORY_FOR.set(this, initFactory);
-    }
+    } // prepare prototype...
 
-    // prepare prototype...
+
     this.constructor.proto();
-
     let self = this;
 
     if (DEBUG && HAS_NATIVE_PROXY && typeof self.unknownProperty === 'function') {
       let messageFor = (obj, property) => {
-        return (
-          `You attempted to access the \`${String(property)}\` property (of ${obj}).\n` +
-          `Since Ember 3.1, this is usually fine as you no longer need to use \`.get()\`\n` +
-          `to access computed properties. However, in this case, the object in question\n` +
-          `is a special kind of Ember object (a proxy). Therefore, it is still necessary\n` +
-          `to use \`.get('${String(property)}')\` in this case.\n\n` +
-          `If you encountered this error because of third-party code that you don't control,\n` +
-          `there is more information at https://github.com/emberjs/ember.js/issues/16148, and\n` +
-          `you can help us improve this error message by telling us more about what happened in\n` +
-          `this situation.`
-        );
+        return `You attempted to access the \`${String(property)}\` property (of ${obj}).\n` + `Since Ember 3.1, this is usually fine as you no longer need to use \`.get()\`\n` + `to access computed properties. However, in this case, the object in question\n` + `is a special kind of Ember object (a proxy). Therefore, it is still necessary\n` + `to use \`.get('${String(property)}')\` in this case.\n\n` + `If you encountered this error because of third-party code that you don't control,\n` + `there is more information at https://github.com/emberjs/ember.js/issues/16148, and\n` + `you can help us improve this error message by telling us more about what happened in\n` + `this situation.`;
       };
-
       /* globals Proxy Reflect */
+
+
       self = new Proxy(this, {
         get(target, property, receiver) {
           if (property === PROXY_CONTENT) {
             return target;
-          } else if (
-            // init called will be set on the proxy, not the target, so get with the receiver
-            !initCalled.has(receiver) ||
-            typeof property === 'symbol' ||
-            isInternalSymbol(property) ||
-            property === 'toJSON' ||
-            property === 'toString' ||
-            property === 'toStringExtension' ||
-            property === 'didDefineProperty' ||
-            property === 'willWatchProperty' ||
-            property === 'didUnwatchProperty' ||
-            property === 'didAddListener' ||
-            property === 'didRemoveListener' ||
-            property === 'isDescriptor' ||
-            property === '_onLookup' ||
-            property in target
-          ) {
+          } else if ( // init called will be set on the proxy, not the target, so get with the receiver
+          !initCalled.has(receiver) || typeof property === 'symbol' || isInternalSymbol(property) || property === 'toJSON' || property === 'toString' || property === 'toStringExtension' || property === 'didDefineProperty' || property === 'willWatchProperty' || property === 'didUnwatchProperty' || property === 'didAddListener' || property === 'didRemoveListener' || property === 'isDescriptor' || property === '_onLookup' || property in target) {
             return Reflect.get(target, property, receiver);
           }
 
@@ -258,31 +186,26 @@ class CoreObject {
           if (typeof value !== 'function') {
             assert(messageFor(receiver, property), value === undefined || value === null);
           }
-        },
+        }
+
       });
-
       FACTORY_FOR.set(self, initFactory);
-    }
+    } // disable chains
 
-    // disable chains
+
     let m = meta(self);
     m.setInitializing();
 
     if (properties !== DELAY_INIT) {
-      deprecate(
-        'using `new` with EmberObject has been deprecated. Please use `create` instead, or consider using native classes without extending from EmberObject.',
-        false,
-        {
-          id: 'object.new-constructor',
-          until: '3.9.0',
-          url: 'https://emberjs.com/deprecations/v3.x#toc_object-new-constructor',
-        }
-      );
-
+      deprecate('using `new` with EmberObject has been deprecated. Please use `create` instead, or consider using native classes without extending from EmberObject.', false, {
+        id: 'object.new-constructor',
+        until: '3.9.0',
+        url: 'https://emberjs.com/deprecations/v3.x#toc_object-new-constructor'
+      });
       initialize(self, properties);
-    }
+    } // only return when in debug builds and `self` is the proxy created above
 
-    // only return when in debug builds and `self` is the proxy created above
+
     if (DEBUG && self !== this) {
       return self;
     }
@@ -292,79 +215,63 @@ class CoreObject {
     applyMixin(this, args);
     return this;
   }
-
   /**
     An overridable method called when objects are instantiated. By default,
     does nothing unless it is overridden during class definition.
-
-    Example:
-
-    ```javascript
+     Example:
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const Person = EmberObject.extend({
+     const Person = EmberObject.extend({
       init() {
         alert(`Name is ${this.get('name')}`);
       }
     });
-
-    let steve = Person.create({
+     let steve = Person.create({
       name: 'Steve'
     });
-
-    // alerts 'Name is Steve'.
+     // alerts 'Name is Steve'.
     ```
-
-    NOTE: If you do override `init` for a framework class like `Ember.View`,
+     NOTE: If you do override `init` for a framework class like `Ember.View`,
     be sure to call `this._super(...arguments)` in your
     `init` declaration! If you don't, Ember may not have an opportunity to
     do important setup work, and you'll see strange behavior in your
     application.
-
-    @method init
+     @method init
     @public
   */
-  init() {}
 
+
+  init() {}
   /**
     Defines the properties that will be concatenated from the superclass
     (instead of overridden).
-
-    By default, when you extend an Ember class a property defined in
+     By default, when you extend an Ember class a property defined in
     the subclass overrides a property with the same name that is defined
     in the superclass. However, there are some cases where it is preferable
     to build up a property's value by combining the superclass' property
     value with the subclass' value. An example of this in use within Ember
     is the `classNames` property of `Ember.View`.
-
-    Here is some sample code showing the difference between a concatenated
+     Here is some sample code showing the difference between a concatenated
     property and a normal one:
-
-    ```javascript
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const Bar = EmberObject.extend({
+     const Bar = EmberObject.extend({
       // Configure which properties to concatenate
       concatenatedProperties: ['concatenatedProperty'],
-
-      someNonConcatenatedProperty: ['bar'],
+       someNonConcatenatedProperty: ['bar'],
       concatenatedProperty: ['bar']
     });
-
-    const FooBar = Bar.extend({
+     const FooBar = Bar.extend({
       someNonConcatenatedProperty: ['foo'],
       concatenatedProperty: ['foo']
     });
-
-    let fooBar = FooBar.create();
+     let fooBar = FooBar.create();
     fooBar.get('someNonConcatenatedProperty'); // ['foo']
     fooBar.get('concatenatedProperty'); // ['bar', 'foo']
     ```
-
-    This behavior extends to object creation as well. Continuing the
+     This behavior extends to object creation as well. Continuing the
     above example:
-
-    ```javascript
+     ```javascript
     let fooBar = FooBar.create({
       someNonConcatenatedProperty: ['baz'],
       concatenatedProperty: ['baz']
@@ -372,29 +279,23 @@ class CoreObject {
     fooBar.get('someNonConcatenatedProperty'); // ['baz']
     fooBar.get('concatenatedProperty'); // ['bar', 'foo', 'baz']
     ```
-
-    Adding a single property that is not an array will just add it in the array:
-
-    ```javascript
+     Adding a single property that is not an array will just add it in the array:
+     ```javascript
     let fooBar = FooBar.create({
       concatenatedProperty: 'baz'
     })
     view.get('concatenatedProperty'); // ['bar', 'foo', 'baz']
     ```
-
-    Using the `concatenatedProperties` property, we can tell Ember to mix the
+     Using the `concatenatedProperties` property, we can tell Ember to mix the
     content of the properties.
-
-    In `Component` the `classNames`, `classNameBindings` and
+     In `Component` the `classNames`, `classNameBindings` and
     `attributeBindings` properties are concatenated.
-
-    This feature is available for you to use throughout the Ember object model,
+     This feature is available for you to use throughout the Ember object model,
     although typical app developers are likely to use it infrequently. Since
     it changes expectations about behavior of properties, you should properly
     document its usage in each individual concatenated property (to not
     mislead your users to think they can override the property in a subclass).
-
-    @property concatenatedProperties
+     @property concatenatedProperties
     @type Array
     @default null
     @public
@@ -403,25 +304,20 @@ class CoreObject {
   /**
     Defines the properties that will be merged from the superclass
     (instead of overridden).
-
-    By default, when you extend an Ember class a property defined in
+     By default, when you extend an Ember class a property defined in
     the subclass overrides a property with the same name that is defined
     in the superclass. However, there are some cases where it is preferable
     to build up a property's value by merging the superclass property value
     with the subclass property's value. An example of this in use within Ember
     is the `queryParams` property of routes.
-
-    Here is some sample code showing the difference between a merged
+     Here is some sample code showing the difference between a merged
     property and a normal one:
-
-    ```javascript
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const Bar = EmberObject.extend({
+     const Bar = EmberObject.extend({
       // Configure which properties are to be merged
       mergedProperties: ['mergedProperty'],
-
-      someNonMergedProperty: {
+       someNonMergedProperty: {
         nonMerged: 'superclass value of nonMerged'
       },
       mergedProperty: {
@@ -429,8 +325,7 @@ class CoreObject {
         limit: { replace: true }
       }
     });
-
-    const FooBar = Bar.extend({
+     const FooBar = Bar.extend({
       someNonMergedProperty: {
         completelyNonMerged: 'subclass value of nonMerged'
       },
@@ -438,16 +333,13 @@ class CoreObject {
         limit: { replace: false }
       }
     });
-
-    let fooBar = FooBar.create();
-
-    fooBar.get('someNonMergedProperty');
+     let fooBar = FooBar.create();
+     fooBar.get('someNonMergedProperty');
     // => { completelyNonMerged: 'subclass value of nonMerged' }
     //
     // Note the entire object, including the nonMerged property of
     // the superclass object, has been replaced
-
-    fooBar.get('mergedProperty');
+     fooBar.get('mergedProperty');
     // => {
     //   page: {replace: false},
     //   limit: {replace: false}
@@ -457,19 +349,15 @@ class CoreObject {
     // `limit` property's value of `false` has been merged from
     // the subclass.
     ```
-
-    This behavior is not available during object `create` calls. It is only
+     This behavior is not available during object `create` calls. It is only
     available at `extend` time.
-
-    In `Route` the `queryParams` property is merged.
-
-    This feature is available for you to use throughout the Ember object model,
+     In `Route` the `queryParams` property is merged.
+     This feature is available for you to use throughout the Ember object model,
     although typical app developers are likely to use it infrequently. Since
     it changes expectations about behavior of properties, you should properly
     document its usage in each individual merged property (to not
     mislead your users to think they can override the property in a subclass).
-
-    @property mergedProperties
+     @property mergedProperties
     @type Array
     @default null
     @public
@@ -477,14 +365,14 @@ class CoreObject {
 
   /**
     Destroyed object property flag.
-
-    if this property is `true` the observers and bindings were already
+     if this property is `true` the observers and bindings were already
     removed by the effect of calling the `destroy()` method.
-
-    @property isDestroyed
+     @property isDestroyed
     @default false
     @public
   */
+
+
   get isDestroyed() {
     return peekMeta(this).isSourceDestroyed();
   }
@@ -492,17 +380,16 @@ class CoreObject {
   set isDestroyed(value) {
     assert(`You cannot set \`${this}.isDestroyed\` directly, please use \`.destroy()\`.`, false);
   }
-
   /**
     Destruction scheduled flag. The `destroy()` method has been called.
-
-    The object stays intact until the end of the run loop at which point
+     The object stays intact until the end of the run loop at which point
     the `isDestroyed` flag is set.
-
-    @property isDestroying
+     @property isDestroying
     @default false
     @public
   */
+
+
   get isDestroying() {
     return peekMeta(this).isSourceDestroying();
   }
@@ -510,84 +397,75 @@ class CoreObject {
   set isDestroying(value) {
     assert(`You cannot set \`${this}.isDestroying\` directly, please use \`.destroy()\`.`, false);
   }
-
   /**
     Destroys an object by setting the `isDestroyed` flag and removing its
     metadata, which effectively destroys observers and bindings.
-
-    If you try to set a property on a destroyed object, an exception will be
+     If you try to set a property on a destroyed object, an exception will be
     raised.
-
-    Note that destruction is scheduled for the end of the run loop and does not
+     Note that destruction is scheduled for the end of the run loop and does not
     happen immediately.  It will set an isDestroying flag immediately.
-
-    @method destroy
+     @method destroy
     @return {EmberObject} receiver
     @public
   */
+
+
   destroy() {
     let m = peekMeta(this);
+
     if (m.isSourceDestroying()) {
       return;
     }
 
     m.setSourceDestroying();
-
     schedule('actions', this, this.willDestroy);
     schedule('destroy', this, this._scheduledDestroy, m);
-
     return this;
   }
-
   /**
     Override to implement teardown.
-
-    @method willDestroy
+     @method willDestroy
     @public
   */
-  willDestroy() {}
 
+
+  willDestroy() {}
   /**
     Invoked by the run loop to actually destroy the object. This is
     scheduled for execution by the `destroy` method.
-
-    @private
+     @private
     @method _scheduledDestroy
   */
+
+
   _scheduledDestroy(m) {
     if (m.isSourceDestroyed()) {
       return;
     }
+
     deleteMeta(this);
     m.setSourceDestroyed();
   }
-
   /**
     Returns a string representation which attempts to provide more information
     than Javascript's `toString` typically does, in a generic way for all Ember
     objects.
-
-    ```javascript
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const Person = EmberObject.extend();
+     const Person = EmberObject.extend();
     person = Person.create();
     person.toString(); //=> "<Person:ember1024>"
     ```
-
-    If the object's class is not defined on an Ember namespace, it will
+     If the object's class is not defined on an Ember namespace, it will
     indicate it is a subclass of the registered superclass:
-
-    ```javascript
+     ```javascript
     const Student = Person.extend();
     let student = Student.create();
     student.toString(); //=> "<(subclass of Person):ember1025>"
     ```
-
-    If the method `toStringExtension` is defined, its return value will be
+     If the method `toStringExtension` is defined, its return value will be
     included in the output.
-
-    ```javascript
+     ```javascript
     const Teacher = Person.extend({
       toStringExtension() {
         return this.get('fullName');
@@ -596,63 +474,49 @@ class CoreObject {
     teacher = Teacher.create();
     teacher.toString(); //=> "<Teacher:ember1026:Tom Dale>"
     ```
-
-    @method toString
+     @method toString
     @return {String} string representation
     @public
   */
+
+
   toString() {
     let hasToStringExtension = typeof this.toStringExtension === 'function';
     let extension = hasToStringExtension ? `:${this.toStringExtension()}` : '';
-
-    let ret = `<${getName(this) || FACTORY_FOR.get(this) || this.constructor.toString()}:${guidFor(
-      this
-    )}${extension}>`;
-
+    let ret = `<${getName(this) || FACTORY_FOR.get(this) || this.constructor.toString()}:${guidFor(this)}${extension}>`;
     return ret;
   }
-
   /**
     Creates a new subclass.
-
-    ```javascript
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const Person = EmberObject.extend({
+     const Person = EmberObject.extend({
       say(thing) {
         alert(thing);
        }
     });
     ```
-
-    This defines a new subclass of EmberObject: `Person`. It contains one method: `say()`.
-
-    You can also create a subclass from any existing class by calling its `extend()` method.
+     This defines a new subclass of EmberObject: `Person`. It contains one method: `say()`.
+     You can also create a subclass from any existing class by calling its `extend()` method.
     For example, you might want to create a subclass of Ember's built-in `Component` class:
-
-    ```javascript
+     ```javascript
     import Component from '@ember/component';
-
-    const PersonComponent = Component.extend({
+     const PersonComponent = Component.extend({
       tagName: 'li',
       classNameBindings: ['isAdministrator']
     });
     ```
-
-    When defining a subclass, you can override methods but still access the
+     When defining a subclass, you can override methods but still access the
     implementation of your parent class by calling the special `_super()` method:
-
-    ```javascript
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const Person = EmberObject.extend({
+     const Person = EmberObject.extend({
       say(thing) {
         let name = this.get('name');
         alert(`${name} says: ${thing}`);
       }
     });
-
-    const Soldier = Person.extend({
+     const Soldier = Person.extend({
       say(thing) {
         this._super(`${thing}, sir!`);
       },
@@ -660,99 +524,83 @@ class CoreObject {
         alert(`${this.get('name')} marches for ${numberOfHours} hours.`);
       }
     });
-
-    let yehuda = Soldier.create({
+     let yehuda = Soldier.create({
       name: 'Yehuda Katz'
     });
-
-    yehuda.say('Yes');  // alerts "Yehuda Katz says: Yes, sir!"
+     yehuda.say('Yes');  // alerts "Yehuda Katz says: Yes, sir!"
     ```
-
-    The `create()` on line #17 creates an *instance* of the `Soldier` class.
+     The `create()` on line #17 creates an *instance* of the `Soldier` class.
     The `extend()` on line #8 creates a *subclass* of `Person`. Any instance
     of the `Person` class will *not* have the `march()` method.
-
-    You can also pass `Mixin` classes to add additional properties to the subclass.
-
-    ```javascript
+     You can also pass `Mixin` classes to add additional properties to the subclass.
+     ```javascript
     import EmberObject from '@ember/object';
     import Mixin from '@ember/object/mixin';
-
-    const Person = EmberObject.extend({
+     const Person = EmberObject.extend({
       say(thing) {
         alert(`${this.get('name')} says: ${thing}`);
       }
     });
-
-    const SingingMixin = Mixin.create({
+     const SingingMixin = Mixin.create({
       sing(thing) {
         alert(`${this.get('name')} sings: la la la ${thing}`);
       }
     });
-
-    const BroadwayStar = Person.extend(SingingMixin, {
+     const BroadwayStar = Person.extend(SingingMixin, {
       dance() {
         alert(`${this.get('name')} dances: tap tap tap tap `);
       }
     });
     ```
-
-    The `BroadwayStar` class contains three methods: `say()`, `sing()`, and `dance()`.
-
-    @method extend
+     The `BroadwayStar` class contains three methods: `say()`, `sing()`, and `dance()`.
+     @method extend
     @static
     @for @ember/object
     @param {Mixin} [mixins]* One or more Mixin classes
     @param {Object} [arguments]* Object containing values to use within the new class
     @public
   */
+
+
   static extend() {
     let Class = class extends this {};
     reopen.apply(Class.PrototypeMixin, arguments);
     return Class;
   }
-
   /**
     Creates an instance of a class. Accepts either no arguments, or an object
     containing values to initialize the newly instantiated object with.
-
-    ```javascript
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const Person = EmberObject.extend({
+     const Person = EmberObject.extend({
       helloWorld() {
         alert(`Hi, my name is ${this.get('name')}`);
       }
     });
-
-    let tom = Person.create({
+     let tom = Person.create({
       name: 'Tom Dale'
     });
-
-    tom.helloWorld(); // alerts "Hi, my name is Tom Dale".
+     tom.helloWorld(); // alerts "Hi, my name is Tom Dale".
     ```
-
-    `create` will call the `init` function if defined during
+     `create` will call the `init` function if defined during
     `AnyObject.extend`
-
-    If no arguments are passed to `create`, it will not set values to the new
+     If no arguments are passed to `create`, it will not set values to the new
     instance during initialization:
-
-    ```javascript
+     ```javascript
     let noName = Person.create();
     noName.helloWorld(); // alerts undefined
     ```
-
-    NOTE: For performance reasons, you cannot declare methods or computed
+     NOTE: For performance reasons, you cannot declare methods or computed
     properties during `create`. You should instead declare methods and computed
     properties when using `extend`.
-
-    @method create
+     @method create
     @for @ember/object
     @static
     @param [arguments]*
     @public
   */
+
+
   static create(props, extra) {
     let C = this;
     let instance = new C(DELAY_INIT);
@@ -765,41 +613,34 @@ class CoreObject {
 
     return instance;
   }
-
   /**
     Augments a constructor's prototype with additional
     properties and functions:
-
-    ```javascript
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const MyObject = EmberObject.extend({
+     const MyObject = EmberObject.extend({
       name: 'an object'
     });
-
-    o = MyObject.create();
+     o = MyObject.create();
     o.get('name'); // 'an object'
-
-    MyObject.reopen({
+     MyObject.reopen({
       say(msg) {
         console.log(msg);
       }
     });
-
-    o2 = MyObject.create();
+     o2 = MyObject.create();
     o2.say('hello'); // logs "hello"
-
-    o.say('goodbye'); // logs "goodbye"
+     o.say('goodbye'); // logs "goodbye"
     ```
-
-    To add functions and properties to the constructor itself,
+     To add functions and properties to the constructor itself,
     see `reopenClass`
-
-    @method reopen
+     @method reopen
     @for @ember/object
     @static
     @public
   */
+
+
   static reopen() {
     this.willReopen();
     reopen.apply(this.PrototypeMixin, arguments);
@@ -808,79 +649,66 @@ class CoreObject {
 
   static willReopen() {
     let p = this.prototype;
-    if (wasApplied.has(p)) {
-      wasApplied.delete(p);
 
-      // If the base mixin already exists and was applied, create a new mixin to
+    if (wasApplied.has(p)) {
+      wasApplied.delete(p); // If the base mixin already exists and was applied, create a new mixin to
       // make sure that it gets properly applied. Reusing the same mixin after
       // the first `proto` call will cause it to get skipped.
+
       if (prototypeMixinMap.has(this)) {
         prototypeMixinMap.set(this, Mixin.create(this.PrototypeMixin));
       }
     }
   }
-
   /**
     Augments a constructor's own properties and functions:
-
-    ```javascript
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const MyObject = EmberObject.extend({
+     const MyObject = EmberObject.extend({
       name: 'an object'
     });
-
-    MyObject.reopenClass({
+     MyObject.reopenClass({
       canBuild: false
     });
-
-    MyObject.canBuild; // false
+     MyObject.canBuild; // false
     o = MyObject.create();
     ```
-
-    In other words, this creates static properties and functions for the class.
+     In other words, this creates static properties and functions for the class.
     These are only available on the class and not on any instance of that class.
-
-    ```javascript
+     ```javascript
     import EmberObject from '@ember/object';
-
-    const Person = EmberObject.extend({
+     const Person = EmberObject.extend({
       name: '',
       sayHello() {
         alert(`Hello. My name is ${this.get('name')}`);
       }
     });
-
-    Person.reopenClass({
+     Person.reopenClass({
       species: 'Homo sapiens',
-
-      createPerson(name) {
+       createPerson(name) {
         return Person.create({ name });
       }
     });
-
-    let tom = Person.create({
+     let tom = Person.create({
       name: 'Tom Dale'
     });
     let yehuda = Person.createPerson('Yehuda Katz');
-
-    tom.sayHello(); // "Hello. My name is Tom Dale"
+     tom.sayHello(); // "Hello. My name is Tom Dale"
     yehuda.sayHello(); // "Hello. My name is Yehuda Katz"
     alert(Person.species); // "Homo sapiens"
     ```
-
-    Note that `species` and `createPerson` are *not* valid on the `tom` and `yehuda`
+     Note that `species` and `createPerson` are *not* valid on the `tom` and `yehuda`
     variables. They are only valid on `Person`.
-
-    To add functions and properties to instances of
+     To add functions and properties to instances of
     a constructor by extending the constructor's prototype
     see `reopen`
-
-    @method reopenClass
+     @method reopenClass
     @for @ember/object
     @static
     @public
   */
+
+
   static reopenClass() {
     applyMixin(this, arguments);
     return this;
@@ -890,76 +718,69 @@ class CoreObject {
     if ('function' !== typeof obj) {
       return false;
     }
+
     while (obj) {
       if (obj === this) {
         return true;
       }
+
       obj = obj.superclass;
     }
+
     return false;
   }
 
   static detectInstance(obj) {
     return obj instanceof this;
   }
-
   /**
     In some cases, you may want to annotate computed properties with additional
     metadata about how they function or what values they operate on. For
     example, computed property functions may close over variables that are then
     no longer available for introspection.
-
-    You can pass a hash of these values to a computed property like this:
-
-    ```javascript
+     You can pass a hash of these values to a computed property like this:
+     ```javascript
     import { computed } from '@ember/object';
-
-    person: computed(function() {
+     person: computed(function() {
       let personId = this.get('personId');
       return Person.create({ id: personId });
     }).meta({ type: Person })
     ```
-
-    Once you've done this, you can retrieve the values saved to the computed
+     Once you've done this, you can retrieve the values saved to the computed
     property from your class like this:
-
-    ```javascript
+     ```javascript
     MyClass.metaForProperty('person');
     ```
-
-    This will return the original hash that was passed to `meta()`.
-
-    @static
+     This will return the original hash that was passed to `meta()`.
+     @static
     @method metaForProperty
     @param key {String} property name
     @private
   */
+
+
   static metaForProperty(key) {
     let proto = this.proto(); // ensure prototype is initialized
-    let possibleDesc = descriptorFor(proto, key);
 
-    assert(
-      `metaForProperty() could not find a computed property with key '${key}'.`,
-      possibleDesc !== undefined
-    );
-
+    let possibleDesc = descriptorForProperty(proto, key);
+    assert(`metaForProperty() could not find a computed property with key '${key}'.`, possibleDesc !== undefined);
     return possibleDesc._meta || {};
   }
-
   /**
     Iterate over each computed property for the class, passing its name
     and any associated metadata (see `metaForProperty`) to the callback.
-
-    @static
+     @static
     @method eachComputedProperty
     @param {Function} callback
     @param {Object} binding
     @private
   */
+
+
   static eachComputedProperty(callback, binding = this) {
     this.proto(); // ensure prototype is initialized
-    let empty = {};
 
+    let empty = {};
     meta(this.prototype).forEachDescriptors((name, descriptor) => {
       if (descriptor.enumerable) {
         let meta = descriptor._meta || empty;
@@ -970,11 +791,13 @@ class CoreObject {
 
   static get PrototypeMixin() {
     let prototypeMixin = prototypeMixinMap.get(this);
+
     if (prototypeMixin === undefined) {
       prototypeMixin = Mixin.create();
       prototypeMixin.ownerConstructor = this;
       prototypeMixinMap.set(this, prototypeMixin);
     }
+
     return prototypeMixin;
   }
 
@@ -985,46 +808,44 @@ class CoreObject {
 
   static proto() {
     let p = this.prototype;
+
     if (!wasApplied.has(p)) {
       wasApplied.add(p);
       let parent = this.superclass;
+
       if (parent) {
         parent.proto();
-      }
-
-      // If the prototype mixin exists, apply it. In the case of native classes,
+      } // If the prototype mixin exists, apply it. In the case of native classes,
       // it will not exist (unless the class has been reopened).
+
+
       if (prototypeMixinMap.has(this)) {
         this.PrototypeMixin.apply(p);
       }
     }
+
     return p;
   }
+
 }
 
 CoreObject.toString = classToString;
 setName(CoreObject, 'Ember.CoreObject');
-
 CoreObject.isClass = true;
 CoreObject.isMethod = false;
 
 function flattenProps(...props) {
-  let { concatenatedProperties, mergedProperties } = this;
-  let hasConcatenatedProps =
-    concatenatedProperties !== undefined && concatenatedProperties.length > 0;
+  let {
+    concatenatedProperties,
+    mergedProperties
+  } = this;
+  let hasConcatenatedProps = concatenatedProperties !== undefined && concatenatedProperties.length > 0;
   let hasMergedProps = mergedProperties !== undefined && mergedProperties.length > 0;
-
   let initProperties = {};
 
   for (let i = 0; i < props.length; i++) {
     let properties = props[i];
-
-    assert(
-      'EmberObject.create no longer supports mixing in other ' +
-        'definitions, use .extend & .create separately instead.',
-      !(properties instanceof Mixin)
-    );
-
+    assert('EmberObject.create no longer supports mixing in other ' + 'definitions, use .extend & .create separately instead.', !(properties instanceof Mixin));
     let keyNames = Object.keys(properties);
 
     for (let j = 0, k = keyNames.length; j < k; j++) {
@@ -1043,7 +864,6 @@ function flattenProps(...props) {
 
       if (hasMergedProps && mergedProperties.indexOf(keyName) > -1) {
         let baseValue = initProperties[keyName];
-
         value = assign({}, baseValue, value);
       }
 
@@ -1057,8 +877,7 @@ function flattenProps(...props) {
 if (DEBUG) {
   /**
     Provides lookup-time type validation for injected properties.
-
-    @private
+     @private
     @method _onLookup
   */
   CoreObject._onLookup = function injectedPropertyAssertion(debugContainerKey) {
@@ -1066,37 +885,42 @@ if (DEBUG) {
     let proto = this.proto();
 
     for (let key in proto) {
-      let desc = descriptorFor(proto, key);
-      if (desc instanceof InjectedProperty) {
-        assert(
-          `Defining \`${key}\` as an injected controller property on a non-controller (\`${debugContainerKey}\`) is not allowed.`,
-          type === 'controller' || desc.type !== 'controller'
-        );
+      let desc = descriptorForProperty(proto, key);
+
+      if (desc && DEBUG_INJECTION_FUNCTIONS.has(desc._getter)) {
+        assert(`Defining \`${key}\` as an injected controller property on a non-controller (\`${debugContainerKey}\`) is not allowed.`, type === 'controller' || DEBUG_INJECTION_FUNCTIONS.get(desc._getter).type !== 'controller');
       }
     }
   };
-
   /**
     Returns a hash of property names and container names that injected
     properties will lookup on the container lazily.
-
-    @method _lazyInjections
+     @method _lazyInjections
     @return {Object} Hash of all lazy injected property keys to container names
     @private
   */
-  CoreObject._lazyInjections = function() {
+
+
+  CoreObject._lazyInjections = function () {
     let injections = {};
     let proto = this.proto();
     let key;
     let desc;
 
     for (key in proto) {
-      desc = descriptorFor(proto, key);
-      if (desc instanceof InjectedProperty) {
+      desc = descriptorForProperty(proto, key);
+
+      if (desc && DEBUG_INJECTION_FUNCTIONS.has(desc._getter)) {
+        let {
+          namespace,
+          source,
+          type,
+          name
+        } = DEBUG_INJECTION_FUNCTIONS.get(desc._getter);
         injections[key] = {
-          namespace: desc.namespace,
-          source: desc.source,
-          specifier: `${desc.type}:${desc.name || key}`,
+          namespace,
+          source,
+          specifier: `${type}:${name || key}`
         };
       }
     }

@@ -1,4 +1,3 @@
-import { EMBER_ENGINES_MOUNT_PARAMS } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { curry, UNDEFINED_REFERENCE, } from '@glimmer/runtime';
 import * as WireFormat from '@glimmer/wire-format';
@@ -47,16 +46,10 @@ export function mountHelper(vm, args) {
   @param {Object} [model] Object that will be set as
                           the model of the engine.
   @for Ember.Templates.helpers
-  @category ember-application-engines
   @public
 */
 export function mountMacro(_name, params, hash, builder) {
-    if (EMBER_ENGINES_MOUNT_PARAMS) {
-        assert('You can only pass a single positional argument to the {{mount}} helper, e.g. {{mount "chat-engine"}}.', params.length === 1);
-    }
-    else {
-        assert('You can only pass a single argument to the {{mount}} helper, e.g. {{mount "chat-engine"}}.', params.length === 1 && hash === null);
-    }
+    assert('You can only pass a single positional argument to the {{mount}} helper, e.g. {{mount "chat-engine"}}.', params.length === 1);
     let expr = [WireFormat.Ops.Helper, '-mount', params || [], hash];
     builder.dynamicComponent(expr, null, [], null, false, null, null);
     return true;

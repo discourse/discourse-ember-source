@@ -2,7 +2,7 @@ import { privatize as P } from '@ember/-internals/container';
 import { ENV } from '@ember/-internals/environment';
 import { setOwner } from '@ember/-internals/owner';
 import { lookupComponent, lookupPartial } from '@ember/-internals/views';
-import { EMBER_GLIMMER_ARRAY_HELPER, EMBER_MODULE_UNIFICATION, GLIMMER_CUSTOM_COMPONENT_MANAGER, GLIMMER_MODIFIER_MANAGER, } from '@ember/canary-features';
+import { EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS, EMBER_MODULE_UNIFICATION, } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { _instrumentStart } from '@ember/instrumentation';
 import { LazyCompiler, Macros, PartialDefinition } from '@glimmer/opcode-compiler';
@@ -10,11 +10,11 @@ import { getDynamicVar } from '@glimmer/runtime';
 import CompileTimeLookup from './compile-time-lookup';
 import { CurlyComponentDefinition } from './component-managers/curly';
 import { CustomManagerDefinition } from './component-managers/custom';
+import { InternalComponentDefinition, } from './component-managers/internal';
 import { TemplateOnlyComponentDefinition } from './component-managers/template-only';
 import { isHelperFactory, isSimpleHelper } from './helper';
 import { default as componentAssertionHelper } from './helpers/-assert-implicit-component-helper-argument';
 import { default as classHelper } from './helpers/-class';
-import { default as htmlSafeHelper } from './helpers/-html-safe';
 import { default as inputTypeHelper } from './helpers/-input-type';
 import { default as normalizeClassHelper } from './helpers/-normalize-class';
 import { default as action } from './helpers/action';
@@ -34,8 +34,8 @@ import { CustomModifierDefinition } from './modifiers/custom';
 import { populateMacros } from './syntax';
 import { mountHelper } from './syntax/mount';
 import { outletHelper } from './syntax/outlet';
-import { getComponentManager } from './utils/custom-component-manager';
 import { getModifierManager } from './utils/custom-modifier-manager';
+import { getManager } from './utils/managers';
 import { ClassBasedHelperReference, SimpleHelperReference } from './utils/references';
 function instrumentationPayload(name) {
     return { object: `component:${name}` };
@@ -49,6 +49,7 @@ function makeOptions(moduleName, namespace) {
 const BUILTINS_HELPERS = {
     if: inlineIf,
     action,
+    array,
     concat,
     get,
     hash,
@@ -62,15 +63,11 @@ const BUILTINS_HELPERS = {
     '-each-in': eachIn,
     '-input-type': inputTypeHelper,
     '-normalize-class': normalizeClassHelper,
-    '-html-safe': htmlSafeHelper,
     '-get-dynamic-var': getDynamicVar,
     '-mount': mountHelper,
     '-outlet': outletHelper,
     '-assert-implicit-component-helper-argument': componentAssertionHelper,
 };
-if (EMBER_GLIMMER_ARRAY_HELPER) {
-    BUILTINS_HELPERS['array'] = array;
-}
 const BUILTIN_MODIFIERS = {
     action: { manager: new ActionModifierManager(), state: null },
 };
@@ -110,6 +107,7 @@ export default class RuntimeResolver {
     lookupComponentHandle(name, meta) {
         let nextHandle = this.handles.length;
         let handle = this.handle(this._lookupComponentDefinition(name, meta));
+        assert('Could not find component `<TextArea />` (did you mean `<Textarea />`?)', !(EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS && name === 'text-area' && handle === null));
         if (nextHandle === handle) {
             this.componentDefinitionCount++;
         }
@@ -229,7 +227,7 @@ export default class RuntimeResolver {
     }
     _lookupModifier(name, meta) {
         let builtin = this.builtInModifiers[name];
-        if (GLIMMER_MODIFIER_MANAGER && builtin === undefined) {
+        if (builtin === undefined) {
             let { owner } = meta;
             let modifier = owner.factoryFor(`modifier:${name}`);
             if (modifier !== undefined) {
@@ -250,9 +248,9 @@ export default class RuntimeResolver {
         }
         return { name, namespace };
     }
-    _lookupComponentDefinition(_name, meta) {
-        assert('You cannot use `textarea` as a component name.', _name !== 'textarea');
-        assert('You cannot use `input` as a component name.', _name !== 'input');
+    _lookupComponentDefinition(_name, { moduleName, owner }) {
+        assert('Invoking `{{textarea}}` using angle bracket syntax or `component` helper is not yet supported.', EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS || _name !== 'textarea');
+        assert('Invoking `{{input}}` using angle bracket syntax or `component` helper is not yet supported.', EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS || _name !== 'input');
         let name = _name;
         let namespace = undefined;
         if (EMBER_MODULE_UNIFICATION) {
@@ -260,7 +258,7 @@ export default class RuntimeResolver {
             name = parsed.name;
             namespace = parsed.namespace;
         }
-        let { layout, component } = lookupComponent(meta.owner, name, makeOptions(meta.moduleName, namespace));
+        let { layout, component } = lookupComponent(owner, name, makeOptions(moduleName, namespace));
         let key = component === undefined ? layout : component;
         if (key === undefined) {
             return null;
@@ -270,21 +268,25 @@ export default class RuntimeResolver {
             return cachedComponentDefinition;
         }
         let finalizer = _instrumentStart('render.getComponentDefinition', instrumentationPayload, name);
-        let definition;
+        let definition = null;
         if (layout !== undefined && component === undefined && ENV._TEMPLATE_ONLY_GLIMMER_COMPONENTS) {
             definition = new TemplateOnlyComponentDefinition(layout);
         }
-        if (GLIMMER_CUSTOM_COMPONENT_MANAGER &&
-            component !== undefined &&
-            component.class !== undefined) {
-            let managerFactory = getComponentManager(component.class);
-            if (managerFactory) {
-                let delegate = managerFactory(meta.owner);
-                definition = new CustomManagerDefinition(name, component, delegate, layout || meta.owner.lookup(P `template:components/-default`));
+        if (component !== undefined && component.class !== undefined) {
+            let wrapper = getManager(component.class);
+            if (wrapper && wrapper.type === 'component') {
+                let { factory } = wrapper;
+                if (wrapper.internal) {
+                    assert(`missing layout for internal component ${name}`, layout !== undefined);
+                    definition = new InternalComponentDefinition(factory(owner), component.class, layout);
+                }
+                else {
+                    definition = new CustomManagerDefinition(name, component, factory(owner), layout || owner.lookup(P `template:components/-default`));
+                }
             }
         }
-        if (definition === undefined) {
-            definition = new CurlyComponentDefinition(name, component || meta.owner.factoryFor(P `component:-default`), null, layout // TODO fix type
+        if (definition === null) {
+            definition = new CurlyComponentDefinition(name, component || owner.factoryFor(P `component:-default`), null, layout // TODO fix type
             );
         }
         finalizer();

@@ -1,5 +1,4 @@
 import { assert } from '@ember/debug';
-import { valueForCapturedArgs } from '../utils/managers';
 import { RootReference } from '../utils/references';
 import AbstractComponentManager from './abstract';
 const CAPABILITIES = {
@@ -56,12 +55,11 @@ export default class CustomComponentManager extends AbstractComponentManager {
     create(_env, definition, args) {
         const { delegate } = definition;
         const capturedArgs = args.capture();
-        let invocationArgs = valueForCapturedArgs(capturedArgs);
-        const component = delegate.createComponent(definition.ComponentClass.class, invocationArgs);
+        const component = delegate.createComponent(definition.ComponentClass.class, capturedArgs.value());
         return new CustomComponentState(delegate, component, capturedArgs);
     }
     update({ delegate, component, args }) {
-        delegate.updateComponent(component, valueForCapturedArgs(args));
+        delegate.updateComponent(component, args.value());
     }
     didCreate({ delegate, component }) {
         if (hasAsyncLifeCycleCallbacks(delegate)) {
@@ -76,9 +74,8 @@ export default class CustomComponentManager extends AbstractComponentManager {
     getContext({ delegate, component }) {
         delegate.getContext(component);
     }
-    getSelf({ delegate, component, }) {
-        const context = delegate.getContext(component);
-        return new RootReference(context);
+    getSelf({ delegate, component }) {
+        return RootReference.create(delegate.getContext(component));
     }
     getDestructor(state) {
         if (hasDestructors(state.delegate)) {

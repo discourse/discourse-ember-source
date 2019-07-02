@@ -5,7 +5,6 @@ import { checkWaiters } from '../test/waiters';
 import { RSVP } from '@ember/-internals/runtime';
 import { getCurrentRunLoop, hasScheduledTimers, run } from '@ember/runloop';
 import { pendingRequests } from '../test/pending_requests';
-
 /**
   Causes the run loop to process any pending events. This is used to ensure that
   any async operations from other helpers (or your assertions) have been processed.
@@ -36,37 +35,37 @@ import { pendingRequests } from '../test/pending_requests';
   @public
   @since 1.0.0
 */
-export default function wait(app, value) {
-  return new RSVP.Promise(function(resolve) {
-    let router = app.__container__.lookup('router:main');
 
-    // Every 10ms, poll for the async thing to have finished
+export default function wait(app, value) {
+  return new RSVP.Promise(function (resolve) {
+    let router = app.__container__.lookup('router:main'); // Every 10ms, poll for the async thing to have finished
+
+
     let watcher = setInterval(() => {
       // 1. If the router is loading, keep polling
-      let routerIsLoading =
-        router._routerMicrolib && Boolean(router._routerMicrolib.activeTransition);
+      let routerIsLoading = router._routerMicrolib && Boolean(router._routerMicrolib.activeTransition);
+
       if (routerIsLoading) {
         return;
-      }
+      } // 2. If there are pending Ajax requests, keep polling
 
-      // 2. If there are pending Ajax requests, keep polling
+
       if (pendingRequests()) {
         return;
-      }
+      } // 3. If there are scheduled timers or we are inside of a run loop, keep polling
 
-      // 3. If there are scheduled timers or we are inside of a run loop, keep polling
+
       if (hasScheduledTimers() || getCurrentRunLoop()) {
         return;
       }
 
       if (checkWaiters()) {
         return;
-      }
+      } // Stop polling
 
-      // Stop polling
-      clearInterval(watcher);
 
-      // Synchronously resolve the promise
+      clearInterval(watcher); // Synchronously resolve the promise
+
       run(null, resolve, value);
     }, 10);
   });

@@ -1,5 +1,5 @@
 import { dict, unreachable, Stack, DictSet } from '@glimmer/util';
-import { Ops, isFlushElement, isArgument, isAttribute, isAttrSplat } from '@glimmer/wire-format';
+import { Ops, isFlushElement, isArgument, isAttribute } from '@glimmer/wire-format';
 import { isLiteral, SyntaxError, preprocess } from '@glimmer/syntax';
 
 class SymbolTable {
@@ -353,8 +353,6 @@ class ComponentBlock extends Block {
                 this.arguments.push(statement);
             } else if (isAttribute(statement)) {
                 this.attributes.push(statement);
-            } else if (isAttrSplat(statement)) {
-                this.attributes.push(statement);
             } else {
                 throw new Error('Compile Error: only parameters allowed before flush-element');
             }
@@ -489,9 +487,17 @@ class JavaScriptCompiler {
         let value = this.popValue();
         this.push([Ops.DynamicAttr, name, value, namespace]);
     }
+    componentAttr([name, namespace]) {
+        let value = this.popValue();
+        this.push([Ops.ComponentAttr, name, value, namespace]);
+    }
     trustingAttr([name, namespace]) {
         let value = this.popValue();
         this.push([Ops.TrustingAttr, name, value, namespace]);
+    }
+    trustingComponentAttr([name, namespace]) {
+        let value = this.popValue();
+        this.push([Ops.TrustingComponentAttr, name, value, namespace]);
     }
     staticArg(name) {
         let value = this.popValue();
@@ -743,7 +749,9 @@ class SymbolAllocator {
     dynamicArg(_op) {}
     staticAttr(_op) {}
     trustingAttr(_op) {}
+    trustingComponentAttr(_op) {}
     dynamicAttr(_op) {}
+    componentAttr(_op) {}
     modifier(_op) {}
     append(_op) {}
     block(_op) {}
@@ -808,14 +816,15 @@ class TemplateCompiler {
     }
     openElement([action]) {
         let attributes = action.attributes;
-        let hasSplat;
+        let hasSplat = false;
         for (let i = 0; i < attributes.length; i++) {
             let attr = attributes[i];
             if (attr.name === '...attributes') {
-                hasSplat = attr;
+                hasSplat = true;
                 break;
             }
         }
+        let actionIsComponent = false;
         if (isDynamicComponent(action)) {
             let head, rest;
             [head, ...rest] = action.tag.split('.');
@@ -824,8 +833,10 @@ class TemplateCompiler {
             }
             this.opcode(['get', [head, rest]]);
             this.opcode(['openComponent', action], action);
+            actionIsComponent = true;
         } else if (isComponent(action)) {
             this.opcode(['openComponent', action], action);
+            actionIsComponent = true;
         } else if (hasSplat) {
             this.opcode(['openSplattedElement', action], action);
         } else {
@@ -838,10 +849,10 @@ class TemplateCompiler {
                 typeAttr = attrs[i];
                 continue;
             }
-            this.attribute([attrs[i]]);
+            this.attribute([attrs[i]], hasSplat || actionIsComponent);
         }
         if (typeAttr) {
-            this.attribute([typeAttr]);
+            this.attribute([typeAttr], hasSplat || actionIsComponent);
         }
         this.opcode(['flushElement', action], null);
     }
@@ -859,7 +870,7 @@ class TemplateCompiler {
             this.opcode(['closeElement', action], action);
         }
     }
-    attribute([action]) {
+    attribute([action], isComponent) {
         let { name, value } = action;
         let namespace = getAttrNamespace(name);
         let isStatic = this.prepareAttributeValue(value);
@@ -876,14 +887,14 @@ class TemplateCompiler {
             let isTrusting = isTrustedValue(value);
             if (isStatic && name === '...attributes') {
                 this.opcode(['attrSplat', null], action);
-            } else if (isStatic) {
+            } else if (isStatic && !isComponent) {
                 this.opcode(['staticAttr', [name, namespace]], action);
             } else if (isTrusting) {
-                this.opcode(['trustingAttr', [name, namespace]], action);
+                this.opcode([isComponent ? 'trustingComponentAttr' : 'trustingAttr', [name, namespace]], action);
             } else if (action.value.type === 'MustacheStatement') {
-                this.opcode(['dynamicAttr', [name, null]], action);
+                this.opcode([isComponent ? 'componentAttr' : 'dynamicAttr', [name, null]], action);
             } else {
-                this.opcode(['dynamicAttr', [name, namespace]], action);
+                this.opcode([isComponent ? 'componentAttr' : 'dynamicAttr', [name, namespace]], action);
             }
         }
     }

@@ -3,10 +3,6 @@ import { isProxy } from '@ember/-internals/utils';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { backburner } from '@ember/runloop';
 import { combine, CONSTANT_TAG, DirtyableTag, UpdatableTag, } from '@glimmer/reference';
-let hasViews = () => false;
-export function setHasViews(fn) {
-    hasViews = fn;
-}
 function makeTag() {
     return DirtyableTag.create();
 }
@@ -75,8 +71,6 @@ export function markObjectAsDirty(obj, propertyKey, meta) {
         ensureRunloop();
     }
 }
-function ensureRunloop() {
-    if (hasViews()) {
-        backburner.ensureInstance();
-    }
+export function ensureRunloop() {
+    backburner.ensureInstance();
 }

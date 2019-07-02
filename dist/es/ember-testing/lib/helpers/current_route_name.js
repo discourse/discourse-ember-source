@@ -19,7 +19,9 @@ visit('/some/path').then(validateRouteName)
 @since 1.5.0
 @public
 */
+
 export default function currentRouteName(app) {
   let routingService = app.__container__.lookup('service:-routing');
+
   return get(routingService, 'currentRouteName');
 }

@@ -19,7 +19,7 @@ const CAPABILITIES = {
     elementHook: false,
     createCaller: true,
     dynamicScope: true,
-    updateHook: true,
+    updateHook: false,
     createInstance: true,
 };
 class OutletComponentManager extends AbstractManager {
@@ -34,9 +34,6 @@ class OutletComponentManager extends AbstractManager {
             self,
             finalize: _instrumentStart('render.outlet', instrumentationPayload, definition),
         };
-    }
-    layoutFor(_state, _component, _env) {
-        throw new Error('Method not implemented.');
     }
     getLayout({ template }, _resolver) {
         // The router has already resolved the template

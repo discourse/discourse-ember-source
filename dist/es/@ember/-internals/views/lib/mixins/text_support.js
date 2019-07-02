@@ -1,17 +1,15 @@
 /**
 @module ember
 */
-
 import { get, set, Mixin } from '@ember/-internals/metal';
 import { TargetActionSupport } from '@ember/-internals/runtime';
+import { EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS } from '@ember/canary-features';
 import { deprecate } from '@ember/debug';
 import { SEND_ACTION } from '@ember/deprecated-features';
-
 const KEY_EVENTS = {
   13: 'insertNewline',
-  27: 'cancel',
+  27: 'cancel'
 };
-
 /**
   `TextSupport` is a shared mixin used by both `TextField` and
   `TextArea`. `TextSupport` adds a number of methods that allow you to
@@ -112,31 +110,17 @@ const KEY_EVENTS = {
   @extends Mixin
   @private
 */
+
 export default Mixin.create(TargetActionSupport, {
   value: '',
-
-  attributeBindings: [
-    'autocapitalize',
-    'autocorrect',
-    'autofocus',
-    'disabled',
-    'form',
-    'maxlength',
-    'minlength',
-    'placeholder',
-    'readonly',
-    'required',
-    'selectionDirection',
-    'spellcheck',
-    'tabindex',
-    'title',
-  ],
+  attributeBindings: ['autocapitalize', 'autocorrect', 'autofocus', 'disabled', 'form', 'maxlength', 'minlength', 'placeholder', 'readonly', 'required', 'selectionDirection', 'spellcheck', 'tabindex', 'title'],
   placeholder: null,
   disabled: false,
   maxlength: null,
 
   init() {
     this._super(...arguments);
+
     this.on('paste', this, this._elementValueDidChange);
     this.on('cut', this, this._elementValueDidChange);
     this.on('input', this, this._elementValueDidChange);
@@ -145,15 +129,12 @@ export default Mixin.create(TargetActionSupport, {
   /**
     Whether the `keyUp` event that triggers an `action` to be sent continues
     propagating to other views.
-
-    By default, when the user presses the return key on their keyboard and
+     By default, when the user presses the return key on their keyboard and
     the text field has an `action` set, the action will be sent to the view's
     controller and the key event will stop propagating.
-
-    If you would like parent views to receive the `keyUp` event even after an
+     If you would like parent views to receive the `keyUp` event even after an
     action has been dispatched, set `bubbles` to true.
-
-    @property bubbles
+     @property bubbles
     @type Boolean
     @default false
     @private
@@ -165,6 +146,7 @@ export default Mixin.create(TargetActionSupport, {
     let method = map[event.keyCode];
 
     this._elementValueDidChange();
+
     if (method) {
       return this[method](event);
     }
@@ -184,11 +166,9 @@ export default Mixin.create(TargetActionSupport, {
     is inserted. To use this method, give your field an `insert-newline`
     attribute. The value of that attribute should be the name of the action
     in your controller that you wish to invoke.
-
-    For an example on how to use the `insert-newline` attribute, please
+     For an example on how to use the `insert-newline` attribute, please
     reference the example near the top of this file.
-
-    @method insertNewline
+     @method insertNewline
     @param {Event} event
     @private
   */
@@ -202,11 +182,9 @@ export default Mixin.create(TargetActionSupport, {
     is pressed. To use this method, give your field an `escape-press`
     attribute. The value of that attribute should be the name of the action
     in your controller that you wish to invoke.
-
-    For an example on how to use the `escape-press` attribute, please reference
+     For an example on how to use the `escape-press` attribute, please reference
     the example near the top of this file.
-
-    @method cancel
+     @method cancel
     @param {Event} event
     @private
   */
@@ -219,11 +197,9 @@ export default Mixin.create(TargetActionSupport, {
     focus. To use this method, give your field a `focus-in` attribute. The value
     of that attribute should be the name of the action in your controller
     that you wish to invoke.
-
-    For an example on how to use the `focus-in` attribute, please reference the
+     For an example on how to use the `focus-in` attribute, please reference the
     example near the top of this file.
-
-    @method focusIn
+     @method focusIn
     @param {Event} event
     @private
   */
@@ -236,16 +212,15 @@ export default Mixin.create(TargetActionSupport, {
     focus. To use this method, give your field a `focus-out` attribute. The value
     of that attribute should be the name of the action in your controller
     that you wish to invoke.
-
-    For an example on how to use the `focus-out` attribute, please reference the
+     For an example on how to use the `focus-out` attribute, please reference the
     example near the top of this file.
-
-    @method focusOut
+     @method focusOut
     @param {Event} event
     @private
   */
   focusOut(event) {
     this._elementValueDidChange(event);
+
     sendAction('focus-out', this, event);
   },
 
@@ -254,11 +229,9 @@ export default Mixin.create(TargetActionSupport, {
     To use this method, give your field a `key-press` attribute. The value of
     that attribute should be the name of the action in your controller you
     that wish to invoke.
-
-    For an example on how to use the `key-press` attribute, please reference the
+     For an example on how to use the `key-press` attribute, please reference the
     example near the top of this file.
-
-    @method keyPress
+     @method keyPress
     @param {Event} event
     @private
   */
@@ -271,11 +244,9 @@ export default Mixin.create(TargetActionSupport, {
     fired. To use this method, give your field a `key-up` attribute. The value
     of that attribute should be the name of the action in your controller
     that you wish to invoke.
-
-    For an example on how to use the `key-up` attribute, please reference the
+     For an example on how to use the `key-up` attribute, please reference the
     example near the top of this file.
-
-    @method keyUp
+     @method keyUp
     @param {Event} event
     @private
   */
@@ -289,39 +260,34 @@ export default Mixin.create(TargetActionSupport, {
     fired. To use this method, give your field a `key-down` attribute. The value
     of that attribute should be the name of the action in your controller that
     you wish to invoke.
-
-    For an example on how to use the `key-down` attribute, please reference the
+     For an example on how to use the `key-down` attribute, please reference the
     example near the top of this file.
-
-    @method keyDown
+     @method keyDown
     @param {Event} event
     @private
   */
   keyDown(event) {
     sendAction('key-down', this, event);
-  },
-});
+  }
 
-// In principle, this shouldn't be necessary, but the legacy
+}); // In principle, this shouldn't be necessary, but the legacy
 // sendAction semantics for TextField are different from
 // the component semantics so this method normalizes them.
+
 function sendAction(eventName, view, event) {
   let actionName = get(view, `attrs.${eventName}`) || get(view, eventName);
   let value = get(view, 'value');
 
   if (SEND_ACTION && typeof actionName === 'string') {
-    deprecate(
-      `Passing actions to components as strings (like {{input ${eventName}="${actionName}"}}) is deprecated. Please use closure actions instead ({{input ${eventName}=(action "${actionName}")}})`,
-      false,
-      {
-        id: 'ember-component.send-action',
-        until: '4.0.0',
-        url: 'https://emberjs.com/deprecations/v3.x#toc_ember-component-send-action',
-      }
-    );
+    let message = EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS ? `Passing actions to components as strings (like \`<Input @${eventName}="${actionName}" />\`) is deprecated. Please use closure actions instead (\`<Input @${eventName}={{action "${actionName}"}} />\`).` : `Passing actions to components as strings (like \`{{input ${eventName}="${actionName}"}}\`) is deprecated. Please use closure actions instead (\`{{input ${eventName}=(action "${actionName}")}}\`).`;
+    deprecate(message, false, {
+      id: 'ember-component.send-action',
+      until: '4.0.0',
+      url: 'https://emberjs.com/deprecations/v3.x#toc_ember-component-send-action'
+    });
     view.triggerAction({
       action: actionName,
-      actionContext: [value, event],
+      actionContext: [value, event]
     });
   } else if (typeof actionName === 'function') {
     actionName(value, event);

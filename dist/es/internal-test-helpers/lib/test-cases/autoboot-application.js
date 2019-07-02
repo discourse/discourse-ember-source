@@ -2,11 +2,10 @@ import TestResolverApplicationTestCase from './test-resolver-application';
 import Application from '@ember/application';
 import { assign } from '@ember/polyfills';
 import { Router } from '@ember/-internals/routing';
-
 export default class AutobootApplicationTestCase extends TestResolverApplicationTestCase {
   createApplication(options, MyApplication = Application) {
     let myOptions = assign(this.applicationOptions, options);
-    let application = (this.application = MyApplication.create(myOptions));
+    let application = this.application = MyApplication.create(myOptions);
     this.resolver = application.__registry__.resolver;
 
     if (this.resolver) {
@@ -23,7 +22,9 @@ export default class AutobootApplicationTestCase extends TestResolverApplication
   }
 
   get applicationInstance() {
-    let { application } = this;
+    let {
+      application
+    } = this;
 
     if (!application) {
       return undefined;
@@ -31,4 +32,5 @@ export default class AutobootApplicationTestCase extends TestResolverApplication
 
     return application.__deprecatedInstance__;
   }
+
 }

@@ -75,29 +75,34 @@ const time = (() => {
     let fn = perf.now || perf.mozNow || perf.webkitNow || perf.msNow || perf.oNow;
     return fn ? fn.bind(perf) : Date.now;
 })();
+function isCallback(value) {
+    return typeof value === 'function';
+}
 export function instrument(name, p1, p2, p3) {
-    let payload;
+    let _payload;
     let callback;
     let binding;
-    if (arguments.length <= 3 && typeof p1 === 'function') {
-        payload = {};
+    if (arguments.length <= 3 && isCallback(p1)) {
         callback = p1;
         binding = p2;
     }
     else {
-        payload = (p1 || {});
+        _payload = p1;
         callback = p2;
         binding = p3;
     }
+    // fast path
     if (subscribers.length === 0) {
         return callback.call(binding);
     }
+    // avoid allocating the payload in fast path
+    let payload = _payload || {};
     let finalizer = _instrumentStart(name, () => payload);
-    if (finalizer) {
-        return withFinalizer(callback, finalizer, payload, binding);
+    if (finalizer === NOOP) {
+        return callback.call(binding);
     }
     else {
-        return callback.call(binding);
+        return withFinalizer(callback, finalizer, payload, binding);
     }
 }
 let flaggedInstrument;
@@ -105,25 +110,25 @@ if (EMBER_IMPROVED_INSTRUMENTATION) {
     flaggedInstrument = instrument;
 }
 else {
-    flaggedInstrument = (_name, _payload, callback) => callback();
+    flaggedInstrument = function instrument(_name, _payload, callback) {
+        return callback();
+    };
 }
 export { flaggedInstrument };
 function withFinalizer(callback, finalizer, payload, binding) {
-    let result;
     try {
-        result = callback.call(binding);
+        return callback.call(binding);
     }
     catch (e) {
         payload.exception = e;
-        result = payload;
+        throw e;
     }
     finally {
         finalizer();
     }
-    return result;
 }
 function NOOP() { }
-export function _instrumentStart(name, _payload, _payloadParam) {
+export function _instrumentStart(name, payloadFunc, payloadArg) {
     if (subscribers.length === 0) {
         return NOOP;
     }
@@ -134,27 +139,23 @@ export function _instrumentStart(name, _payload, _payloadParam) {
     if (listeners.length === 0) {
         return NOOP;
     }
-    let payload = _payload(_payloadParam);
+    let payload = payloadFunc(payloadArg);
     let STRUCTURED_PROFILE = ENV.STRUCTURED_PROFILE;
     let timeName;
     if (STRUCTURED_PROFILE) {
         timeName = `${name}: ${payload.object}`;
         console.time(timeName);
     }
-    let beforeValues = new Array(listeners.length);
-    let i;
-    let listener;
+    let beforeValues = [];
     let timestamp = time();
-    for (i = 0; i < listeners.length; i++) {
-        listener = listeners[i];
-        beforeValues[i] = listener.before(name, timestamp, payload);
+    for (let i = 0; i < listeners.length; i++) {
+        let listener = listeners[i];
+        beforeValues.push(listener.before(name, timestamp, payload));
     }
     return function _instrumentEnd() {
-        let i;
-        let listener;
         let timestamp = time();
-        for (i = 0; i < listeners.length; i++) {
-            listener = listeners[i];
+        for (let i = 0; i < listeners.length; i++) {
+            let listener = listeners[i];
             if (typeof listener.after === 'function') {
                 listener.after(name, timestamp, payload, beforeValues[i]);
             }

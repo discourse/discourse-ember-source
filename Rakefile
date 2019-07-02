@@ -11,7 +11,7 @@ Rake::TestTask.new(:test) do |t|
 end
 
 task :default do
-  ember_version = Ember::VERSION[/\d\.\d\.\d/]
+  ember_version = Ember::VERSION[/\d+\.\d+\.\d+/]
 
   puts "Fetching Ember v#{ember_version}"
 

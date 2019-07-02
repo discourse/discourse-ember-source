@@ -1,15 +1,16 @@
+import { EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS } from '@ember/canary-features';
 import { assert } from '@ember/debug';
-import { textAreaMacro } from './syntax/-text-area';
 import { inputMacro } from './syntax/input';
 import { blockLetMacro } from './syntax/let';
 import { mountMacro } from './syntax/mount';
 import { outletMacro } from './syntax/outlet';
+import { textAreaMacro } from './syntax/textarea';
 import { hashToArgs } from './syntax/utils';
 import { wrapComponentClassAttribute } from './utils/bindings';
 function refineInlineSyntax(name, params, hash, builder) {
     assert(`You attempted to overwrite the built-in helper "${name}" which is not allowed. Please rename the helper.`, !(builder.compiler['resolver']['resolver']['builtInHelpers'][name] &&
         builder.referrer.owner.hasRegistration(`helper:${name}`)));
-    if (name.indexOf('-') === -1) {
+    if (!EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS && name.indexOf('-') === -1) {
         return false;
     }
     let handle = builder.compiler['resolver'].lookupComponentDefinition(name, builder.referrer);
@@ -20,7 +21,7 @@ function refineInlineSyntax(name, params, hash, builder) {
     return false;
 }
 function refineBlockSyntax(name, params, hash, template, inverse, builder) {
-    if (name.indexOf('-') === -1) {
+    if (!EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS && name.indexOf('-') === -1) {
         return false;
     }
     let handle = builder.compiler['resolver'].lookupComponentDefinition(name, builder.referrer);
@@ -52,8 +53,10 @@ export function populateMacros(macros) {
     let { inlines, blocks } = macros;
     inlines.add('outlet', outletMacro);
     inlines.add('mount', mountMacro);
-    inlines.add('input', inputMacro);
-    inlines.add('textarea', textAreaMacro);
+    if (!EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
+        inlines.add('input', inputMacro);
+        inlines.add('textarea', textAreaMacro);
+    }
     inlines.addMissing(refineInlineSyntax);
     blocks.add('let', blockLetMacro);
     blocks.addMissing(refineBlockSyntax);

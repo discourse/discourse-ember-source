@@ -1,7 +1,7 @@
 const MANAGERS = new WeakMap();
 const getPrototypeOf = Object.getPrototypeOf;
-export function setManager(factory, obj) {
-    MANAGERS.set(obj, factory);
+export function setManager(wrapper, obj) {
+    MANAGERS.set(obj, wrapper);
     return obj;
 }
 export function getManager(obj) {
@@ -12,11 +12,5 @@ export function getManager(obj) {
         }
         pointer = getPrototypeOf(pointer);
     }
-    return;
-}
-export function valueForCapturedArgs(args) {
-    return {
-        named: args.named.value(),
-        positional: args.positional.value(),
-    };
+    return null;
 }

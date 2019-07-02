@@ -19,6 +19,7 @@ class ReduceTests extends AbstractTestCase {
     let res = obj.reduce((previousValue, item, index, enumerable) => enumerable, 0);
     this.assert.equal(res, obj);
   }
+
 }
 
 runArrayTests('reduce', ReduceTests);

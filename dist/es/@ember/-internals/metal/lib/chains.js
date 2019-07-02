@@ -1,5 +1,6 @@
-import { descriptorFor, meta as metaFor, peekMeta } from '@ember/-internals/meta';
+import { meta as metaFor, peekMeta } from '@ember/-internals/meta';
 import { getCachedValueFor } from './computed_cache';
+import { descriptorForProperty } from './descriptor_map';
 import { eachProxyFor } from './each_proxy';
 import { get } from './property_get';
 import { unwatchKey, watchKey } from './watch_key';
@@ -7,7 +8,7 @@ function isObject(obj) {
     return typeof obj === 'object' && obj !== null;
 }
 function isVolatile(obj, keyName, meta) {
-    let desc = descriptorFor(obj, keyName, meta);
+    let desc = descriptorForProperty(obj, keyName, meta);
     return !(desc !== undefined && desc._volatile === false);
 }
 class ChainWatchers {

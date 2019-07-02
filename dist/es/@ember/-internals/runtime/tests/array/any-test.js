@@ -8,12 +8,10 @@ class AnyTests extends AbstractTestCase {
     let ary = this.toArray(obj);
     let found = [];
     let result;
-
-    result = obj.any(function(i) {
+    result = obj.any(function (i) {
       found.push(i);
       return false;
     });
-
     this.assert.equal(result, false, 'return value of obj.any');
     this.assert.deepEqual(found, ary, 'items passed during any() should match');
   }
@@ -25,8 +23,7 @@ class AnyTests extends AbstractTestCase {
     let exp = cnt;
     let found = [];
     let result;
-
-    result = obj.any(function(i) {
+    result = obj.any(function (i) {
       found.push(i);
       return --cnt <= 0;
     });
@@ -38,7 +35,6 @@ class AnyTests extends AbstractTestCase {
   '@test any should return true if any object matches the callback'() {
     let obj = emberA([0, 1, 2]);
     let result;
-
     result = obj.any(i => Boolean(i));
     this.assert.equal(result, true, 'return value of obj.any');
   }
@@ -46,10 +42,10 @@ class AnyTests extends AbstractTestCase {
   '@test any should produce correct results even if the matching element is undefined'(assert) {
     let obj = emberA([undefined]);
     let result;
-
     result = obj.any(() => true);
     assert.equal(result, true, 'return value of obj.any');
   }
+
 }
 
 runArrayTests('any', AnyTests);

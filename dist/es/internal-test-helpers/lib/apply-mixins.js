@@ -12,18 +12,15 @@ export default function applyMixins(TestClass, ...mixins) {
     if (isGenerator(mixinOrGenerator)) {
       let generator = mixinOrGenerator;
       mixin = {};
-
       generator.cases.forEach((value, idx) => {
         assign(mixin, generator.generate(value, idx));
       });
-
       assign(TestClass.prototype, mixin);
     } else if (typeof mixinOrGenerator === 'function') {
       let properties = getAllPropertyNames(mixinOrGenerator);
       mixin = new mixinOrGenerator();
-
       properties.forEach(name => {
-        TestClass.prototype[name] = function() {
+        TestClass.prototype[name] = function () {
           return mixin[name].apply(mixin, arguments);
         };
       });
@@ -32,6 +29,5 @@ export default function applyMixins(TestClass, ...mixins) {
       assign(TestClass.prototype, mixin);
     }
   });
-
   return TestClass;
 }

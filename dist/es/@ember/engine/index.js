@@ -1,9 +1,7 @@
 /**
 @module @ember/engine
 */
-
 export { getEngineParent, setEngineParent } from './lib/engine-parent';
-
 import { canInvoke } from '@ember/-internals/utils';
 import Controller from '@ember/controller';
 import { Namespace, RegistryProxyMixin } from '@ember/-internals/runtime';
@@ -27,7 +25,6 @@ function props(obj) {
 
   return properties;
 }
-
 /**
   The `Engine` class contains core functionality for both applications and
   engines.
@@ -44,6 +41,8 @@ function props(obj) {
   @uses RegistryProxy
   @public
 */
+
+
 const Engine = Namespace.extend(RegistryProxyMixin, {
   init() {
     this._super(...arguments);
@@ -53,16 +52,14 @@ const Engine = Namespace.extend(RegistryProxyMixin, {
 
   /**
     A private flag indicating whether an engine's initializers have run yet.
-
-    @private
+     @private
     @property _initializersRan
   */
   _initializersRan: false,
 
   /**
     Ensure that initializers are run once, and only once, per engine.
-
-    @private
+     @private
     @method ensureInitializers
   */
   ensureInitializers() {
@@ -74,8 +71,7 @@ const Engine = Namespace.extend(RegistryProxyMixin, {
 
   /**
     Create an EngineInstance for this engine.
-
-    @public
+     @public
     @method buildInstance
     @return {EngineInstance} the engine instance
   */
@@ -87,14 +83,12 @@ const Engine = Namespace.extend(RegistryProxyMixin, {
 
   /**
     Build and configure the registry for the current engine.
-
-    @private
+     @private
     @method buildRegistry
     @return {Ember.Registry} the configured registry
   */
   buildRegistry() {
-    let registry = (this.__registry__ = this.constructor.buildRegistry(this));
-
+    let registry = this.__registry__ = this.constructor.buildRegistry(this);
     return registry;
   },
 
@@ -149,9 +143,9 @@ const Engine = Namespace.extend(RegistryProxyMixin, {
     }
 
     graph.topsort(cb);
-  },
-});
+  }
 
+});
 Engine.reopenClass({
   initializers: Object.create(null),
   instanceInitializers: Object.create(null),
@@ -163,144 +157,111 @@ Engine.reopenClass({
     the container or store you should use an InstanceInitializer that will be run
     after all initializers and therefore after all code is loaded and the app is
     ready.
-
-    Initializer receives an object which has the following attributes:
+     Initializer receives an object which has the following attributes:
     `name`, `before`, `after`, `initialize`. The only required attribute is
     `initialize`, all others are optional.
-
-    * `name` allows you to specify under which name the initializer is registered.
+     * `name` allows you to specify under which name the initializer is registered.
     This must be a unique name, as trying to register two initializers with the
     same name will result in an error.
-
-    ```app/initializer/named-initializer.js
+     ```app/initializer/named-initializer.js
     import { debug } from '@ember/debug';
-
-    export function initialize() {
+     export function initialize() {
       debug('Running namedInitializer!');
     }
-
-    export default {
+     export default {
       name: 'named-initializer',
       initialize
     };
     ```
-
-    * `before` and `after` are used to ensure that this initializer is ran prior
+     * `before` and `after` are used to ensure that this initializer is ran prior
     or after the one identified by the value. This value can be a single string
     or an array of strings, referencing the `name` of other initializers.
-
-    An example of ordering initializers, we create an initializer named `first`:
-
-    ```app/initializer/first.js
+     An example of ordering initializers, we create an initializer named `first`:
+     ```app/initializer/first.js
     import { debug } from '@ember/debug';
-
-    export function initialize() {
+     export function initialize() {
       debug('First initializer!');
     }
-
-    export default {
+     export default {
       name: 'first',
       initialize
     };
     ```
-
-    ```bash
+     ```bash
     // DEBUG: First initializer!
     ```
-
-    We add another initializer named `second`, specifying that it should run
+     We add another initializer named `second`, specifying that it should run
     after the initializer named `first`:
-
-    ```app/initializer/second.js
+     ```app/initializer/second.js
     import { debug } from '@ember/debug';
-
-    export function initialize() {
+     export function initialize() {
       debug('Second initializer!');
     }
-
-    export default {
+     export default {
       name: 'second',
       after: 'first',
       initialize
     };
     ```
-
-    ```
+     ```
     // DEBUG: First initializer!
     // DEBUG: Second initializer!
     ```
-
-    Afterwards we add a further initializer named `pre`, this time specifying
+     Afterwards we add a further initializer named `pre`, this time specifying
     that it should run before the initializer named `first`:
-
-    ```app/initializer/pre.js
+     ```app/initializer/pre.js
     import { debug } from '@ember/debug';
-
-    export function initialize() {
+     export function initialize() {
       debug('Pre initializer!');
     }
-
-    export default {
+     export default {
       name: 'pre',
       before: 'first',
       initialize
     };
     ```
-
-    ```bash
+     ```bash
     // DEBUG: Pre initializer!
     // DEBUG: First initializer!
     // DEBUG: Second initializer!
     ```
-
-    Finally we add an initializer named `post`, specifying it should run after
+     Finally we add an initializer named `post`, specifying it should run after
     both the `first` and the `second` initializers:
-
-    ```app/initializer/post.js
+     ```app/initializer/post.js
     import { debug } from '@ember/debug';
-
-    export function initialize() {
+     export function initialize() {
       debug('Post initializer!');
     }
-
-    export default {
+     export default {
       name: 'post',
       after: ['first', 'second'],
       initialize
     };
     ```
-
-    ```bash
+     ```bash
     // DEBUG: Pre initializer!
     // DEBUG: First initializer!
     // DEBUG: Second initializer!
     // DEBUG: Post initializer!
     ```
-
-    * `initialize` is a callback function that receives one argument,
+     * `initialize` is a callback function that receives one argument,
       `application`, on which you can operate.
-
-    Example of using `application` to register an adapter:
-
-    ```app/initializer/api-adapter.js
+     Example of using `application` to register an adapter:
+     ```app/initializer/api-adapter.js
     import ApiAdapter from '../utils/api-adapter';
-
-    export function initialize(application) {
+     export function initialize(application) {
       application.register('api-adapter:main', ApiAdapter);
     }
-
-    export default {
+     export default {
       name: 'post',
       after: ['first', 'second'],
       initialize
     };
     ```
-
-    @method initializer
+     @method initializer
     @param initializer {Object}
     @public
   */
-
   initializer: buildInitializerMethod('initializers', 'initializer'),
 
   /**
@@ -308,41 +269,31 @@ Engine.reopenClass({
     instance initializers run after the app is fully set up. We have access
     to the store, container, and other items. However, these initializers run
     after code has loaded and are not allowed to defer readiness.
-
-    Instance initializer receives an object which has the following attributes:
+     Instance initializer receives an object which has the following attributes:
     `name`, `before`, `after`, `initialize`. The only required attribute is
     `initialize`, all others are optional.
-
-    * `name` allows you to specify under which name the instanceInitializer is
+     * `name` allows you to specify under which name the instanceInitializer is
     registered. This must be a unique name, as trying to register two
     instanceInitializer with the same name will result in an error.
-
-    ```app/initializer/named-instance-initializer.js
+     ```app/initializer/named-instance-initializer.js
     import { debug } from '@ember/debug';
-
-    export function initialize() {
+     export function initialize() {
       debug('Running named-instance-initializer!');
     }
-
-    export default {
+     export default {
       name: 'named-instance-initializer',
       initialize
     };
     ```
-
-    * `before` and `after` are used to ensure that this initializer is ran prior
+     * `before` and `after` are used to ensure that this initializer is ran prior
     or after the one identified by the value. This value can be a single string
     or an array of strings, referencing the `name` of other initializers.
-
-    * See Application.initializer for discussion on the usage of before
+     * See Application.initializer for discussion on the usage of before
     and after.
-
-    Example instanceInitializer to preload data into the store.
-
-    ```app/initializer/preload-data.js
+     Example instanceInitializer to preload data into the store.
+     ```app/initializer/preload-data.js
     import $ from 'jquery';
-
-    export function initialize(application) {
+     export function initialize(application) {
         var userConfig, userConfigEncoded, store;
         // We have a HTML escaped JSON representation of the user's basic
         // configuration generated server side and stored in the DOM of the main
@@ -351,27 +302,21 @@ Engine.reopenClass({
         // needed for immediate rendering of the page. Keep in mind, this data,
         // like all local models and data can be manipulated by the user, so it
         // should not be relied upon for security or authorization.
-
-        // Grab the encoded data from the meta tag
+         // Grab the encoded data from the meta tag
         userConfigEncoded = $('head meta[name=app-user-config]').attr('content');
-
-        // Unescape the text, then parse the resulting JSON into a real object
+         // Unescape the text, then parse the resulting JSON into a real object
         userConfig = JSON.parse(unescape(userConfigEncoded));
-
-        // Lookup the store
+         // Lookup the store
         store = application.lookup('service:store');
-
-        // Push the encoded JSON into the store
+         // Push the encoded JSON into the store
         store.pushPayload(userConfig);
     }
-
-    export default {
+     export default {
       name: 'named-instance-initializer',
       initialize
     };
     ```
-
-    @method instanceInitializer
+     @method instanceInitializer
     @param instanceInitializer
     @public
   */
@@ -379,10 +324,8 @@ Engine.reopenClass({
 
   /**
     This creates a registry with the default Ember naming conventions.
-
-    It also configures the registry:
-
-    * registered views are created every time they are looked up (they are
+     It also configures the registry:
+     * registered views are created every time they are looked up (they are
       not singletons)
     * registered templates are not factories; the registered value is
       returned directly.
@@ -394,8 +337,7 @@ Engine.reopenClass({
       `controller` property
     * the application view receives the application template as its
       `defaultTemplate` property
-
-    @method buildRegistry
+     @method buildRegistry
     @static
     @param {Application} namespace the application for which to
       build the registry
@@ -404,23 +346,20 @@ Engine.reopenClass({
   */
   buildRegistry(namespace) {
     let registry = new Registry({
-      resolver: resolverFor(namespace),
+      resolver: resolverFor(namespace)
     });
-
     registry.set = set;
-
-    registry.register('application:main', namespace, { instantiate: false });
-
+    registry.register('application:main', namespace, {
+      instantiate: false
+    });
     commonSetupRegistry(registry);
     setupEngineRegistry(registry);
-
     return registry;
   },
 
   /**
     Set this to provide an alternate class to `DefaultResolver`
-
-    @deprecated Use 'Resolver' instead
+     @deprecated Use 'Resolver' instead
     @property resolver
     @public
   */
@@ -428,13 +367,11 @@ Engine.reopenClass({
 
   /**
     Set this to provide an alternate class to `DefaultResolver`
-
-    @property resolver
+     @property resolver
     @public
   */
-  Resolver: null,
+  Resolver: null
 });
-
 /**
   This function defines the default lookup rules for container lookups:
 
@@ -451,81 +388,65 @@ Engine.reopenClass({
   @param {Ember.Namespace} namespace the namespace to look for classes
   @return {*} the resolved value for a given lookup
 */
+
 function resolverFor(namespace) {
   let ResolverClass = get(namespace, 'Resolver') || DefaultResolver;
-  let props = { namespace };
+  let props = {
+    namespace
+  };
   return ResolverClass.create(props);
 }
 
 function buildInitializerMethod(bucketName, humanName) {
-  return function(initializer) {
+  return function (initializer) {
     // If this is the first initializer being added to a subclass, we are going to reopen the class
     // to make sure we have a new `initializers` object, which extends from the parent class' using
     // prototypal inheritance. Without this, attempting to add initializers to the subclass would
     // pollute the parent class as well as other subclasses.
-    if (
-      this.superclass[bucketName] !== undefined &&
-      this.superclass[bucketName] === this[bucketName]
-    ) {
+    if (this.superclass[bucketName] !== undefined && this.superclass[bucketName] === this[bucketName]) {
       let attrs = {};
       attrs[bucketName] = Object.create(this[bucketName]);
       this.reopenClass(attrs);
     }
 
-    assert(
-      `The ${humanName} '${initializer.name}' has already been registered`,
-      !this[bucketName][initializer.name]
-    );
-    assert(
-      `An ${humanName} cannot be registered without an initialize function`,
-      canInvoke(initializer, 'initialize')
-    );
-    assert(
-      `An ${humanName} cannot be registered without a name property`,
-      initializer.name !== undefined
-    );
-
+    assert(`The ${humanName} '${initializer.name}' has already been registered`, !this[bucketName][initializer.name]);
+    assert(`An ${humanName} cannot be registered without an initialize function`, canInvoke(initializer, 'initialize'));
+    assert(`An ${humanName} cannot be registered without a name property`, initializer.name !== undefined);
     this[bucketName][initializer.name] = initializer;
   };
 }
 
 function commonSetupRegistry(registry) {
-  registry.optionsForType('component', { singleton: false });
-  registry.optionsForType('view', { singleton: false });
-
-  registry.register('controller:basic', Controller, { instantiate: false });
-
+  registry.optionsForType('component', {
+    singleton: false
+  });
+  registry.optionsForType('view', {
+    singleton: false
+  });
+  registry.register('controller:basic', Controller, {
+    instantiate: false
+  });
   registry.injection('view', '_viewRegistry', '-view-registry:main');
   registry.injection('renderer', '_viewRegistry', '-view-registry:main');
-  registry.injection('event_dispatcher:main', '_viewRegistry', '-view-registry:main');
-
   registry.injection('route', '_topLevelViewTemplate', 'template:-outlet');
-
   registry.injection('view:-outlet', 'namespace', 'application:main');
-
   registry.injection('controller', 'target', 'router:main');
   registry.injection('controller', 'namespace', 'application:main');
-
   registry.injection('router', '_bucketCache', P`-bucket-cache:main`);
   registry.injection('route', '_bucketCache', P`-bucket-cache:main`);
+  registry.injection('route', '_router', 'router:main'); // Register the routing service...
 
-  registry.injection('route', '_router', 'router:main');
+  registry.register('service:-routing', RoutingService); // Then inject the app router into it
 
-  // Register the routing service...
-  registry.register('service:-routing', RoutingService);
-  // Then inject the app router into it
-  registry.injection('service:-routing', 'router', 'router:main');
+  registry.injection('service:-routing', 'router', 'router:main'); // DEBUGGING
 
-  // DEBUGGING
   registry.register('resolver-for-debugging:main', registry.resolver, {
-    instantiate: false,
+    instantiate: false
   });
   registry.injection('container-debug-adapter:main', 'resolver', 'resolver-for-debugging:main');
-  registry.injection('data-adapter:main', 'containerDebugAdapter', 'container-debug-adapter:main');
-  // Custom resolver authors may want to register their own ContainerDebugAdapter with this key
+  registry.injection('data-adapter:main', 'containerDebugAdapter', 'container-debug-adapter:main'); // Custom resolver authors may want to register their own ContainerDebugAdapter with this key
 
   registry.register('container-debug-adapter:main', ContainerDebugAdapter);
-
   registry.register('component-lookup:main', ComponentLookup);
 }
 

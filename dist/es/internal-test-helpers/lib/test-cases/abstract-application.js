@@ -2,18 +2,16 @@ import { compile } from 'ember-template-compiler';
 import { ENV } from '@ember/-internals/environment';
 import AbstractTestCase from './abstract';
 import { runDestroy, runTask } from '../run';
-
 export default class AbstractApplicationTestCase extends AbstractTestCase {
   _ensureInstance(bootOptions) {
     if (this._applicationInstancePromise) {
       return this._applicationInstancePromise;
     }
 
-    return (this._applicationInstancePromise = runTask(() => this.application.boot()).then(app => {
+    return this._applicationInstancePromise = runTask(() => this.application.boot()).then(app => {
       this.applicationInstance = app.buildInstance();
-
       return this.applicationInstance.boot(bootOptions);
-    }));
+    });
   }
 
   visit(url, options) {
@@ -29,9 +27,9 @@ export default class AbstractApplicationTestCase extends AbstractTestCase {
     if (this._element) {
       return this._element;
     } else if (ENV._APPLICATION_TEMPLATE_WRAPPER) {
-      return (this._element = document.querySelector('#qunit-fixture > div.ember-view'));
+      return this._element = document.querySelector('#qunit-fixture > div.ember-view');
     } else {
-      return (this._element = document.querySelector('#qunit-fixture'));
+      return this._element = document.querySelector('#qunit-fixture');
     }
   }
 
@@ -42,19 +40,18 @@ export default class AbstractApplicationTestCase extends AbstractTestCase {
   afterEach() {
     runDestroy(this.applicationInstance);
     runDestroy(this.application);
-
     super.teardown();
   }
 
   get applicationOptions() {
     return {
-      rootElement: '#qunit-fixture',
+      rootElement: '#qunit-fixture'
     };
   }
 
   get routerOptions() {
     return {
-      location: 'none',
+      location: 'none'
     };
   }
 
@@ -62,7 +59,10 @@ export default class AbstractApplicationTestCase extends AbstractTestCase {
     return this.application.resolveRegistration('router:main');
   }
 
-  compile(/* string, options */) {
+  compile()
+  /* string, options */
+  {
     return compile(...arguments);
   }
+
 }

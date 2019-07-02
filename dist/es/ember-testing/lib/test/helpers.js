@@ -1,5 +1,4 @@
 import TestPromise from './promise';
-
 export const helpers = {};
 /**
  @module @ember/test
@@ -42,13 +41,15 @@ export const helpers = {};
   @param {Function} helperMethod
   @param options {Object}
 */
+
 export function registerHelper(name, helperMethod) {
   helpers[name] = {
     method: helperMethod,
-    meta: { wait: false },
+    meta: {
+      wait: false
+    }
   };
 }
-
 /**
   `registerAsyncHelper` is used to register an async test helper that will be injected
   when `App.injectTestHelpers` is called.
@@ -95,13 +96,15 @@ export function registerHelper(name, helperMethod) {
   @param {Function} helperMethod
   @since 1.2.0
 */
+
 export function registerAsyncHelper(name, helperMethod) {
   helpers[name] = {
     method: helperMethod,
-    meta: { wait: true },
+    meta: {
+      wait: true
+    }
   };
 }
-
 /**
   Remove a previously added helper method.
 
@@ -119,6 +122,7 @@ export function registerAsyncHelper(name, helperMethod) {
   @for @ember/test
   @param {String} name The helper to remove.
 */
+
 export function unregisterHelper(name) {
   delete helpers[name];
   delete TestPromise.prototype[name];

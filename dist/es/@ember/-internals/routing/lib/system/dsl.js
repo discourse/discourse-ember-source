@@ -1,7 +1,13 @@
 import { assert } from '@ember/debug';
 import { assign } from '@ember/polyfills';
 let uuid = 0;
-class DSL {
+function isCallback(value) {
+    return typeof value === 'function';
+}
+function isOptions(value) {
+    return value !== null && typeof value === 'object';
+}
+export default class DSLImpl {
     constructor(name = null, options) {
         this.explicitIndex = false;
         this.parent = name;
@@ -9,11 +15,23 @@ class DSL {
         this.matches = [];
         this.options = options;
     }
-    route(name, options = {}, callback) {
+    route(name, _options, _callback) {
+        let options;
+        let callback = null;
         let dummyErrorRoute = `/_unused_dummy_error_path_route_${name}/:error`;
-        if (arguments.length === 2 && typeof options === 'function') {
-            callback = options;
+        if (isCallback(_options)) {
+            assert('Unexpected arguments', arguments.length === 2);
             options = {};
+            callback = _options;
+        }
+        else if (isCallback(_callback)) {
+            assert('Unexpected arguments', arguments.length === 3);
+            assert('Unexpected arguments', isOptions(_options));
+            options = _options;
+            callback = _callback;
+        }
+        else {
+            options = _options || {};
         }
         assert(`'${name}' cannot be used as a route name.`, (() => {
             if (options.overrideNameAssertion === true) {
@@ -33,7 +51,7 @@ class DSL {
         }
         if (callback) {
             let fullName = getFullName(this, name, options.resetNamespace);
-            let dsl = new DSL(fullName, this.options);
+            let dsl = new DSLImpl(fullName, this.options);
             createRoute(dsl, 'loading');
             createRoute(dsl, 'error', { path: dummyErrorRoute });
             callback.call(dsl);
@@ -43,6 +61,7 @@ class DSL {
             createRoute(this, name, options);
         }
     }
+    /* eslint-enable no-dupe-class-members */
     push(url, name, callback, serialize) {
         let parts = name.split('.');
         if (this.options.engineInfo) {
@@ -99,7 +118,7 @@ class DSL {
                 this.options.engineInfo = engineInfo;
             }
             let optionsForChild = assign({ engineInfo }, this.options);
-            let childDSL = new DSL(fullName, optionsForChild);
+            let childDSL = new DSLImpl(fullName, optionsForChild);
             createRoute(childDSL, 'loading');
             createRoute(childDSL, 'error', { path: dummyErrorRoute });
             engineRouteMap.class.call(childDSL);
@@ -133,7 +152,6 @@ class DSL {
         this.push(path, fullName, callback);
     }
 }
-export default DSL;
 function canNest(dsl) {
     return dsl.parent !== 'application';
 }

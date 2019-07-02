@@ -1,8 +1,6 @@
 import { onLoad } from '@ember/application';
-
 let name = 'deferReadiness in `testing` mode';
-
-onLoad('Ember.Application', function(Application) {
+onLoad('Ember.Application', function (Application) {
   if (!Application.initializers[name]) {
     Application.initializer({
       name: name,
@@ -11,7 +9,8 @@ onLoad('Ember.Application', function(Application) {
         if (application.testing) {
           application.deferReadiness();
         }
-      },
+      }
+
     });
   }
 });

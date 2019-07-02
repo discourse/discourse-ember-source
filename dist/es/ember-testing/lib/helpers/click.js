@@ -2,7 +2,6 @@
 @module ember
 */
 import { focus, fireEvent } from '../events';
-
 /**
   Clicks an element and triggers any actions triggered by the element's `click`
   event.
@@ -21,16 +20,13 @@ import { focus, fireEvent } from '../events';
   @return {RSVP.Promise<undefined>}
   @public
 */
+
 export default function click(app, selector, context) {
   let $el = app.testHelpers.findWithAssert(selector, context);
   let el = $el[0];
-
   fireEvent(el, 'mousedown');
-
   focus(el);
-
   fireEvent(el, 'mouseup');
   fireEvent(el, 'click');
-
   return app.testHelpers.wait();
 }

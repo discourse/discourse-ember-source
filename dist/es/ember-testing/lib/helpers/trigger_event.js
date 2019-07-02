@@ -22,6 +22,7 @@ import { fireEvent } from '../events';
  @since 1.5.0
  @public
 */
+
 export default function triggerEvent(app, selector, contextOrType, typeOrOptions, possibleOptions) {
   let arity = arguments.length;
   let context, type, options;
@@ -55,8 +56,6 @@ export default function triggerEvent(app, selector, contextOrType, typeOrOptions
 
   let $el = app.testHelpers.findWithAssert(selector, context);
   let el = $el[0];
-
   fireEvent(el, type, options);
-
   return app.testHelpers.wait();
 }

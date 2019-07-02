@@ -1,6 +1,5 @@
 import { classify, dasherize } from '@ember/string';
 import { A as emberA, typeOf, Namespace, Object as EmberObject } from '@ember/-internals/runtime';
-
 /**
 @module @ember/debug
 */
@@ -39,13 +38,13 @@ import { A as emberA, typeOf, Namespace, Object as EmberObject } from '@ember/-i
   @since 1.5.0
   @public
 */
+
 export default EmberObject.extend({
   /**
     The resolver instance of the application
     being debugged. This property will be injected
     on creation.
-
-    @property resolver
+     @property resolver
     @default null
     @public
   */
@@ -54,8 +53,7 @@ export default EmberObject.extend({
   /**
     Returns true if it is possible to catalog a list of available
     classes in the resolver for a given type.
-
-    @method canCatalogEntriesByType
+     @method canCatalogEntriesByType
     @param {String} type The type. e.g. "model", "controller", "route".
     @return {boolean} whether a list is available for this type.
     @public
@@ -70,8 +68,7 @@ export default EmberObject.extend({
 
   /**
     Returns the available classes a given type.
-
-    @method catalogEntriesByType
+     @method catalogEntriesByType
     @param {String} type The type. e.g. "model", "controller", "route".
     @return {Array} An array of strings.
     @public
@@ -80,14 +77,15 @@ export default EmberObject.extend({
     let namespaces = emberA(Namespace.NAMESPACES);
     let types = emberA();
     let typeSuffixRegex = new RegExp(`${classify(type)}$`);
-
     namespaces.forEach(namespace => {
       for (let key in namespace) {
         if (!namespace.hasOwnProperty(key)) {
           continue;
         }
+
         if (typeSuffixRegex.test(key)) {
           let klass = namespace[key];
+
           if (typeOf(klass) === 'class') {
             types.push(dasherize(key.replace(typeSuffixRegex, '')));
           }
@@ -95,5 +93,6 @@ export default EmberObject.extend({
       }
     });
     return types;
-  },
+  }
+
 });

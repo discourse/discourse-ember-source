@@ -10,9 +10,8 @@ var Ops$1;
 (function (Ops$$1) {
     Ops$$1[Ops$$1["OpenComponentElement"] = 0] = "OpenComponentElement";
     Ops$$1[Ops$$1["DidCreateElement"] = 1] = "DidCreateElement";
-    Ops$$1[Ops$$1["SetComponentAttrs"] = 2] = "SetComponentAttrs";
-    Ops$$1[Ops$$1["DidRenderLayout"] = 3] = "DidRenderLayout";
-    Ops$$1[Ops$$1["Debugger"] = 4] = "Debugger";
+    Ops$$1[Ops$$1["DidRenderLayout"] = 2] = "DidRenderLayout";
+    Ops$$1[Ops$$1["Debugger"] = 3] = "Debugger";
 })(Ops$1 || (Ops$1 = {}));
 
 var Ops$2 = Ops;
@@ -70,14 +69,19 @@ function statementCompiler() {
     STATEMENTS.add(Ops$2.DynamicAttr, (sexp, builder) => {
         dynamicAttr(sexp, false, builder);
     });
+    STATEMENTS.add(Ops$2.ComponentAttr, (sexp, builder) => {
+        componentAttr(sexp, false, builder);
+    });
     STATEMENTS.add(Ops$2.TrustingAttr, (sexp, builder) => {
         dynamicAttr(sexp, true, builder);
+    });
+    STATEMENTS.add(Ops$2.TrustingComponentAttr, (sexp, builder) => {
+        componentAttr(sexp, true, builder);
     });
     STATEMENTS.add(Ops$2.OpenElement, (sexp, builder) => {
         builder.openPrimitiveElement(sexp[1]);
     });
     STATEMENTS.add(Ops$2.OpenSplattedElement, (sexp, builder) => {
-        builder.setComponentAttrs(true);
         builder.putComponentOperations();
         builder.openPrimitiveElement(sexp[1]);
     });
@@ -86,18 +90,19 @@ function statementCompiler() {
         let block = builder.template(template);
         let attrsBlock = null;
         if (attrs.length > 0) {
-            let wrappedAttrs = [[Ops$2.ClientSideStatement, Ops$1.SetComponentAttrs, true], ...attrs, [Ops$2.ClientSideStatement, Ops$1.SetComponentAttrs, false]];
-            attrsBlock = builder.inlineBlock({ statements: wrappedAttrs, parameters: EMPTY_ARRAY });
+            attrsBlock = builder.inlineBlock({ statements: attrs, parameters: EMPTY_ARRAY });
         }
         builder.dynamicComponent(definition, attrsBlock, null, args, false, block, null);
     });
     STATEMENTS.add(Ops$2.Component, (sexp, builder) => {
-        let [, tag, _attrs, args, block] = sexp;
+        let [, tag, attrs, args, block] = sexp;
         let { referrer } = builder;
         let { handle, capabilities, compilable } = builder.compiler.resolveLayoutForTag(tag, referrer);
         if (handle !== null && capabilities !== null) {
-            let attrs = [[Ops$2.ClientSideStatement, Ops$1.SetComponentAttrs, true], ..._attrs, [Ops$2.ClientSideStatement, Ops$1.SetComponentAttrs, false]];
-            let attrsBlock = builder.inlineBlock({ statements: attrs, parameters: EMPTY_ARRAY });
+            let attrsBlock = null;
+            if (attrs.length > 0) {
+                attrsBlock = builder.inlineBlock({ statements: attrs, parameters: EMPTY_ARRAY });
+            }
             let child = builder.template(block);
             if (compilable) {
                 builder.pushComponentDefinition(handle);
@@ -133,7 +138,6 @@ function statementCompiler() {
     STATEMENTS.add(Ops$2.AttrSplat, (sexp, builder) => {
         let [, to] = sexp;
         builder.yield(to, []);
-        builder.setComponentAttrs(false);
     });
     STATEMENTS.add(Ops$2.Debugger, (sexp, builder) => {
         let [, evalInfo] = sexp;
@@ -164,9 +168,6 @@ function statementCompiler() {
     CLIENT_SIDE.add(Ops$1.DidCreateElement, (_sexp, builder) => {
         builder.didCreateElement(Register.s0);
     });
-    CLIENT_SIDE.add(Ops$1.SetComponentAttrs, (sexp, builder) => {
-        builder.setComponentAttrs(sexp[2]);
-    });
     CLIENT_SIDE.add(Ops$1.Debugger, () => {
         // tslint:disable-next-line:no-debugger
         debugger;
@@ -175,6 +176,15 @@ function statementCompiler() {
         builder.didRenderLayout(Register.s0);
     });
     return STATEMENTS;
+}
+function componentAttr(sexp, trusting, builder) {
+    let [, name, value, namespace] = sexp;
+    builder.expr(value);
+    if (namespace) {
+        builder.componentAttr(name, namespace, trusting);
+    } else {
+        builder.componentAttr(name, null, trusting);
+    }
 }
 function dynamicAttr(sexp, trusting, builder) {
     let [, name, value, namespace] = sexp;
@@ -833,12 +843,10 @@ class WrappedBuilder {
         b.load(Register.s1);
         b.jumpUnless('BODY');
         b.fetch(Register.s1);
-        b.setComponentAttrs(true);
         b.putComponentOperations();
         b.openDynamicElement();
         b.didCreateElement(Register.s0);
         b.yield(this.attrsBlockNumber, []);
-        b.setComponentAttrs(false);
         b.flushElement();
         b.label('BODY');
         b.invokeStaticBlock(blockFor(layout, compiler));
@@ -1312,16 +1320,12 @@ class OpcodeBuilder extends StdOpcodeBuilder {
         this.containingLayout = containingLayout;
         this.component = new ComponentBuilder(this);
         this.expressionCompiler = expressionCompiler();
-        this.isComponentAttrs = false;
         this.constants = compiler.constants;
         this.stdLib = compiler.stdLib;
     }
     /// MECHANICS
     get referrer() {
         return this.containingLayout && this.containingLayout.referrer;
-    }
-    setComponentAttrs(enabled) {
-        this.isComponentAttrs = enabled;
     }
     expr(expression) {
         if (Array.isArray(expression)) {
@@ -1646,22 +1650,18 @@ class OpcodeBuilder extends StdOpcodeBuilder {
     dynamicAttr(_name, _namespace, trusting) {
         let name = this.constants.string(_name);
         let namespace = _namespace ? this.constants.string(_namespace) : 0;
-        if (this.isComponentAttrs) {
-            this.push(37 /* ComponentAttr */, name, trusting === true ? 1 : 0, namespace);
-        } else {
-            this.push(36 /* DynamicAttr */, name, trusting === true ? 1 : 0, namespace);
-        }
+        this.push(36 /* DynamicAttr */, name, trusting === true ? 1 : 0, namespace);
+    }
+    componentAttr(_name, _namespace, trusting) {
+        let name = this.constants.string(_name);
+        let namespace = _namespace ? this.constants.string(_namespace) : 0;
+        this.push(37 /* ComponentAttr */, name, trusting === true ? 1 : 0, namespace);
     }
     staticAttr(_name, _namespace, _value) {
         let name = this.constants.string(_name);
         let namespace = _namespace ? this.constants.string(_namespace) : 0;
-        if (this.isComponentAttrs) {
-            this.pushPrimitiveReference(_value);
-            this.push(37 /* ComponentAttr */, name, 1, namespace);
-        } else {
-            let value = this.constants.string(_value);
-            this.push(35 /* StaticAttr */, name, value, namespace);
-        }
+        let value = this.constants.string(_value);
+        this.push(35 /* StaticAttr */, name, value, namespace);
     }
     // expressions
     hasBlockParams(to) {

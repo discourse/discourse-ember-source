@@ -1,6 +1,6 @@
 import { ENV } from '@ember/-internals/environment';
-import { runInTransaction, setHasViews } from '@ember/-internals/metal';
-import { fallbackViewRegistry, getViewElement, getViewId, setViewElement, } from '@ember/-internals/views';
+import { runInTransaction } from '@ember/-internals/metal';
+import { getViewElement, getViewId } from '@ember/-internals/views';
 import { assert } from '@ember/debug';
 import { backburner, getCurrentRunLoop } from '@ember/runloop';
 import { CURRENT_TAG } from '@glimmer/reference';
@@ -95,7 +95,6 @@ const renderers = [];
 export function _resetRenderers() {
     renderers.length = 0;
 }
-setHasViews(() => renderers.length > 0);
 function register(renderer) {
     assert('Cannot register the same renderer twice', renderers.indexOf(renderer) === -1);
     renderers.push(renderer);
@@ -162,10 +161,10 @@ function loopEnd() {
 backburner.on('begin', loopBegin);
 backburner.on('end', loopEnd);
 export class Renderer {
-    constructor(env, rootTemplate, _viewRegistry = fallbackViewRegistry, destinedForDOM = false, builder = clientBuilder) {
+    constructor(env, rootTemplate, viewRegistry, destinedForDOM = false, builder = clientBuilder) {
         this._env = env;
         this._rootTemplate = rootTemplate;
-        this._viewRegistry = _viewRegistry;
+        this._viewRegistry = viewRegistry;
         this._destinedForDOM = destinedForDOM;
         this._destroyed = false;
         this._roots = [];
@@ -203,12 +202,8 @@ export class Renderer {
     remove(view) {
         view._transitionTo('destroying');
         this.cleanupRootFor(view);
-        setViewElement(view, null);
         if (this._destinedForDOM) {
             view.trigger('didDestroyElement');
-        }
-        if (!view.isDestroying) {
-            view.destroy();
         }
     }
     cleanupRootFor(view) {
@@ -255,7 +250,7 @@ export class Renderer {
     }
     _renderRoots() {
         let { _roots: roots, _env: env, _removedRoots: removedRoots } = this;
-        let globalShouldReflush;
+        let globalShouldReflush = false;
         let initialRootsLength;
         do {
             env.begin();

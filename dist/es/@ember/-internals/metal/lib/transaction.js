@@ -58,9 +58,9 @@ if (DEBUG) {
                     let parts = [];
                     let label;
                     if (lastRef !== undefined) {
-                        while (lastRef && lastRef._propertyKey) {
-                            parts.unshift(lastRef._propertyKey);
-                            lastRef = lastRef._parentReference;
+                        while (lastRef && lastRef.propertyKey) {
+                            parts.unshift(lastRef.propertyKey);
+                            lastRef = lastRef.parentReference;
                         }
                         label = parts.join('.');
                     }
@@ -123,9 +123,9 @@ if (DEBUG) {
         }
     }
     let runner = new TransactionRunner();
-    runInTransaction = runner.runInTransaction.bind(runner);
-    didRender = runner.didRender.bind(runner);
-    assertNotRendered = runner.assertNotRendered.bind(runner);
+    runInTransaction = (...args) => runner.runInTransaction(...args);
+    didRender = (...args) => runner.didRender(...args);
+    assertNotRendered = (...args) => runner.assertNotRendered(...args);
 }
 else {
     // in production do nothing to detect reflushes

@@ -1,19 +1,20 @@
 /**
 @module @ember/object
 */
-import { descriptorFor, meta as metaFor, peekMeta } from '@ember/-internals/meta';
+import { meta as metaFor, peekMeta } from '@ember/-internals/meta';
 import { getListeners, getObservers, getOwnPropertyDescriptors, guidFor, makeArray, NAME_KEY, ROOT, setObservers, wrap, } from '@ember/-internals/utils';
 import { assert, deprecate } from '@ember/debug';
 import { ALIAS_METHOD } from '@ember/deprecated-features';
 import { assign } from '@ember/polyfills';
 import { DEBUG } from '@glimmer/env';
-import { ComputedProperty } from './computed';
-import nativeDescriptor from './descriptor';
+import { ComputedProperty, } from './computed';
+import { makeComputedDecorator, nativeDescDecorator } from './decorator';
+import { descriptorForDecorator, descriptorForProperty, isClassicDecorator, } from './descriptor_map';
 import { addListener, removeListener } from './events';
 import expandProperties from './expand_properties';
 import { classToString, setUnprocessedMixins } from './namespace_search';
 import { addObserver, removeObserver } from './observer';
-import { defineProperty, Descriptor } from './properties';
+import { defineProperty } from './properties';
 const a_concat = Array.prototype.concat;
 const { isArray } = Array;
 function isMethod(obj) {
@@ -39,7 +40,7 @@ function extractAccessors(properties) {
             keys.forEach(key => {
                 let descriptor = descriptors[key];
                 if (isAccessor(descriptor)) {
-                    extracted[key] = nativeDescriptor(descriptor);
+                    extracted[key] = nativeDescDecorator(descriptor);
                 }
                 else {
                     extracted[key] = properties[key];
@@ -71,35 +72,54 @@ function concatenatedMixinProperties(concatProp, props, values, base) {
     }
     return concats;
 }
-function giveDescriptorSuper(meta, key, property, values, descs, base) {
+function giveDecoratorSuper(meta, key, decorator, values, descs, base) {
+    let property = descriptorForDecorator(decorator);
     let superProperty;
+    if (!(property instanceof ComputedProperty) || property._getter === undefined) {
+        return decorator;
+    }
     // Computed properties override methods, and do not call super to them
     if (values[key] === undefined) {
         // Find the original descriptor in a parent mixin
-        superProperty = descs[key];
+        superProperty = descriptorForDecorator(descs[key]);
     }
     // If we didn't find the original descriptor in a parent mixin, find
     // it on the original object.
     if (!superProperty) {
-        superProperty = descriptorFor(base, key, meta);
+        superProperty = descriptorForProperty(base, key, meta);
     }
     if (superProperty === undefined || !(superProperty instanceof ComputedProperty)) {
-        return property;
+        return decorator;
     }
-    // Since multiple mixins may inherit from the same parent, we need
-    // to clone the computed property so that other mixins do not receive
-    // the wrapped version.
-    property = Object.create(property);
-    property._getter = wrap(property._getter, superProperty._getter);
+    let get = wrap(property._getter, superProperty._getter);
+    let set;
     if (superProperty._setter) {
         if (property._setter) {
-            property._setter = wrap(property._setter, superProperty._setter);
+            set = wrap(property._setter, superProperty._setter);
         }
         else {
-            property._setter = superProperty._setter;
+            // If the super property has a setter, we default to using it no matter what.
+            // This is clearly very broken and weird, but it's what was here so we have
+            // to keep it until the next major at least.
+            //
+            // TODO: Add a deprecation here.
+            set = superProperty._setter;
         }
     }
-    return property;
+    else {
+        set = property._setter;
+    }
+    // only create a new CP if we must
+    if (get !== property._getter || set !== property._setter) {
+        // Since multiple mixins may inherit from the same parent, we need
+        // to clone the computed property so that other mixins do not receive
+        // the wrapped version.
+        let newProperty = Object.create(property);
+        newProperty._getter = get;
+        newProperty._setter = set;
+        return makeComputedDecorator(newProperty, ComputedProperty);
+    }
+    return decorator;
 }
 function giveMethodSuper(obj, key, method, values, descs) {
     // Methods overwrite computed properties, and do not call super to them.
@@ -110,7 +130,7 @@ function giveMethodSuper(obj, key, method, values, descs) {
     let superMethod = values[key];
     // If we didn't find the original value in a parent mixin, find it in
     // the original object
-    if (superMethod === undefined && descriptorFor(obj, key) === undefined) {
+    if (superMethod === undefined && descriptorForProperty(obj, key) === undefined) {
         superMethod = obj[key];
     }
     // Only wrap the new method if the original method was a function
@@ -160,13 +180,9 @@ function applyMergedProperties(obj, key, value, values) {
     return newBase;
 }
 function addNormalizedProperty(base, key, value, meta, descs, values, concats, mergings) {
-    if (value instanceof Descriptor) {
-        // Wrap descriptor function to implement
-        // _super() if needed
-        if (value._getter) {
-            value = giveDescriptorSuper(meta, key, value, values, descs, base);
-        }
-        descs[key] = value;
+    if (isClassicDecorator(value)) {
+        // Wrap descriptor function to implement _super() if needed
+        descs[key] = giveDecoratorSuper(meta, key, value, values, descs, base);
         values[key] = undefined;
     }
     else {
@@ -237,7 +253,7 @@ if (ALIAS_METHOD) {
         if (desc !== undefined || value !== undefined) {
             // do nothing
         }
-        else if ((possibleDesc = descriptorFor(obj, altKey)) !== undefined) {
+        else if ((possibleDesc = descriptorForProperty(obj, altKey)) !== undefined) {
             desc = possibleDesc;
             value = undefined;
         }
@@ -297,7 +313,7 @@ export function applyMixin(obj, mixins) {
         if (desc === undefined && value === undefined) {
             continue;
         }
-        if (descriptorFor(obj, key) !== undefined) {
+        if (descriptorForProperty(obj, key) !== undefined) {
             replaceObserversAndListeners(obj, key, null, value);
         }
         else {

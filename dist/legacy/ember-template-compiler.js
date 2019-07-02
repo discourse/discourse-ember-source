@@ -6,7 +6,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   3.9.0
+ * @version   3.10.0
  */
 
 /*globals process */
@@ -1025,9 +1025,9 @@ enifed("@ember/-internals/utils", ["exports", "@ember/polyfills"], function (_ex
   _exports.HAS_NATIVE_PROXY = HAS_NATIVE_PROXY;
   var PROXIES = new _polyfills._WeakSet();
 
-  function isProxy(object) {
-    if (isObject(object)) {
-      return PROXIES.has(object);
+  function isProxy(value) {
+    if (isObject(value)) {
+      return PROXIES.has(value);
     }
 
     return false;
@@ -1102,7 +1102,7 @@ enifed("@ember/canary-features/index", ["exports", "@ember/-internals/environmen
   "use strict";
 
   _exports.isEnabled = isEnabled;
-  _exports.EMBER_ROUTING_BUILD_ROUTEINFO_METADATA = _exports.EMBER_GLIMMER_ARRAY_HELPER = _exports.GLIMMER_MODIFIER_MANAGER = _exports.EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION = _exports.GLIMMER_CUSTOM_COMPONENT_MANAGER = _exports.EMBER_METAL_TRACKED_PROPERTIES = _exports.EMBER_MODULE_UNIFICATION = _exports.EMBER_ENGINES_MOUNT_PARAMS = _exports.EMBER_ROUTING_ROUTER_SERVICE = _exports.EMBER_GLIMMER_NAMED_ARGUMENTS = _exports.EMBER_IMPROVED_INSTRUMENTATION = _exports.EMBER_LIBRARIES_ISREGISTERED = _exports.FEATURES = _exports.DEFAULT_FEATURES = void 0;
+  _exports.EMBER_NATIVE_DECORATOR_SUPPORT = _exports.EMBER_ROUTING_BUILD_ROUTEINFO_METADATA = _exports.EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS = _exports.EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP = _exports.EMBER_METAL_TRACKED_PROPERTIES = _exports.EMBER_MODULE_UNIFICATION = _exports.EMBER_IMPROVED_INSTRUMENTATION = _exports.EMBER_LIBRARIES_ISREGISTERED = _exports.FEATURES = _exports.DEFAULT_FEATURES = void 0;
 
   /**
     Set `EmberENV.FEATURES` in your application's `config/environment.js` file
@@ -1117,16 +1117,12 @@ enifed("@ember/canary-features/index", ["exports", "@ember/-internals/environmen
   var DEFAULT_FEATURES = {
     EMBER_LIBRARIES_ISREGISTERED: false,
     EMBER_IMPROVED_INSTRUMENTATION: false,
-    EMBER_GLIMMER_NAMED_ARGUMENTS: true,
-    EMBER_ROUTING_ROUTER_SERVICE: true,
-    EMBER_ENGINES_MOUNT_PARAMS: true,
     EMBER_MODULE_UNIFICATION: false,
-    GLIMMER_CUSTOM_COMPONENT_MANAGER: true,
-    GLIMMER_MODIFIER_MANAGER: true,
     EMBER_METAL_TRACKED_PROPERTIES: false,
-    EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION: true,
-    EMBER_GLIMMER_ARRAY_HELPER: true,
-    EMBER_ROUTING_BUILD_ROUTEINFO_METADATA: false
+    EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS: true,
+    EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP: true,
+    EMBER_ROUTING_BUILD_ROUTEINFO_METADATA: true,
+    EMBER_NATIVE_DECORATOR_SUPPORT: true
   };
   /**
     The hash of enabled Canary features. Add to this, any canary features
@@ -1182,26 +1178,18 @@ enifed("@ember/canary-features/index", ["exports", "@ember/-internals/environmen
   _exports.EMBER_LIBRARIES_ISREGISTERED = EMBER_LIBRARIES_ISREGISTERED;
   var EMBER_IMPROVED_INSTRUMENTATION = featureValue(FEATURES.EMBER_IMPROVED_INSTRUMENTATION);
   _exports.EMBER_IMPROVED_INSTRUMENTATION = EMBER_IMPROVED_INSTRUMENTATION;
-  var EMBER_GLIMMER_NAMED_ARGUMENTS = featureValue(FEATURES.EMBER_GLIMMER_NAMED_ARGUMENTS);
-  _exports.EMBER_GLIMMER_NAMED_ARGUMENTS = EMBER_GLIMMER_NAMED_ARGUMENTS;
-  var EMBER_ROUTING_ROUTER_SERVICE = featureValue(FEATURES.EMBER_ROUTING_ROUTER_SERVICE);
-  _exports.EMBER_ROUTING_ROUTER_SERVICE = EMBER_ROUTING_ROUTER_SERVICE;
-  var EMBER_ENGINES_MOUNT_PARAMS = featureValue(FEATURES.EMBER_ENGINES_MOUNT_PARAMS);
-  _exports.EMBER_ENGINES_MOUNT_PARAMS = EMBER_ENGINES_MOUNT_PARAMS;
   var EMBER_MODULE_UNIFICATION = featureValue(FEATURES.EMBER_MODULE_UNIFICATION);
   _exports.EMBER_MODULE_UNIFICATION = EMBER_MODULE_UNIFICATION;
   var EMBER_METAL_TRACKED_PROPERTIES = featureValue(FEATURES.EMBER_METAL_TRACKED_PROPERTIES);
   _exports.EMBER_METAL_TRACKED_PROPERTIES = EMBER_METAL_TRACKED_PROPERTIES;
-  var GLIMMER_CUSTOM_COMPONENT_MANAGER = featureValue(FEATURES.GLIMMER_CUSTOM_COMPONENT_MANAGER);
-  _exports.GLIMMER_CUSTOM_COMPONENT_MANAGER = GLIMMER_CUSTOM_COMPONENT_MANAGER;
-  var EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION = featureValue(FEATURES.EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION);
-  _exports.EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION = EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION;
-  var GLIMMER_MODIFIER_MANAGER = featureValue(FEATURES.GLIMMER_MODIFIER_MANAGER);
-  _exports.GLIMMER_MODIFIER_MANAGER = GLIMMER_MODIFIER_MANAGER;
-  var EMBER_GLIMMER_ARRAY_HELPER = featureValue(FEATURES.EMBER_GLIMMER_ARRAY_HELPER);
-  _exports.EMBER_GLIMMER_ARRAY_HELPER = EMBER_GLIMMER_ARRAY_HELPER;
+  var EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP = featureValue(FEATURES.EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP);
+  _exports.EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP = EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP;
+  var EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS = featureValue(FEATURES.EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS);
+  _exports.EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS = EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS;
   var EMBER_ROUTING_BUILD_ROUTEINFO_METADATA = featureValue(FEATURES.EMBER_ROUTING_BUILD_ROUTEINFO_METADATA);
   _exports.EMBER_ROUTING_BUILD_ROUTEINFO_METADATA = EMBER_ROUTING_BUILD_ROUTEINFO_METADATA;
+  var EMBER_NATIVE_DECORATOR_SUPPORT = featureValue(FEATURES.EMBER_NATIVE_DECORATOR_SUPPORT);
+  _exports.EMBER_NATIVE_DECORATOR_SUPPORT = EMBER_NATIVE_DECORATOR_SUPPORT;
 });
 enifed("@ember/debug/index", ["exports", "@ember/-internals/browser-environment", "@ember/error", "@ember/debug/lib/deprecate", "@ember/debug/lib/testing", "@ember/debug/lib/warn"], function (_exports, _browserEnvironment, _error, _deprecate2, _testing, _warn2) {
   "use strict";
@@ -1447,7 +1435,12 @@ enifed("@ember/debug/index", ["exports", "@ember/-internals/browser-environment"
               func = args[2];
           return function () {
             deprecate(message, false, options);
-            return func.apply(this, arguments);
+
+            for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+              args[_key2] = arguments[_key2];
+            }
+
+            return func.apply(this, args);
           };
         } else {
           var _message = args[0],
@@ -1494,7 +1487,13 @@ enifed("@ember/debug/index", ["exports", "@ember/-internals/browser-environment"
         Object.seal(obj);
       });
       setDebugFunction('debugFreeze', function debugFreeze(obj) {
-        Object.freeze(obj);
+        // re-freezing an already frozen object introduces a significant
+        // performance penalty on Chrome (tested through 59).
+        //
+        // See: https://bugs.chromium.org/p/v8/issues/detail?id=6450
+        if (!Object.isFrozen(obj)) {
+          Object.freeze(obj);
+        }
       });
       setDebugFunction('deprecate', _deprecate2.default);
       setDebugFunction('warn', _warn2.default);
@@ -1858,7 +1857,7 @@ enifed("@ember/debug/lib/warn", ["exports", "@ember/debug/index", "@ember/debug/
 enifed("@ember/deprecated-features/index", ["exports"], function (_exports) {
   "use strict";
 
-  _exports.APP_CTRL_ROUTER_PROPS = _exports.ALIAS_METHOD = _exports.JQUERY_INTEGRATION = _exports.COMPONENT_MANAGER_STRING_LOOKUP = _exports.TRANSITION_STATE = _exports.ROUTER_EVENTS = _exports.HANDLER_INFOS = _exports.MERGE = _exports.LOGGER = _exports.RUN_SYNC = _exports.EMBER_EXTEND_PROTOTYPES = _exports.SEND_ACTION = void 0;
+  _exports.APP_CTRL_ROUTER_PROPS = _exports.ALIAS_METHOD = _exports.JQUERY_INTEGRATION = _exports.COMPONENT_MANAGER_STRING_LOOKUP = _exports.ROUTER_EVENTS = _exports.MERGE = _exports.LOGGER = _exports.RUN_SYNC = _exports.EMBER_EXTEND_PROTOTYPES = _exports.SEND_ACTION = void 0;
 
   /* eslint-disable no-implicit-coercion */
   // These versions should be the version that the deprecation was _introduced_,
@@ -1873,19 +1872,15 @@ enifed("@ember/deprecated-features/index", ["exports"], function (_exports) {
   _exports.LOGGER = LOGGER;
   var MERGE = !!'3.6.0-beta.1';
   _exports.MERGE = MERGE;
-  var HANDLER_INFOS = !!'3.9.0';
-  _exports.HANDLER_INFOS = HANDLER_INFOS;
-  var ROUTER_EVENTS = !!'3.9.0';
+  var ROUTER_EVENTS = !!'4.0.0';
   _exports.ROUTER_EVENTS = ROUTER_EVENTS;
-  var TRANSITION_STATE = !!'3.9.0';
-  _exports.TRANSITION_STATE = TRANSITION_STATE;
   var COMPONENT_MANAGER_STRING_LOOKUP = !!'3.8.0';
   _exports.COMPONENT_MANAGER_STRING_LOOKUP = COMPONENT_MANAGER_STRING_LOOKUP;
   var JQUERY_INTEGRATION = !!'3.9.0';
   _exports.JQUERY_INTEGRATION = JQUERY_INTEGRATION;
   var ALIAS_METHOD = !!'3.9.0';
   _exports.ALIAS_METHOD = ALIAS_METHOD;
-  var APP_CTRL_ROUTER_PROPS = !!'4.0.0';
+  var APP_CTRL_ROUTER_PROPS = !!'3.10.0';
   _exports.APP_CTRL_ROUTER_PROPS = APP_CTRL_ROUTER_PROPS;
 });
 enifed("@ember/error/index", ["exports"], function (_exports) {
@@ -2589,8 +2584,6 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
           this.arguments.push(statement);
         } else if ((0, _wireFormat.isAttribute)(statement)) {
           this.attributes.push(statement);
-        } else if ((0, _wireFormat.isAttrSplat)(statement)) {
-          this.attributes.push(statement);
         } else {
           throw new Error('Compile Error: only parameters allowed before flush-element');
         }
@@ -2786,11 +2779,25 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.push([_wireFormat.Ops.DynamicAttr, name, value, namespace]);
     };
 
-    _proto10.trustingAttr = function trustingAttr(_ref4) {
+    _proto10.componentAttr = function componentAttr(_ref4) {
       var name = _ref4[0],
           namespace = _ref4[1];
       var value = this.popValue();
+      this.push([_wireFormat.Ops.ComponentAttr, name, value, namespace]);
+    };
+
+    _proto10.trustingAttr = function trustingAttr(_ref5) {
+      var name = _ref5[0],
+          namespace = _ref5[1];
+      var value = this.popValue();
       this.push([_wireFormat.Ops.TrustingAttr, name, value, namespace]);
+    };
+
+    _proto10.trustingComponentAttr = function trustingComponentAttr(_ref6) {
+      var name = _ref6[0],
+          namespace = _ref6[1];
+      var value = this.popValue();
+      this.push([_wireFormat.Ops.TrustingComponentAttr, name, value, namespace]);
     };
 
     _proto10.staticArg = function staticArg(name) {
@@ -2847,9 +2854,9 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.pushValue([_wireFormat.Ops.Unknown, name]);
     };
 
-    _proto10.get = function get(_ref5) {
-      var head = _ref5[0],
-          path = _ref5[1];
+    _proto10.get = function get(_ref7) {
+      var head = _ref7[0],
+          path = _ref7[1];
       this.pushValue([_wireFormat.Ops.Get, head, path]);
     };
 
@@ -3118,7 +3125,11 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
 
     _proto11.trustingAttr = function trustingAttr(_op) {};
 
+    _proto11.trustingComponentAttr = function trustingComponentAttr(_op) {};
+
     _proto11.dynamicAttr = function dynamicAttr(_op) {};
+
+    _proto11.componentAttr = function componentAttr(_op) {};
 
     _proto11.modifier = function modifier(_op) {};
 
@@ -3181,9 +3192,9 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
     _proto12.process = function process(actions) {
       var _this9 = this;
 
-      actions.forEach(function (_ref6) {
-        var name = _ref6[0],
-            args = _ref6.slice(1);
+      actions.forEach(function (_ref8) {
+        var name = _ref8[0],
+            args = _ref8.slice(1);
 
         if (!_this9[name]) {
           throw new Error("Unimplemented " + name + " on TemplateCompiler");
@@ -3194,8 +3205,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       return this.opcodes;
     };
 
-    _proto12.startProgram = function startProgram(_ref7) {
-      var program = _ref7[0];
+    _proto12.startProgram = function startProgram(_ref9) {
+      var program = _ref9[0];
       this.opcode(['startProgram', program], program);
     };
 
@@ -3203,8 +3214,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.opcode(['endProgram', null], null);
     };
 
-    _proto12.startBlock = function startBlock(_ref8) {
-      var program = _ref8[0];
+    _proto12.startBlock = function startBlock(_ref10) {
+      var program = _ref10[0];
       this.templateId++;
       this.opcode(['startBlock', program], program);
     };
@@ -3214,29 +3225,31 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.opcode(['endBlock', null], null);
     };
 
-    _proto12.text = function text(_ref9) {
-      var action = _ref9[0];
+    _proto12.text = function text(_ref11) {
+      var action = _ref11[0];
       this.opcode(['text', action.chars], action);
     };
 
-    _proto12.comment = function comment(_ref10) {
-      var action = _ref10[0];
+    _proto12.comment = function comment(_ref12) {
+      var action = _ref12[0];
       this.opcode(['comment', action.value], action);
     };
 
-    _proto12.openElement = function openElement(_ref11) {
-      var action = _ref11[0];
+    _proto12.openElement = function openElement(_ref13) {
+      var action = _ref13[0];
       var attributes = action.attributes;
-      var hasSplat;
+      var hasSplat = false;
 
       for (var i = 0; i < attributes.length; i++) {
         var attr = attributes[i];
 
         if (attr.name === '...attributes') {
-          hasSplat = attr;
+          hasSplat = true;
           break;
         }
       }
+
+      var actionIsComponent = false;
 
       if (isDynamicComponent(action)) {
         var head, rest;
@@ -3252,8 +3265,10 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
 
         this.opcode(['get', [head, rest]]);
         this.opcode(['openComponent', action], action);
+        actionIsComponent = true;
       } else if (isComponent(action)) {
         this.opcode(['openComponent', action], action);
+        actionIsComponent = true;
       } else if (hasSplat) {
         this.opcode(['openSplattedElement', action], action);
       } else {
@@ -3269,18 +3284,18 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
           continue;
         }
 
-        this.attribute([attrs[_i2]]);
+        this.attribute([attrs[_i2]], hasSplat || actionIsComponent);
       }
 
       if (typeAttr) {
-        this.attribute([typeAttr]);
+        this.attribute([typeAttr], hasSplat || actionIsComponent);
       }
 
       this.opcode(['flushElement', action], null);
     };
 
-    _proto12.closeElement = function closeElement(_ref12) {
-      var action = _ref12[0];
+    _proto12.closeElement = function closeElement(_ref14) {
+      var action = _ref14[0];
 
       if (isDynamicComponent(action)) {
         this.opcode(['closeDynamicComponent', action], action);
@@ -3297,8 +3312,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       }
     };
 
-    _proto12.attribute = function attribute(_ref13) {
-      var action = _ref13[0];
+    _proto12.attribute = function attribute(_ref15, isComponent) {
+      var action = _ref15[0];
       var name = action.name,
           value = action.value;
       var namespace = getAttrNamespace(name);
@@ -3318,28 +3333,28 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
 
         if (isStatic && name === '...attributes') {
           this.opcode(['attrSplat', null], action);
-        } else if (isStatic) {
+        } else if (isStatic && !isComponent) {
           this.opcode(['staticAttr', [name, namespace]], action);
         } else if (isTrusting) {
-          this.opcode(['trustingAttr', [name, namespace]], action);
+          this.opcode([isComponent ? 'trustingComponentAttr' : 'trustingAttr', [name, namespace]], action);
         } else if (action.value.type === 'MustacheStatement') {
-          this.opcode(['dynamicAttr', [name, null]], action);
+          this.opcode([isComponent ? 'componentAttr' : 'dynamicAttr', [name, null]], action);
         } else {
-          this.opcode(['dynamicAttr', [name, namespace]], action);
+          this.opcode([isComponent ? 'componentAttr' : 'dynamicAttr', [name, namespace]], action);
         }
       }
     };
 
-    _proto12.modifier = function modifier(_ref14) {
-      var action = _ref14[0];
+    _proto12.modifier = function modifier(_ref16) {
+      var action = _ref16[0];
       assertIsSimplePath(action.path, action.loc, 'modifier');
       var parts = action.path.parts;
       this.prepareHelper(action);
       this.opcode(['modifier', parts[0]], action);
     };
 
-    _proto12.mustache = function mustache(_ref15) {
-      var action = _ref15[0];
+    _proto12.mustache = function mustache(_ref17) {
+      var action = _ref17[0];
       var path = action.path;
 
       if ((0, _syntax.isLiteral)(path)) {
@@ -3360,10 +3375,10 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       }
     };
 
-    _proto12.block = function block(_ref16) {
+    _proto12.block = function block(_ref18) {
       var action
       /*, index, count*/
-      = _ref16[0];
+      = _ref18[0];
       this.prepareHelper(action);
       var templateId = this.templateIds.pop();
       var inverseId = action.inverse === null ? null : this.templateIds.pop();
@@ -3371,8 +3386,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
     } /// Internal actions, not found in the original processed actions
     ;
 
-    _proto12.arg = function arg(_ref17) {
-      var path = _ref17[0];
+    _proto12.arg = function arg(_ref19) {
+      var path = _ref19[0];
 
       var _path$parts = path.parts,
           head = _path$parts[0],
@@ -3578,8 +3593,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.opcode(['prepareArray', parts.length], null);
     };
 
-    _proto12.attributeMustache = function attributeMustache(_ref18) {
-      var action = _ref18[0];
+    _proto12.attributeMustache = function attributeMustache(_ref20) {
+      var action = _ref20[0];
       this.mustacheExpression(action);
     };
 
@@ -3605,8 +3620,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
     return mustache.params && mustache.params.length > 0 || mustache.hash && mustache.hash.pairs.length > 0;
   }
 
-  function isSimplePath(_ref19) {
-    var parts = _ref19.parts;
+  function isSimplePath(_ref21) {
+    var parts = _ref21.parts;
     return parts.length === 1;
   }
 
@@ -4718,31 +4733,39 @@ enifed("@glimmer/syntax", ["exports", "ember-babel", "simple-html-tokenizer", "@
   function appendDynamicAttributeValuePart(attribute, part) {
     attribute.isDynamic = true;
     attribute.parts.push(part);
+  }
+
+  function tuple() {
+    for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+      args[_key2] = arguments[_key2];
+    }
+
+    return args;
   } // ensure stays in sync with typing
   // ParentNode and ChildKey types are derived from VisitorKeysMap
 
 
   var visitorKeys = {
-    Program: ['body'],
-    MustacheStatement: ['path', 'params', 'hash'],
-    BlockStatement: ['path', 'params', 'hash', 'program', 'inverse'],
-    ElementModifierStatement: ['path', 'params', 'hash'],
-    PartialStatement: ['name', 'params', 'hash'],
-    CommentStatement: [],
-    MustacheCommentStatement: [],
-    ElementNode: ['attributes', 'modifiers', 'children', 'comments'],
-    AttrNode: ['value'],
-    TextNode: [],
-    ConcatStatement: ['parts'],
-    SubExpression: ['path', 'params', 'hash'],
-    PathExpression: [],
-    StringLiteral: [],
-    BooleanLiteral: [],
-    NumberLiteral: [],
-    NullLiteral: [],
-    UndefinedLiteral: [],
-    Hash: ['pairs'],
-    HashPair: ['value']
+    Program: tuple('body'),
+    MustacheStatement: tuple('path', 'params', 'hash'),
+    BlockStatement: tuple('path', 'params', 'hash', 'program', 'inverse'),
+    ElementModifierStatement: tuple('path', 'params', 'hash'),
+    PartialStatement: tuple('name', 'params', 'hash'),
+    CommentStatement: tuple(),
+    MustacheCommentStatement: tuple(),
+    ElementNode: tuple('attributes', 'modifiers', 'children', 'comments'),
+    AttrNode: tuple('value'),
+    TextNode: tuple(),
+    ConcatStatement: tuple('parts'),
+    SubExpression: tuple('path', 'params', 'hash'),
+    PathExpression: tuple(),
+    StringLiteral: tuple(),
+    BooleanLiteral: tuple(),
+    NumberLiteral: tuple(),
+    NullLiteral: tuple(),
+    UndefinedLiteral: tuple(),
+    Hash: tuple('pairs'),
+    HashPair: tuple('value')
   };
 
   var TraversalError = function () {
@@ -4827,7 +4850,8 @@ enifed("@glimmer/syntax", ["exports", "ember-babel", "simple-html-tokenizer", "@
       if (JSON.stringify(node) === JSON.stringify(result)) {
         result = undefined;
       } else if (Array.isArray(result)) {
-        return visitArray(visitor, result) || result;
+        visitArray(visitor, result);
+        return result;
       } else {
         return visitNode(visitor, result) || result;
       }
@@ -5609,7 +5633,8 @@ enifed("@glimmer/syntax", ["exports", "ember-babel", "simple-html-tokenizer", "@
   };
 
   function preprocess(html, options) {
-    var ast = typeof html === 'object' ? html : (0, _handlebars.parse)(html);
+    var parseOptions = options ? options.parseOptions : {};
+    var ast = typeof html === 'object' ? html : (0, _handlebars.parse)(html, parseOptions);
     var program = new TokenizerEventHandlers(html).acceptNode(ast);
 
     if (options && options.plugins && options.plugins.ast) {
@@ -5642,12 +5667,11 @@ enifed("@glimmer/util", ["exports", "ember-babel"], function (_exports, _emberBa
   _exports.fillNulls = fillNulls;
   _exports.ensureGuid = ensureGuid;
   _exports.initializeGuid = initializeGuid;
-  _exports.isSerializationFirstNode = isSerializationFirstNode;
   _exports.dict = dict;
   _exports.unwrap = unwrap;
   _exports.expect = expect;
   _exports.unreachable = unreachable;
-  _exports.EMPTY_ARRAY = _exports.ListSlice = _exports.ListNode = _exports.LinkedList = _exports.EMPTY_SLICE = _exports.DictSet = _exports.Stack = _exports.SERIALIZATION_FIRST_NODE_STRING = void 0;
+  _exports.EMPTY_ARRAY = _exports.ListSlice = _exports.ListNode = _exports.LinkedList = _exports.EMPTY_SLICE = _exports.DictSet = _exports.Stack = void 0;
 
   function unwrap(val) {
     if (val === null || val === undefined) throw new Error("Expected value to be present");
@@ -5711,13 +5735,6 @@ enifed("@glimmer/util", ["exports", "ember-babel"], function (_exports, _emberBa
 
   function ensureGuid(object) {
     return object._guid || initializeGuid(object);
-  }
-
-  var SERIALIZATION_FIRST_NODE_STRING = '%+b:0%';
-  _exports.SERIALIZATION_FIRST_NODE_STRING = SERIALIZATION_FIRST_NODE_STRING;
-
-  function isSerializationFirstNode(node) {
-    return node.nodeValue === SERIALIZATION_FIRST_NODE_STRING;
   }
 
   function dict() {
@@ -5924,7 +5941,7 @@ enifed("@glimmer/wire-format", ["exports"], function (_exports) {
   _exports.is = is;
   _exports.isAttribute = isAttribute;
   _exports.isArgument = isArgument;
-  _exports.Ops = _exports.isMaybeLocal = _exports.isGet = _exports.isAttrSplat = _exports.isFlushElement = void 0;
+  _exports.Ops = _exports.isMaybeLocal = _exports.isGet = _exports.isFlushElement = void 0;
   var Opcodes;
   _exports.Ops = Opcodes;
 
@@ -5943,24 +5960,26 @@ enifed("@glimmer/wire-format", ["exports"], function (_exports) {
     Opcodes[Opcodes["CloseElement"] = 10] = "CloseElement";
     Opcodes[Opcodes["StaticAttr"] = 11] = "StaticAttr";
     Opcodes[Opcodes["DynamicAttr"] = 12] = "DynamicAttr";
-    Opcodes[Opcodes["AttrSplat"] = 13] = "AttrSplat";
-    Opcodes[Opcodes["Yield"] = 14] = "Yield";
-    Opcodes[Opcodes["Partial"] = 15] = "Partial";
-    Opcodes[Opcodes["DynamicArg"] = 16] = "DynamicArg";
-    Opcodes[Opcodes["StaticArg"] = 17] = "StaticArg";
-    Opcodes[Opcodes["TrustingAttr"] = 18] = "TrustingAttr";
-    Opcodes[Opcodes["Debugger"] = 19] = "Debugger";
-    Opcodes[Opcodes["ClientSideStatement"] = 20] = "ClientSideStatement"; // Expressions
+    Opcodes[Opcodes["ComponentAttr"] = 13] = "ComponentAttr";
+    Opcodes[Opcodes["AttrSplat"] = 14] = "AttrSplat";
+    Opcodes[Opcodes["Yield"] = 15] = "Yield";
+    Opcodes[Opcodes["Partial"] = 16] = "Partial";
+    Opcodes[Opcodes["DynamicArg"] = 17] = "DynamicArg";
+    Opcodes[Opcodes["StaticArg"] = 18] = "StaticArg";
+    Opcodes[Opcodes["TrustingAttr"] = 19] = "TrustingAttr";
+    Opcodes[Opcodes["TrustingComponentAttr"] = 20] = "TrustingComponentAttr";
+    Opcodes[Opcodes["Debugger"] = 21] = "Debugger";
+    Opcodes[Opcodes["ClientSideStatement"] = 22] = "ClientSideStatement"; // Expressions
 
-    Opcodes[Opcodes["Unknown"] = 21] = "Unknown";
-    Opcodes[Opcodes["Get"] = 22] = "Get";
-    Opcodes[Opcodes["MaybeLocal"] = 23] = "MaybeLocal";
-    Opcodes[Opcodes["HasBlock"] = 24] = "HasBlock";
-    Opcodes[Opcodes["HasBlockParams"] = 25] = "HasBlockParams";
-    Opcodes[Opcodes["Undefined"] = 26] = "Undefined";
-    Opcodes[Opcodes["Helper"] = 27] = "Helper";
-    Opcodes[Opcodes["Concat"] = 28] = "Concat";
-    Opcodes[Opcodes["ClientSideExpression"] = 29] = "ClientSideExpression";
+    Opcodes[Opcodes["Unknown"] = 23] = "Unknown";
+    Opcodes[Opcodes["Get"] = 24] = "Get";
+    Opcodes[Opcodes["MaybeLocal"] = 25] = "MaybeLocal";
+    Opcodes[Opcodes["HasBlock"] = 26] = "HasBlock";
+    Opcodes[Opcodes["HasBlockParams"] = 27] = "HasBlockParams";
+    Opcodes[Opcodes["Undefined"] = 28] = "Undefined";
+    Opcodes[Opcodes["Helper"] = 29] = "Helper";
+    Opcodes[Opcodes["Concat"] = 30] = "Concat";
+    Opcodes[Opcodes["ClientSideExpression"] = 31] = "ClientSideExpression";
   })(Opcodes || (_exports.Ops = Opcodes = {}));
 
   function is(variant) {
@@ -5972,11 +5991,9 @@ enifed("@glimmer/wire-format", ["exports"], function (_exports) {
 
   var isFlushElement = is(Opcodes.FlushElement);
   _exports.isFlushElement = isFlushElement;
-  var isAttrSplat = is(Opcodes.AttrSplat);
-  _exports.isAttrSplat = isAttrSplat;
 
   function isAttribute(val) {
-    return val[0] === Opcodes.StaticAttr || val[0] === Opcodes.DynamicAttr || val[0] === Opcodes.TrustingAttr;
+    return val[0] === Opcodes.StaticAttr || val[0] === Opcodes.DynamicAttr || val[0] === Opcodes.ComponentAttr || val[0] === Opcodes.TrustingAttr || val[0] === Opcodes.TrustingComponentAttr || val[0] === Opcodes.AttrSplat;
   }
 
   function isArgument(val) {
@@ -5992,13 +6009,38 @@ enifed("@glimmer/wire-format", ["exports"], function (_exports) {
 enifed("ember-babel", ["exports"], function (_exports) {
   "use strict";
 
+  _exports.wrapNativeSuper = wrapNativeSuper;
   _exports.classCallCheck = classCallCheck;
   _exports.inheritsLoose = inheritsLoose;
   _exports.taggedTemplateLiteralLoose = taggedTemplateLiteralLoose;
   _exports.createClass = createClass;
   _exports.assertThisInitialized = assertThisInitialized;
   _exports.possibleConstructorReturn = possibleConstructorReturn;
+  _exports.objectDestructuringEmpty = objectDestructuringEmpty;
   var setPrototypeOf = Object.setPrototypeOf;
+  var nativeWrapperCache = new Map(); // Super minimal version of Babel's wrapNativeSuper. We only use this for
+  // extending Function, for ComputedDecoratorImpl and AliasDecoratorImpl. We know
+  // we will never directly create an instance of these classes so no need to
+  // include `construct` code or other helpers.
+
+  function wrapNativeSuper(Class) {
+    if (nativeWrapperCache.has(Class)) {
+      return nativeWrapperCache.get(Class);
+    }
+
+    function Wrapper() {}
+
+    Wrapper.prototype = Object.create(Class.prototype, {
+      constructor: {
+        value: Wrapper,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+    nativeWrapperCache.set(Class, Wrapper);
+    return setPrototypeOf(Wrapper, Class);
+  }
 
   function classCallCheck(instance, Constructor) {
     if (true
@@ -6096,6 +6138,14 @@ enifed("ember-babel", ["exports"], function (_exports) {
     }
 
     return assertThisInitialized(self);
+  }
+
+  function objectDestructuringEmpty(obj) {
+    if (true
+    /* DEBUG */
+    && (obj === null || obj === undefined)) {
+      throw new TypeError('Cannot destructure undefined');
+    }
   }
 });
 enifed("ember-template-compiler/index", ["exports", "@ember/-internals/environment", "@ember/canary-features", "ember/version", "ember-template-compiler/lib/compat", "ember-template-compiler/lib/system/precompile", "ember-template-compiler/lib/system/compile", "ember-template-compiler/lib/system/compile-options", "ember-template-compiler/lib/plugins/index", "ember-template-compiler/lib/system/bootstrap", "ember-template-compiler/lib/system/initializer"], function (_exports, _environment, _canaryFeatures, _version, _compat, _precompile, _compile, _compileOptions, _index, _bootstrap, _initializer) {
@@ -6331,17 +6381,35 @@ enifed("ember-template-compiler/lib/plugins/assert-reserved-named-arguments", ["
   "use strict";
 
   _exports.default = assertReservedNamedArguments;
-  var RESERVED = ['@arguments', '@args', '@block', '@else'];
-  var isReserved, assertMessage;
 
   function assertReservedNamedArguments(env) {
     var moduleName = env.meta.moduleName;
     return {
       name: 'assert-reserved-named-arguments',
       visitor: {
-        PathExpression: function (_ref) {
-          var original = _ref.original,
+        // In general, we don't assert on the invocation side to avoid creating migration
+        // hazards (e.g. using angle bracket to invoke a classic component that uses
+        // `this.someReservedName`. However, we want to avoid leaking special internal
+        // things, such as `__ARGS__`, so those would need to be asserted on both sides.
+        AttrNode: function (_ref) {
+          var name = _ref.name,
               loc = _ref.loc;
+
+          if (name === '@__ARGS__') {
+            true && !false && (0, _debug.assert)(assertMessage(name) + " " + (0, _calculateLocationDisplay.default)(moduleName, loc));
+          }
+        },
+        HashPair: function (_ref2) {
+          var key = _ref2.key,
+              loc = _ref2.loc;
+
+          if (key === '__ARGS__') {
+            true && !false && (0, _debug.assert)(assertMessage(key) + " " + (0, _calculateLocationDisplay.default)(moduleName, loc));
+          }
+        },
+        PathExpression: function (_ref3) {
+          var original = _ref3.original,
+              loc = _ref3.loc;
 
           if (isReserved(original)) {
             true && !false && (0, _debug.assert)(assertMessage(original) + " " + (0, _calculateLocationDisplay.default)(moduleName, loc));
@@ -6351,24 +6419,14 @@ enifed("ember-template-compiler/lib/plugins/assert-reserved-named-arguments", ["
     };
   }
 
-  if (true
-  /* EMBER_GLIMMER_NAMED_ARGUMENTS */
-  ) {
-      isReserved = function (name) {
-        return RESERVED.indexOf(name) !== -1 || Boolean(name.match(/^@[^a-z]/));
-      };
+  var RESERVED = ['@arguments', '@args', '@block', '@else'];
 
-      assertMessage = function (name) {
-        return "'" + name + "' is reserved.";
-      };
-    } else {
-    isReserved = function (name) {
-      return name[0] === '@';
-    };
+  function isReserved(name) {
+    return RESERVED.indexOf(name) !== -1 || Boolean(name.match(/^@[^a-z]/));
+  }
 
-    assertMessage = function (name) {
-      return "'" + name + "' is not a valid path.";
-    };
+  function assertMessage(name) {
+    return "'" + name + "' is reserved.";
   }
 });
 enifed("ember-template-compiler/lib/plugins/assert-splattribute-expression", ["exports", "@ember/debug", "ember-template-compiler/lib/system/calculate-location-display"], function (_exports, _debug, _calculateLocationDisplay) {
@@ -6381,19 +6439,9 @@ enifed("ember-template-compiler/lib/plugins/assert-splattribute-expression", ["e
     return {
       name: 'assert-splattribute-expressions',
       visitor: {
-        AttrNode: function (_ref) {
-          var name = _ref.name,
+        PathExpression: function (_ref) {
+          var original = _ref.original,
               loc = _ref.loc;
-
-          if (!true
-          /* EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION */
-          && name === '...attributes') {
-            true && !false && (0, _debug.assert)(errorMessage() + " " + (0, _calculateLocationDisplay.default)(moduleName, loc));
-          }
-        },
-        PathExpression: function (_ref2) {
-          var original = _ref2.original,
-              loc = _ref2.loc;
 
           if (original === '...attributes') {
             true && !false && (0, _debug.assert)(errorMessage() + " " + (0, _calculateLocationDisplay.default)(moduleName, loc));
@@ -6404,13 +6452,7 @@ enifed("ember-template-compiler/lib/plugins/assert-splattribute-expression", ["e
   }
 
   function errorMessage() {
-    if (true
-    /* EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION */
-    ) {
-        return "Using \"...attributes\" can only be used in the element position e.g. <div ...attributes />. It cannot be used as a path.";
-      }
-
-    return "...attributes is an invalid path";
+    return '`...attributes` can only be used in the element position e.g. `<div ...attributes />`. It cannot be used as a path.';
   }
 });
 enifed("ember-template-compiler/lib/plugins/deprecate-send-action", ["exports", "@ember/debug", "@ember/deprecated-features", "ember-template-compiler/lib/system/calculate-location-display"], function (_exports, _debug, _deprecatedFeatures, _calculateLocationDisplay) {
@@ -6423,14 +6465,53 @@ enifed("ember-template-compiler/lib/plugins/deprecate-send-action", ["exports", 
     if (_deprecatedFeatures.SEND_ACTION) {
       var moduleName = env.meta.moduleName;
 
-      var deprecationMessage = function (node, evName, action) {
+      var deprecationMessage = function (node, eventName, actionName) {
         var sourceInformation = (0, _calculateLocationDisplay.default)(moduleName, node.loc);
-        return "Please refactor `{{input " + evName + "=\"" + action + "\"}}` to `{{input " + evName + "=(action \"" + action + "\")}}. " + sourceInformation;
+
+        if (true
+        /* EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS */
+        && node.type === 'ElementNode') {
+          return "Passing actions to components as strings (like `<Input @" + eventName + "=\"" + actionName + "\" />`) is deprecated. Please use closure actions instead (`<Input @" + eventName + "={{action \"" + actionName + "\"}} />`). " + sourceInformation;
+        } else {
+          return "Passing actions to components as strings (like `{{input " + eventName + "=\"" + actionName + "\"}}`) is deprecated. Please use closure actions instead (`{{input " + eventName + "=(action \"" + actionName + "\")}}`). " + sourceInformation;
+        }
       };
 
       return {
         name: 'deprecate-send-action',
         visitor: {
+          ElementNode: function (node) {
+            if (!true
+            /* EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS */
+            || node.tag !== 'Input') {
+              return;
+            }
+
+            node.attributes.forEach(function (_ref) {
+              var name = _ref.name,
+                  value = _ref.value;
+
+              if (name.charAt(0) === '@') {
+                var eventName = name.substring(1);
+
+                if (EVENTS.indexOf(eventName) > -1) {
+                  if (value.type === 'TextNode') {
+                    true && !false && (0, _debug.deprecate)(deprecationMessage(node, eventName, value.chars), false, {
+                      id: 'ember-component.send-action',
+                      until: '4.0.0',
+                      url: 'https://emberjs.com/deprecations/v3.x#toc_ember-component-send-action'
+                    });
+                  } else if (value.type === 'MustacheStatement' && value.path.type === 'StringLiteral') {
+                    true && !false && (0, _debug.deprecate)(deprecationMessage(node, eventName, value.path.original), false, {
+                      id: 'ember-component.send-action',
+                      until: '4.0.0',
+                      url: 'https://emberjs.com/deprecations/v3.x#toc_ember-component-send-action'
+                    });
+                  }
+                }
+              }
+            });
+          },
           MustacheStatement: function (node) {
             if (node.path.original !== 'input') {
               return;
@@ -6453,11 +6534,17 @@ enifed("ember-template-compiler/lib/plugins/deprecate-send-action", ["exports", 
     return;
   }
 });
-enifed("ember-template-compiler/lib/plugins/index", ["exports", "ember-template-compiler/lib/plugins/assert-if-helper-without-arguments", "ember-template-compiler/lib/plugins/assert-input-helper-without-block", "ember-template-compiler/lib/plugins/assert-local-variable-shadowing-helper-invocation", "ember-template-compiler/lib/plugins/assert-reserved-named-arguments", "ember-template-compiler/lib/plugins/assert-splattribute-expression", "ember-template-compiler/lib/plugins/deprecate-send-action", "ember-template-compiler/lib/plugins/transform-action-syntax", "ember-template-compiler/lib/plugins/transform-attrs-into-args", "ember-template-compiler/lib/plugins/transform-component-invocation", "ember-template-compiler/lib/plugins/transform-each-in-into-each", "ember-template-compiler/lib/plugins/transform-has-block-syntax", "ember-template-compiler/lib/plugins/transform-in-element", "ember-template-compiler/lib/plugins/transform-inline-link-to", "ember-template-compiler/lib/plugins/transform-input-type-syntax", "ember-template-compiler/lib/plugins/transform-old-class-binding-syntax", "ember-template-compiler/lib/plugins/transform-quoted-bindings-into-just-bindings", "@ember/deprecated-features"], function (_exports, _assertIfHelperWithoutArguments, _assertInputHelperWithoutBlock, _assertLocalVariableShadowingHelperInvocation, _assertReservedNamedArguments, _assertSplattributeExpression, _deprecateSendAction, _transformActionSyntax, _transformAttrsIntoArgs, _transformComponentInvocation, _transformEachInIntoEach, _transformHasBlockSyntax, _transformInElement, _transformInlineLinkTo, _transformInputTypeSyntax, _transformOldClassBindingSyntax, _transformQuotedBindingsIntoJustBindings, _deprecatedFeatures) {
+enifed("ember-template-compiler/lib/plugins/index", ["exports", "ember-template-compiler/lib/plugins/assert-if-helper-without-arguments", "ember-template-compiler/lib/plugins/assert-input-helper-without-block", "ember-template-compiler/lib/plugins/assert-local-variable-shadowing-helper-invocation", "ember-template-compiler/lib/plugins/assert-reserved-named-arguments", "ember-template-compiler/lib/plugins/assert-splattribute-expression", "ember-template-compiler/lib/plugins/deprecate-send-action", "ember-template-compiler/lib/plugins/transform-action-syntax", "ember-template-compiler/lib/plugins/transform-attrs-into-args", "ember-template-compiler/lib/plugins/transform-component-invocation", "ember-template-compiler/lib/plugins/transform-each-in-into-each", "ember-template-compiler/lib/plugins/transform-has-block-syntax", "ember-template-compiler/lib/plugins/transform-in-element", "ember-template-compiler/lib/plugins/transform-input-type-syntax", "ember-template-compiler/lib/plugins/transform-link-to", "ember-template-compiler/lib/plugins/transform-old-class-binding-syntax", "ember-template-compiler/lib/plugins/transform-quoted-bindings-into-just-bindings", "@ember/deprecated-features"], function (_exports, _assertIfHelperWithoutArguments, _assertInputHelperWithoutBlock, _assertLocalVariableShadowingHelperInvocation, _assertReservedNamedArguments, _assertSplattributeExpression, _deprecateSendAction, _transformActionSyntax, _transformAttrsIntoArgs, _transformComponentInvocation, _transformEachInIntoEach, _transformHasBlockSyntax, _transformInElement, _transformInputTypeSyntax, _transformLinkTo, _transformOldClassBindingSyntax, _transformQuotedBindingsIntoJustBindings, _deprecatedFeatures) {
   "use strict";
 
   _exports.default = void 0;
-  var transforms = [_transformComponentInvocation.default, _transformInlineLinkTo.default, _transformOldClassBindingSyntax.default, _transformQuotedBindingsIntoJustBindings.default, _assertReservedNamedArguments.default, _transformActionSyntax.default, _transformInputTypeSyntax.default, _transformAttrsIntoArgs.default, _transformEachInIntoEach.default, _transformHasBlockSyntax.default, _assertLocalVariableShadowingHelperInvocation.default, _assertInputHelperWithoutBlock.default, _transformInElement.default, _assertIfHelperWithoutArguments.default, _assertSplattributeExpression.default];
+  var transforms = [_transformComponentInvocation.default, _transformOldClassBindingSyntax.default, _transformQuotedBindingsIntoJustBindings.default, _assertReservedNamedArguments.default, _transformActionSyntax.default, _transformAttrsIntoArgs.default, _transformEachInIntoEach.default, _transformHasBlockSyntax.default, _assertLocalVariableShadowingHelperInvocation.default, _transformLinkTo.default, _assertInputHelperWithoutBlock.default, _transformInElement.default, _assertIfHelperWithoutArguments.default, _assertSplattributeExpression.default];
+
+  if (!true
+  /* EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS */
+  ) {
+      transforms.push(_transformInputTypeSyntax.default);
+    }
 
   if (_deprecatedFeatures.SEND_ACTION) {
     transforms.push(_deprecateSendAction.default);
@@ -7027,52 +7114,10 @@ enifed("ember-template-compiler/lib/plugins/transform-in-element", ["exports", "
     return "The {{in-element}} helper cannot be used. " + sourceInformation;
   }
 });
-enifed("ember-template-compiler/lib/plugins/transform-inline-link-to", ["exports"], function (_exports) {
+enifed("ember-template-compiler/lib/plugins/transform-input-type-syntax", ["exports", "@glimmer/util"], function (_exports, _util) {
   "use strict";
 
-  _exports.default = transformInlineLinkTo;
-
-  function buildProgram(b, content, loc) {
-    return b.program([buildStatement(b, content, loc)], undefined, loc);
-  }
-
-  function buildStatement(b, content, loc) {
-    switch (content.type) {
-      case 'PathExpression':
-        return b.mustache(content, undefined, undefined, undefined, loc);
-
-      case 'SubExpression':
-        return b.mustache(content.path, content.params, content.hash, undefined, loc);
-      // The default case handles literals.
-
-      default:
-        return b.text("" + content.value, loc);
-    }
-  }
-
-  function unsafeHtml(b, expr) {
-    return b.sexpr('-html-safe', [expr]);
-  }
-
-  function transformInlineLinkTo(env) {
-    var b = env.syntax.builders;
-    return {
-      name: 'transform-inline-link-to',
-      visitor: {
-        MustacheStatement: function (node) {
-          if (node.path.original === 'link-to') {
-            var content = node.escaped ? node.params[0] : unsafeHtml(b, node.params[0]);
-            return b.block('link-to', node.params.slice(1), node.hash, buildProgram(b, content, node.loc), null, node.loc);
-          }
-        }
-      }
-    };
-  }
-});
-enifed("ember-template-compiler/lib/plugins/transform-input-type-syntax", ["exports"], function (_exports) {
-  "use strict";
-
-  _exports.default = transformInputTypeSyntax;
+  _exports.default = void 0;
 
   /**
    @module ember
@@ -7098,38 +7143,170 @@ enifed("ember-template-compiler/lib/plugins/transform-input-type-syntax", ["expo
     @private
     @class TransformInputTypeSyntax
   */
-  function transformInputTypeSyntax(env) {
-    var b = env.syntax.builders;
-    return {
-      name: 'transform-input-type-syntax',
-      visitor: {
-        MustacheStatement: function (node) {
-          if (isInput(node)) {
-            insertTypeHelperParameter(node, b);
+  var transformInputTypeSyntax;
+
+  if (true
+  /* EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS */
+  ) {
+      transformInputTypeSyntax = function () {
+        throw (0, _util.unreachable)();
+      };
+    } else {
+    transformInputTypeSyntax = function transformInputTypeSyntax(env) {
+      var b = env.syntax.builders;
+      return {
+        name: 'transform-input-type-syntax',
+        visitor: {
+          MustacheStatement: function (node) {
+            if (isInput(node)) {
+              insertTypeHelperParameter(node, b);
+            }
           }
         }
+      };
+    };
+
+    var isInput = function isInput(node) {
+      return node.path.original === 'input';
+    };
+
+    var insertTypeHelperParameter = function insertTypeHelperParameter(node, builders) {
+      var pairs = node.hash.pairs;
+      var pair = null;
+
+      for (var i = 0; i < pairs.length; i++) {
+        if (pairs[i].key === 'type') {
+          pair = pairs[i];
+          break;
+        }
+      }
+
+      if (pair && pair.value.type !== 'StringLiteral') {
+        node.params.unshift(builders.sexpr('-input-type', [pair.value], undefined, pair.loc));
       }
     };
   }
 
-  function isInput(node) {
-    return node.path.original === 'input';
+  var _default = transformInputTypeSyntax;
+  _exports.default = _default;
+});
+enifed("ember-template-compiler/lib/plugins/transform-link-to", ["exports", "@ember/debug", "ember-template-compiler/lib/system/calculate-location-display"], function (_exports, _debug, _calculateLocationDisplay) {
+  "use strict";
+
+  _exports.default = transformLinkTo;
+
+  function isInlineLinkTo(node) {
+    return node.path.original === 'link-to';
   }
 
-  function insertTypeHelperParameter(node, builders) {
-    var pairs = node.hash.pairs;
-    var pair = null;
+  function isBlockLinkTo(node) {
+    return node.path.original === 'link-to';
+  }
 
-    for (var i = 0; i < pairs.length; i++) {
-      if (pairs[i].key === 'type') {
-        pair = pairs[i];
-        break;
+  function isSubExpression(node) {
+    return node.type === 'SubExpression';
+  }
+
+  function isQueryParams(node) {
+    return isSubExpression(node) && node.path.original === 'query-params';
+  }
+
+  function transformInlineLinkToIntoBlockForm(env, node) {
+    var b = env.syntax.builders;
+    return b.block('link-to', node.params.slice(1), node.hash, buildProgram(b, node.params[0], node.escaped, node.loc), null, node.loc);
+  }
+
+  function transformPositionalLinkToIntoNamedArguments(env, node) {
+    var b = env.syntax.builders;
+    var moduleName = env.meta.moduleName;
+    var params = node.params,
+        pairs = node.hash.pairs;
+    var keys = pairs.map(function (pair) {
+      return pair.key;
+    });
+
+    if (params.length === 0) {
+      true && !(keys.indexOf('params') !== -1 || keys.indexOf('route') !== -1 || keys.indexOf('model') !== -1 || keys.indexOf('models') !== -1 || keys.indexOf('query') !== -1) && (0, _debug.assert)("You must provide one or more parameters to the `{{link-to}}` component. " + (0, _calculateLocationDisplay.default)(moduleName, node.loc), keys.indexOf('params') !== -1 || keys.indexOf('route') !== -1 || keys.indexOf('model') !== -1 || keys.indexOf('models') !== -1 || keys.indexOf('query') !== -1);
+      return node;
+    } else {
+      true && !(keys.indexOf('params') === -1) && (0, _debug.assert)("You cannot pass positional parameters and the `params` argument to the `{{link-to}}` component at the same time. " + (0, _calculateLocationDisplay.default)(moduleName, node.loc), keys.indexOf('params') === -1);
+      true && !(keys.indexOf('route') === -1) && (0, _debug.assert)("You cannot pass positional parameters and the `route` argument to the `{{link-to}}` component at the same time. " + (0, _calculateLocationDisplay.default)(moduleName, node.loc), keys.indexOf('route') === -1);
+      true && !(keys.indexOf('model') === -1) && (0, _debug.assert)("You cannot pass positional parameters and the `model` argument to the `{{link-to}}` component at the same time. " + (0, _calculateLocationDisplay.default)(moduleName, node.loc), keys.indexOf('model') === -1);
+      true && !(keys.indexOf('models') === -1) && (0, _debug.assert)("You cannot pass positional parameters and the `models` argument to the `{{link-to}}` component at the same time. " + (0, _calculateLocationDisplay.default)(moduleName, node.loc), keys.indexOf('models') === -1);
+      true && !(keys.indexOf('query') === -1) && (0, _debug.assert)("You cannot pass positional parameters and the `query` argument to the `{{link-to}}` component at the same time. " + (0, _calculateLocationDisplay.default)(moduleName, node.loc), keys.indexOf('query') === -1);
+    }
+
+    true && !(params.length > 0) && (0, _debug.assert)("You must provide one or more parameters to the `{{link-to}}` component. " + (0, _calculateLocationDisplay.default)(moduleName, node.loc), params.length > 0); // 1. The last argument is possibly the `query` object.
+
+    var query = params[params.length - 1];
+
+    if (query && isQueryParams(query)) {
+      params.pop();
+      true && !(query.params.length === 0) && (0, _debug.assert)("The `(query-params ...)` helper does not take positional arguments. " + (0, _calculateLocationDisplay.default)(moduleName, query.loc), query.params.length === 0);
+      pairs.push(b.pair('query', b.sexpr(b.path('hash', query.path.loc), [], query.hash, query.loc), query.loc));
+    } // 2. If there is a `route`, it is now at index 0.
+
+
+    var route = params.shift();
+
+    if (route) {
+      pairs.push(b.pair('route', route, route.loc));
+    } // 3. Any remaining indices (if any) are `models`.
+
+
+    if (params.length === 1) {
+      pairs.push(b.pair('model', params[0], params[0].loc));
+    } else if (params.length > 1) {
+      pairs.push(b.pair('models', b.sexpr(b.path('array', node.loc), params, undefined, node.loc), node.loc));
+    }
+
+    return b.block(node.path, null, b.hash(pairs, node.hash.loc), node.program, node.inverse, node.loc);
+  }
+
+  function buildProgram(b, content, escaped, loc) {
+    return b.program([buildStatement(b, content, escaped, loc)], undefined, loc);
+  }
+
+  function buildStatement(b, content, escaped, loc) {
+    switch (content.type) {
+      case 'PathExpression':
+        return b.mustache(content, undefined, undefined, !escaped, loc);
+
+      case 'SubExpression':
+        return b.mustache(content.path, content.params, content.hash, !escaped, loc);
+      // The default case handles literals.
+
+      default:
+        return b.text("" + content.value, loc);
+    }
+  }
+
+  function transformLinkTo(env) {
+    return {
+      name: 'transform-link-to',
+      visitor: {
+        MustacheStatement: function (node) {
+          if (isInlineLinkTo(node)) {
+            var block = transformInlineLinkToIntoBlockForm(env, node);
+
+            if (true
+            /* EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS */
+            ) {
+                block = transformPositionalLinkToIntoNamedArguments(env, block);
+              }
+
+            return block;
+          }
+        },
+        BlockStatement: function (node) {
+          if (true
+          /* EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS */
+          && isBlockLinkTo(node)) {
+            return transformPositionalLinkToIntoNamedArguments(env, node);
+          }
+        }
       }
-    }
-
-    if (pair && pair.value.type !== 'StringLiteral') {
-      node.params.unshift(builders.sexpr('-input-type', [pair.value], undefined, pair.loc));
-    }
+    };
   }
 });
 enifed("ember-template-compiler/lib/plugins/transform-old-class-binding-syntax", ["exports"], function (_exports) {
@@ -7546,11 +7723,21 @@ enifed("ember-template-compiler/lib/system/dasherize-component-name", ["exports"
     This diverges from `Ember.String.dasherize` so that`<XFoo />` can resolve to `x-foo`.
     `Ember.String.dasherize` would resolve it to `xfoo`..
   */
-  var SIMPLE_DASHERIZE_REGEXP = /[A-Z]/g;
+  var SIMPLE_DASHERIZE_REGEXP = /[A-Z]|::/g;
   var ALPHA = /[A-Za-z0-9]/;
 
   var _default = new _utils.Cache(1000, function (key) {
     return key.replace(SIMPLE_DASHERIZE_REGEXP, function (char, index) {
+      if (char === '::') {
+        if (true
+        /* EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP */
+        ) {
+            return '/';
+          } else {
+          return char;
+        }
+      }
+
       if (index === 0 || !ALPHA.test(key[index - 1])) {
         return char.toLowerCase();
       }
@@ -7991,398 +8178,395 @@ enifed("ember-template-compiler/tests/plugins/assert-local-variable-shadowing-he
 enifed("ember-template-compiler/tests/plugins/assert-reserved-named-arguments-test", ["ember-babel", "ember-template-compiler/index", "internal-test-helpers"], function (_emberBabel, _index, _internalTestHelpers) {
   "use strict";
 
-  if (true
-  /* EMBER_GLIMMER_NAMED_ARGUMENTS */
-  ) {
-      (0, _internalTestHelpers.moduleFor)('ember-template-compiler: assert-reserved-named-arguments (EMBER_GLIMMER_NAMED_ARGUMENTS) ',
-      /*#__PURE__*/
-      function (_AbstractTestCase) {
-        (0, _emberBabel.inheritsLoose)(_class, _AbstractTestCase);
+  (0, _internalTestHelpers.moduleFor)('ember-template-compiler: assert-reserved-named-arguments',
+  /*#__PURE__*/
+  function (_AbstractTestCase) {
+    (0, _emberBabel.inheritsLoose)(_class, _AbstractTestCase);
 
-        function _class() {
-          return _AbstractTestCase.apply(this, arguments) || this;
-        }
+    function _class() {
+      return _AbstractTestCase.apply(this, arguments) || this;
+    }
 
-        var _proto = _class.prototype;
+    var _proto = _class.prototype;
 
-        _proto["@test '@arguments' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@arguments}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@arguments' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @arguments}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@arguments' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @arguments \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@arguments' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@arguments' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@arguments}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@arguments' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @arguments}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@arguments' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @arguments \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@arguments' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@args' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@args}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@args' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @args}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@args' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @args \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@args' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@args' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@args}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@args' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @args}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@args' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @args \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@args' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@block' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@block}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@block' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @block}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@block' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @block \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@block' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@block' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@block}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@block' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @block}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@block' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @block \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@block' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@else' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@else}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@else' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @else}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@else' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @else \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@else' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        } // anything else that doesn't start with a lower case letter
-        ;
+    _proto["@test '@else' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@else}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@else' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @else}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@else' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @else \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@else' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    } // anything else that doesn't start with a lower case letter
+    ;
 
-        _proto["@test '@Arguments' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@Arguments}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@Arguments' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @Arguments}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@Arguments' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @Arguments \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@Arguments' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@Arguments' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@Arguments}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@Arguments' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @Arguments}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@Arguments' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @Arguments \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@Arguments' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@Args' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@Args}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@Args' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @Args}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@Args' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @Args \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@Args' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@Args' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@Args}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@Args' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @Args}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@Args' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @Args \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@Args' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@FOO' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@FOO}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@FOO' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @FOO}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@FOO' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @FOO \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@FOO' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@FOO' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@FOO}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@FOO' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @FOO}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@FOO' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @FOO \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@FOO' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@Foo' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@Foo}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@Foo' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @Foo}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@Foo' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @Foo \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@Foo' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@Foo' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@Foo}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@Foo' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @Foo}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@Foo' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @Foo \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@Foo' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@.' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@.}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@.' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @.}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@.' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @. \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@.' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@.' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@.}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@.' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @.}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@.' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @. \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@.' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@_' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@_}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@_' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @_}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@_' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @_ \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@_' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@_' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@_}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@_' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @_}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@_' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @_ \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@_' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@-' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@-}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@-' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @-}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@-' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @- \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@-' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@-' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@-}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@-' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @-}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@-' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @- \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@-' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@$' is reserved"] = function () {
-          expectAssertion(function () {
-            (0, _index.compile)("{{@$}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@$' is reserved. ('baz/foo-bar' @ L1:C2) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{#if @$}}Yup{{/if}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@$' is reserved. ('baz/foo-bar' @ L1:C6) ");
-          expectAssertion(function () {
-            (0, _index.compile)("{{input type=(if @$ \"bar\" \"baz\")}}", {
-              moduleName: 'baz/foo-bar'
-            });
-          }, "'@$' is reserved. ('baz/foo-bar' @ L1:C17) ");
-        };
+    _proto["@test '@$' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("{{@$}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@$' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @$}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@$' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @$ \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@$' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@' is de facto reserved (parse error)"] = function (assert) {
-          assert.throws(function () {
-            (0, _index.compile)('{{@}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{#if @}}Yup{{/if}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{input type=(if @ "bar" "baz")}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-        };
+    _proto["@test '@__ARGS__' is reserved"] = function () {
+      expectAssertion(function () {
+        (0, _index.compile)("<Foo @__ARGS__=\"bar\" />", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@__ARGS__' is reserved. ('baz/foo-bar' @ L1:C5) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{foo __ARGS__=\"bar\"}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'__ARGS__' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#let (component \"foo\" __ARGS__=\"bar\") as |c|}}{{c}}{{/let}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'__ARGS__' is reserved. ('baz/foo-bar' @ L1:C24) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{@__ARGS__}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@__ARGS__' is reserved. ('baz/foo-bar' @ L1:C2) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{#if @__ARGS__}}Yup{{/if}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@__ARGS__' is reserved. ('baz/foo-bar' @ L1:C6) ");
+      expectAssertion(function () {
+        (0, _index.compile)("{{input type=(if @__ARGS__ \"bar\" \"baz\")}}", {
+          moduleName: 'baz/foo-bar'
+        });
+      }, "'@__ARGS__' is reserved. ('baz/foo-bar' @ L1:C17) ");
+    };
 
-        _proto["@test '@0' is de facto reserved (parse error)"] = function (assert) {
-          assert.throws(function () {
-            (0, _index.compile)('{{@0}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{#if @0}}Yup{{/if}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{input type=(if @0 "bar" "baz")}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-        };
+    _proto["@test '@' is de facto reserved (parse error)"] = function (assert) {
+      assert.throws(function () {
+        (0, _index.compile)('{{@}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{#if @}}Yup{{/if}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{input type=(if @ "bar" "baz")}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+    };
 
-        _proto["@test '@1' is de facto reserved (parse error)"] = function (assert) {
-          assert.throws(function () {
-            (0, _index.compile)('{{@1}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{#if @1}}Yup{{/if}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{input type=(if @1 "bar" "baz")}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-        };
+    _proto["@test '@0' is de facto reserved (parse error)"] = function (assert) {
+      assert.throws(function () {
+        (0, _index.compile)('{{@0}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{#if @0}}Yup{{/if}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{input type=(if @0 "bar" "baz")}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+    };
 
-        _proto["@test '@2' is de facto reserved (parse error)"] = function (assert) {
-          assert.throws(function () {
-            (0, _index.compile)('{{@2}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{#if @2}}Yup{{/if}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{input type=(if @2 "bar" "baz")}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-        };
+    _proto["@test '@1' is de facto reserved (parse error)"] = function (assert) {
+      assert.throws(function () {
+        (0, _index.compile)('{{@1}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{#if @1}}Yup{{/if}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{input type=(if @1 "bar" "baz")}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+    };
 
-        _proto["@test '@@' is de facto reserved (parse error)"] = function (assert) {
-          assert.throws(function () {
-            (0, _index.compile)('{{@@}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{#if @@}}Yup{{/if}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{input type=(if @@ "bar" "baz")}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-        };
+    _proto["@test '@2' is de facto reserved (parse error)"] = function (assert) {
+      assert.throws(function () {
+        (0, _index.compile)('{{@2}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{#if @2}}Yup{{/if}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{input type=(if @2 "bar" "baz")}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+    };
 
-        _proto["@test '@=' is de facto reserved (parse error)"] = function (assert) {
-          assert.throws(function () {
-            (0, _index.compile)('{{@=}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{#if @=}}Yup{{/if}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{input type=(if @= "bar" "baz")}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-        };
+    _proto["@test '@@' is de facto reserved (parse error)"] = function (assert) {
+      assert.throws(function () {
+        (0, _index.compile)('{{@@}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{#if @@}}Yup{{/if}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{input type=(if @@ "bar" "baz")}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+    };
 
-        _proto["@test '@!' is de facto reserved (parse error)"] = function (assert) {
-          assert.throws(function () {
-            (0, _index.compile)('{{@!}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{#if @!}}Yup{{/if}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-          assert.throws(function () {
-            (0, _index.compile)('{{input type=(if @! "bar" "baz")}}', {
-              moduleName: 'baz/foo-bar'
-            });
-          }, /Expecting 'ID'/);
-        };
+    _proto["@test '@=' is de facto reserved (parse error)"] = function (assert) {
+      assert.throws(function () {
+        (0, _index.compile)('{{@=}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{#if @=}}Yup{{/if}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{input type=(if @= "bar" "baz")}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+    };
 
-        return _class;
-      }(_internalTestHelpers.AbstractTestCase));
-    } else {
-    (0, _internalTestHelpers.moduleFor)('ember-template-compiler: assert-reserved-named-arguments',
-    /*#__PURE__*/
-    function (_AbstractTestCase2) {
-      (0, _emberBabel.inheritsLoose)(_class2, _AbstractTestCase2);
+    _proto["@test '@!' is de facto reserved (parse error)"] = function (assert) {
+      assert.throws(function () {
+        (0, _index.compile)('{{@!}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{#if @!}}Yup{{/if}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+      assert.throws(function () {
+        (0, _index.compile)('{{input type=(if @! "bar" "baz")}}', {
+          moduleName: 'baz/foo-bar'
+        });
+      }, /Expecting 'ID'/);
+    };
 
-      function _class2() {
-        return _AbstractTestCase2.apply(this, arguments) || this;
-      }
-
-      var _proto2 = _class2.prototype;
-
-      _proto2['@test Paths beginning with @ are not valid'] = function testPathsBeginningWithAreNotValid() {
-        expectAssertion(function () {
-          (0, _index.compile)('{{@foo}}', {
-            moduleName: 'baz/foo-bar'
-          });
-        }, "'@foo' is not a valid path. ('baz/foo-bar' @ L1:C2) ");
-        expectAssertion(function () {
-          (0, _index.compile)('{{#if @foo}}Yup{{/if}}', {
-            moduleName: 'baz/foo-bar'
-          });
-        }, "'@foo' is not a valid path. ('baz/foo-bar' @ L1:C6) ");
-        expectAssertion(function () {
-          (0, _index.compile)('{{input type=(if @foo "bar" "baz")}}', {
-            moduleName: 'baz/foo-bar'
-          });
-        }, "'@foo' is not a valid path. ('baz/foo-bar' @ L1:C17) ");
-      };
-
-      return _class2;
-    }(_internalTestHelpers.AbstractTestCase));
-  }
+    return _class;
+  }(_internalTestHelpers.AbstractTestCase));
 });
 enifed("ember-template-compiler/tests/plugins/assert-splattribute-expression-test", ["ember-babel", "internal-test-helpers", "ember-template-compiler/index"], function (_emberBabel, _internalTestHelpers, _index) {
   "use strict";
@@ -8399,22 +8583,12 @@ enifed("ember-template-compiler/tests/plugins/assert-splattribute-expression-tes
     var _proto = _class.prototype;
 
     _proto.expectedMessage = function expectedMessage(locInfo) {
-      return true
-      /* EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION */
-      ? "Using \"...attributes\" can only be used in the element position e.g. <div ...attributes />. It cannot be used as a path. (" + locInfo + ") " : "...attributes is an invalid path (" + locInfo + ") ";
+      return "`...attributes` can only be used in the element position e.g. `<div ...attributes />`. It cannot be used as a path. (" + locInfo + ") ";
     };
 
     _proto['@test ...attributes is in element space'] = function testAttributesIsInElementSpace(assert) {
-      if (true
-      /* EMBER_GLIMMER_ANGLE_BRACKET_INVOCATION */
-      ) {
-          assert.expect(0);
-          (0, _index.compile)('<div ...attributes>Foo</div>');
-        } else {
-        expectAssertion(function () {
-          (0, _index.compile)('<div ...attributes>Foo</div>');
-        }, this.expectedMessage('L1:C5'));
-      }
+      assert.expect(0);
+      (0, _index.compile)('<div ...attributes>Foo</div>');
     };
 
     _proto['@test {{...attributes}} is not valid'] = function testAttributesIsNotValid() {
@@ -8471,7 +8645,7 @@ enifed("ember-template-compiler/tests/plugins/deprecate-send-action-test", ["emb
 
   EVENTS.forEach(function (e) {
     DeprecateSendActionTest.prototype["@test Using `{{input " + e + "=\"actionName\"}}` provides a deprecation"] = function () {
-      var expectedMessage = "Please refactor `{{input " + e + "=\"foo-bar\"}}` to `{{input " + e + "=(action \"foo-bar\")}}. ('baz/foo-bar' @ L1:C0) ";
+      var expectedMessage = "Passing actions to components as strings (like `{{input " + e + "=\"foo-bar\"}}`) is deprecated. Please use closure actions instead (`{{input " + e + "=(action \"foo-bar\")}}`). ('baz/foo-bar' @ L1:C0) ";
       expectDeprecation(function () {
         (0, _index.compile)("{{input " + e + "=\"foo-bar\"}}", {
           moduleName: 'baz/foo-bar'
@@ -8514,30 +8688,6 @@ enifed("ember-template-compiler/tests/plugins/transform-component-invocation-tes
     return _class;
   }(_internalTestHelpers.AbstractTestCase));
 });
-enifed("ember-template-compiler/tests/plugins/transform-inline-link-to-test", ["ember-babel", "ember-template-compiler/index", "internal-test-helpers"], function (_emberBabel, _index, _internalTestHelpers) {
-  "use strict";
-
-  (0, _internalTestHelpers.moduleFor)('ember-template-compiler: inline-link-to',
-  /*#__PURE__*/
-  function (_AbstractTestCase) {
-    (0, _emberBabel.inheritsLoose)(_class, _AbstractTestCase);
-
-    function _class() {
-      return _AbstractTestCase.apply(this, arguments) || this;
-    }
-
-    var _proto = _class.prototype;
-
-    _proto['@test Can transform an inline {{link-to}} without error'] = function testCanTransformAnInlineLinkToWithoutError(assert) {
-      assert.expect(0);
-      (0, _index.compile)("{{link-to 'foo' 'index'}}", {
-        moduleName: 'foo/bar/baz'
-      });
-    };
-
-    return _class;
-  }(_internalTestHelpers.AbstractTestCase));
-});
 enifed("ember-template-compiler/tests/plugins/transform-input-type-syntax-test", ["ember-babel", "ember-template-compiler/index", "internal-test-helpers"], function (_emberBabel, _index, _internalTestHelpers) {
   "use strict";
 
@@ -8569,6 +8719,247 @@ enifed("ember-template-compiler/tests/plugins/transform-input-type-syntax-test",
 
     return _class;
   }(_internalTestHelpers.AbstractTestCase));
+});
+enifed("ember-template-compiler/tests/plugins/transform-link-to-test", ["ember-babel", "ember-template-compiler/tests/utils/transform-test-case", "ember-template-compiler/index", "internal-test-helpers"], function (_emberBabel, _transformTestCase, _index, _internalTestHelpers) {
+  "use strict";
+
+  if (true
+  /* EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS */
+  ) {
+      (0, _internalTestHelpers.moduleFor)('ember-template-compiler: transforming inline {{link-to}} into the block form',
+      /*#__PURE__*/
+      function (_TransformTestCase) {
+        (0, _emberBabel.inheritsLoose)(_class, _TransformTestCase);
+
+        function _class() {
+          return _TransformTestCase.apply(this, arguments) || this;
+        }
+
+        var _proto = _class.prototype;
+
+        _proto['@test it transforms an inline {{link-to}} into its block form'] = function testItTransformsAnInlineLinkToIntoItsBlockForm() {
+          this.assertTransformed("{{link-to 'foo' 'index'}}", "{{#link-to route='index'}}foo{{/link-to}}");
+        };
+
+        _proto['@test bound link title'] = function testBoundLinkTitle() {
+          this.assertTransformed("{{link-to foo 'index'}}", "{{#link-to route='index'}}{{foo}}{{/link-to}}");
+          this.assertTransformed("{{link-to this.foo 'index'}}", "{{#link-to route='index'}}{{this.foo}}{{/link-to}}");
+          this.assertTransformed("{{link-to foo.bar.baz 'index'}}", "{{#link-to route='index'}}{{foo.bar.baz}}{{/link-to}}");
+          this.assertTransformed("{{link-to @foo 'index'}}", "{{#link-to route='index'}}{{@foo}}{{/link-to}}");
+        };
+
+        _proto['@test sexp link title'] = function testSexpLinkTitle() {
+          this.assertTransformed("{{link-to (foo) 'index'}}", "{{#link-to route='index'}}{{foo}}{{/link-to}}");
+          this.assertTransformed("{{link-to (foo bar) 'index'}}", "{{#link-to route='index'}}{{foo bar}}{{/link-to}}");
+          this.assertTransformed("{{link-to (foo bar baz=bat) 'index'}}", "{{#link-to route='index'}}{{foo bar baz=bat}}{{/link-to}}");
+        };
+
+        return _class;
+      }(_transformTestCase.default));
+      (0, _internalTestHelpers.moduleFor)('ember-template-compiler: transforming inline {{{link-to}}} into the block form',
+      /*#__PURE__*/
+      function (_TransformTestCase2) {
+        (0, _emberBabel.inheritsLoose)(_class2, _TransformTestCase2);
+
+        function _class2() {
+          return _TransformTestCase2.apply(this, arguments) || this;
+        }
+
+        var _proto2 = _class2.prototype;
+
+        _proto2['@test it transforms an inline {{{link-to}}} into its block form'] = function testItTransformsAnInlineLinkToIntoItsBlockForm() {
+          this.assertTransformed("{{{link-to 'foo' 'index'}}}", "{{#link-to route='index'}}foo{{/link-to}}");
+        };
+
+        _proto2['@test bound link title'] = function testBoundLinkTitle() {
+          this.assertTransformed("{{{link-to foo 'index'}}}", "{{#link-to route='index'}}{{{foo}}}{{/link-to}}");
+          this.assertTransformed("{{{link-to this.foo 'index'}}}", "{{#link-to route='index'}}{{{this.foo}}}{{/link-to}}");
+          this.assertTransformed("{{{link-to foo.bar.baz 'index'}}}", "{{#link-to route='index'}}{{{foo.bar.baz}}}{{/link-to}}");
+          this.assertTransformed("{{{link-to @foo 'index'}}}", "{{#link-to route='index'}}{{{@foo}}}{{/link-to}}");
+        };
+
+        _proto2['@test sexp link title'] = function testSexpLinkTitle() {
+          this.assertTransformed("{{{link-to (foo) 'index'}}}", "{{#link-to route='index'}}{{{foo}}}{{/link-to}}");
+          this.assertTransformed("{{{link-to (foo bar) 'index'}}}", "{{#link-to route='index'}}{{{foo bar}}}{{/link-to}}");
+          this.assertTransformed("{{{link-to (foo bar baz=bat) 'index'}}}", "{{#link-to route='index'}}{{{foo bar baz=bat}}}{{/link-to}}");
+        };
+
+        return _class2;
+      }(_transformTestCase.default));
+      (0, _internalTestHelpers.moduleFor)('ember-template-compiler: transforming positional arguments into named arguments',
+      /*#__PURE__*/
+      function (_TransformTestCase3) {
+        (0, _emberBabel.inheritsLoose)(_class3, _TransformTestCase3);
+
+        function _class3() {
+          return _TransformTestCase3.apply(this, arguments) || this;
+        }
+
+        var _proto3 = _class3.prototype;
+
+        _proto3['@test no arguments'] = function testNoArguments() {
+          expectAssertion(function () {
+            return (0, _index.compile)('{{#link-to}}zomg{{/link-to}}', {
+              moduleName: '-top-level'
+            });
+          }, /You must provide one or more parameters to the `{{link-to}}` component. \('-top-level' @ L1:C0\)/);
+          expectAssertion(function () {
+            return (0, _index.compile)('{{#link-to class="wow"}}zomg{{/link-to}}', {
+              moduleName: '-top-level'
+            });
+          }, /You must provide one or more parameters to the `{{link-to}}` component. \('-top-level' @ L1:C0\)/); // these are ok
+
+          (0, _index.compile)('{{#link-to params=foo}}zomg{{/link-to}}', {
+            moduleName: '-top-level'
+          });
+          (0, _index.compile)('{{#link-to route=foo}}zomg{{/link-to}}', {
+            moduleName: '-top-level'
+          });
+          (0, _index.compile)('{{#link-to model=foo}}zomg{{/link-to}}', {
+            moduleName: '-top-level'
+          });
+          (0, _index.compile)('{{#link-to models=foo}}zomg{{/link-to}}', {
+            moduleName: '-top-level'
+          });
+          (0, _index.compile)('{{#link-to query=foo}}zomg{{/link-to}}', {
+            moduleName: '-top-level'
+          });
+        };
+
+        _proto3['@test mixing positional and named arguments'] = function testMixingPositionalAndNamedArguments() {
+          expectAssertion(function () {
+            return (0, _index.compile)('{{#link-to foo params=bar}}zomg{{/link-to}}', {
+              moduleName: '-top-level'
+            });
+          }, /cannot pass positional parameters and the `params` argument to the `{{link-to}}` component at the same time. \('-top-level' @ L1:C0\)/);
+          expectAssertion(function () {
+            return (0, _index.compile)('{{#link-to foo route=bar}}zomg{{/link-to}}', {
+              moduleName: '-top-level'
+            });
+          }, /cannot pass positional parameters and the `route` argument to the `{{link-to}}` component at the same time. \('-top-level' @ L1:C0\)/);
+          expectAssertion(function () {
+            return (0, _index.compile)('{{#link-to foo model=bar}}zomg{{/link-to}}', {
+              moduleName: '-top-level'
+            });
+          }, /cannot pass positional parameters and the `model` argument to the `{{link-to}}` component at the same time. \('-top-level' @ L1:C0\)/);
+          expectAssertion(function () {
+            return (0, _index.compile)('{{#link-to foo models=bar}}zomg{{/link-to}}', {
+              moduleName: '-top-level'
+            });
+          }, /cannot pass positional parameters and the `models` argument to the `{{link-to}}` component at the same time. \('-top-level' @ L1:C0\)/);
+          expectAssertion(function () {
+            return (0, _index.compile)('{{#link-to foo query=bar}}zomg{{/link-to}}', {
+              moduleName: '-top-level'
+            });
+          }, /cannot pass positional parameters and the `query` argument to the `{{link-to}}` component at the same time. \('-top-level' @ L1:C0\)/);
+        };
+
+        _proto3['@test route only'] = function testRouteOnly() {
+          this.assertTransformed("{{#link-to 'foo'}}Foo{{/link-to}}", "{{#link-to route='foo'}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to foo}}Foo{{/link-to}}", "{{#link-to route=foo}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to this.foo}}Foo{{/link-to}}", "{{#link-to route=this.foo}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to foo.bar.baz}}Foo{{/link-to}}", "{{#link-to route=foo.bar.baz}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to @foo}}Foo{{/link-to}}", "{{#link-to route=@foo}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to @foo}}Foo{{/link-to}}", "{{#link-to route=@foo}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to (foo)}}Foo{{/link-to}}", "{{#link-to route=(foo)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to (foo bar)}}Foo{{/link-to}}", "{{#link-to route=(foo bar)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to (foo bar baz=bat)}}Foo{{/link-to}}", "{{#link-to route=(foo bar baz=bat)}}Foo{{/link-to}}");
+        };
+
+        _proto3['@test single model'] = function testSingleModel() {
+          this.assertTransformed("{{#link-to 'foo' 'bar'}}Foo{{/link-to}}", "{{#link-to route='foo' model='bar'}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' bar}}Foo{{/link-to}}", "{{#link-to route='foo' model=bar}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' this.bar}}Foo{{/link-to}}", "{{#link-to route='foo' model=this.bar}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' bar.baz.bat}}Foo{{/link-to}}", "{{#link-to route='foo' model=bar.baz.bat}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' @bar}}Foo{{/link-to}}", "{{#link-to route='foo' model=@bar}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' (bar)}}Foo{{/link-to}}", "{{#link-to route='foo' model=(bar)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' (bar baz)}}Foo{{/link-to}}", "{{#link-to route='foo' model=(bar baz)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' (bar baz bat=wat)}}Foo{{/link-to}}", "{{#link-to route='foo' model=(bar baz bat=wat)}}Foo{{/link-to}}");
+        };
+
+        _proto3['@test multi models'] = function testMultiModels() {
+          this.assertTransformed("{{#link-to 'foo' 'bar' 'baz' 'bat'}}Foo{{/link-to}}", "{{#link-to route='foo' models=(array 'bar' 'baz' 'bat')}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' bar baz bat}}Foo{{/link-to}}", "{{#link-to route='foo' models=(array bar baz bat)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' this.bar this.baz this.bat}}Foo{{/link-to}}", "{{#link-to route='foo' models=(array this.bar this.baz this.bat)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' bar.baz.bat baz.bat.bar bat.bar.baz}}Foo{{/link-to}}", "{{#link-to route='foo' models=(array bar.baz.bat baz.bat.bar bat.bar.baz)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' @bar @baz @bat}}Foo{{/link-to}}", "{{#link-to route='foo' models=(array @bar @baz @bat)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' (bar) (baz) (bat)}}Foo{{/link-to}}", "{{#link-to route='foo' models=(array (bar) (baz) (bat))}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' (bar baz) (baz bat) (bat bar)}}Foo{{/link-to}}", "{{#link-to route='foo' models=(array (bar baz) (baz bat) (bat bar))}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' (bar baz bat=wat) (baz bat wat=bar) (bat wat bar=baz)}}Foo{{/link-to}}", "{{#link-to route='foo' models=(array (bar baz bat=wat) (baz bat wat=bar) (bat wat bar=baz))}}Foo{{/link-to}}");
+        };
+
+        _proto3['@test query params'] = function testQueryParams() {
+          this.assertTransformed("{{#link-to (query-params)}}Foo{{/link-to}}", "{{#link-to query=(hash)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to (query-params foo='bar' baz=bat)}}Foo{{/link-to}}", "{{#link-to query=(hash foo='bar' baz=bat)}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' (query-params foo='bar' baz=bat)}}Foo{{/link-to}}", "{{#link-to query=(hash foo='bar' baz=bat) route='foo'}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' 'bar' (query-params foo='bar' baz=bat)}}Foo{{/link-to}}", "{{#link-to query=(hash foo='bar' baz=bat) route='foo' model='bar'}}Foo{{/link-to}}");
+          this.assertTransformed("{{#link-to 'foo' 'bar' 'baz' 'bat' 'wat' (query-params foo='bar' baz=bat)}}Foo{{/link-to}}", "{{#link-to query=(hash foo='bar' baz=bat) route='foo' models=(array 'bar' 'baz' 'bat' 'wat')}}Foo{{/link-to}}");
+        };
+
+        return _class3;
+      }(_transformTestCase.default));
+    } else {
+    (0, _internalTestHelpers.moduleFor)('ember-template-compiler: transforming inline {{link-to}} into the block form',
+    /*#__PURE__*/
+    function (_TransformTestCase4) {
+      (0, _emberBabel.inheritsLoose)(_class4, _TransformTestCase4);
+
+      function _class4() {
+        return _TransformTestCase4.apply(this, arguments) || this;
+      }
+
+      var _proto4 = _class4.prototype;
+
+      _proto4['@test it transforms an inline {{link-to}} into its block form'] = function testItTransformsAnInlineLinkToIntoItsBlockForm() {
+        this.assertTransformed("{{link-to 'foo' 'index'}}", "{{#link-to 'index'}}foo{{/link-to}}");
+      };
+
+      _proto4['@test bound link title'] = function testBoundLinkTitle() {
+        this.assertTransformed("{{link-to foo 'index'}}", "{{#link-to 'index'}}{{foo}}{{/link-to}}");
+        this.assertTransformed("{{link-to this.foo 'index'}}", "{{#link-to 'index'}}{{this.foo}}{{/link-to}}");
+        this.assertTransformed("{{link-to foo.bar.baz 'index'}}", "{{#link-to 'index'}}{{foo.bar.baz}}{{/link-to}}");
+        this.assertTransformed("{{link-to @foo 'index'}}", "{{#link-to 'index'}}{{@foo}}{{/link-to}}");
+      };
+
+      _proto4['@test sexp link title'] = function testSexpLinkTitle() {
+        this.assertTransformed("{{link-to (foo) 'index'}}", "{{#link-to 'index'}}{{foo}}{{/link-to}}");
+        this.assertTransformed("{{link-to (foo bar) 'index'}}", "{{#link-to 'index'}}{{foo bar}}{{/link-to}}");
+        this.assertTransformed("{{link-to (foo bar baz=bat) 'index'}}", "{{#link-to 'index'}}{{foo bar baz=bat}}{{/link-to}}");
+      };
+
+      return _class4;
+    }(_transformTestCase.default));
+    (0, _internalTestHelpers.moduleFor)('ember-template-compiler: transforming inline {{{link-to}}} into the block form',
+    /*#__PURE__*/
+    function (_TransformTestCase5) {
+      (0, _emberBabel.inheritsLoose)(_class5, _TransformTestCase5);
+
+      function _class5() {
+        return _TransformTestCase5.apply(this, arguments) || this;
+      }
+
+      var _proto5 = _class5.prototype;
+
+      _proto5['@test it transforms an inline {{{link-to}}} into its block form'] = function testItTransformsAnInlineLinkToIntoItsBlockForm() {
+        this.assertTransformed("{{{link-to 'foo' 'index'}}}", "{{#link-to 'index'}}foo{{/link-to}}");
+      };
+
+      _proto5['@test bound link title'] = function testBoundLinkTitle() {
+        this.assertTransformed("{{{link-to foo 'index'}}}", "{{#link-to 'index'}}{{{foo}}}{{/link-to}}");
+        this.assertTransformed("{{{link-to this.foo 'index'}}}", "{{#link-to 'index'}}{{{this.foo}}}{{/link-to}}");
+        this.assertTransformed("{{{link-to foo.bar.baz 'index'}}}", "{{#link-to 'index'}}{{{foo.bar.baz}}}{{/link-to}}");
+        this.assertTransformed("{{{link-to @foo 'index'}}}", "{{#link-to 'index'}}{{{@foo}}}{{/link-to}}");
+      };
+
+      _proto5['@test sexp link title'] = function testSexpLinkTitle() {
+        this.assertTransformed("{{{link-to (foo) 'index'}}}", "{{#link-to 'index'}}{{{foo}}}{{/link-to}}");
+        this.assertTransformed("{{{link-to (foo bar) 'index'}}}", "{{#link-to 'index'}}{{{foo bar}}}{{/link-to}}");
+        this.assertTransformed("{{{link-to (foo bar baz=bat) 'index'}}}", "{{#link-to 'index'}}{{{foo bar baz=bat}}}{{/link-to}}");
+      };
+
+      return _class5;
+    }(_transformTestCase.default));
+  }
 });
 enifed("ember-template-compiler/tests/system/bootstrap-test", ["ember-babel", "@ember/runloop", "@ember/-internals/glimmer", "ember-template-compiler/lib/system/bootstrap", "internal-test-helpers"], function (_emberBabel, _runloop, _glimmer, _bootstrap, _internalTestHelpers) {
   "use strict";
@@ -8952,20 +9343,110 @@ enifed("ember-template-compiler/tests/system/dasherize-component-name-test", ["e
       assert.equal(_dasherizeComponentName.default.get('FooB3ar'), 'foo-b3ar');
       assert.equal(_dasherizeComponentName.default.get('XBlah'), 'x-blah');
       assert.equal(_dasherizeComponentName.default.get('X-Blah'), 'x-blah');
-      assert.equal(_dasherizeComponentName.default.get('Foo::BarBaz'), 'foo::bar-baz');
-      assert.equal(_dasherizeComponentName.default.get('Foo::Bar-Baz'), 'foo::bar-baz');
       assert.equal(_dasherizeComponentName.default.get('Foo@BarBaz'), 'foo@bar-baz');
       assert.equal(_dasherizeComponentName.default.get('Foo@Bar-Baz'), 'foo@bar-baz');
+
+      if (true
+      /* EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP */
+      ) {
+          assert.equal(_dasherizeComponentName.default.get('Foo::BarBaz'), 'foo/bar-baz');
+          assert.equal(_dasherizeComponentName.default.get('Foo::Bar-Baz'), 'foo/bar-baz');
+          assert.equal(_dasherizeComponentName.default.get('Foo::BarBaz::Bang'), 'foo/bar-baz/bang');
+        } else {
+        assert.equal(_dasherizeComponentName.default.get('Foo::BarBaz'), 'foo::bar-baz');
+        assert.equal(_dasherizeComponentName.default.get('Foo::Bar-Baz'), 'foo::bar-baz');
+      }
     };
 
     return _class;
   }(_internalTestHelpers.AbstractTestCase));
 });
+enifed("ember-template-compiler/tests/utils/transform-test-case", ["exports", "ember-babel", "@glimmer/compiler", "internal-test-helpers", "ember-template-compiler/index"], function (_exports, _emberBabel, _compiler, _internalTestHelpers, _index) {
+  "use strict";
+
+  _exports.default = void 0;
+
+  var _default =
+  /*#__PURE__*/
+  function (_AbstractTestCase) {
+    (0, _emberBabel.inheritsLoose)(_default, _AbstractTestCase);
+
+    function _default() {
+      return _AbstractTestCase.apply(this, arguments) || this;
+    }
+
+    var _proto = _default.prototype;
+
+    _proto.assertTransformed = function assertTransformed(before, after) {
+      this.assert.deepEqual(deloc(ast(before)), deloc(ast(after)));
+    };
+
+    return _default;
+  }(_internalTestHelpers.AbstractTestCase);
+
+  _exports.default = _default;
+
+  function ast(template) {
+    var program = null;
+
+    function extractProgram() {
+      return {
+        name: 'extract-program',
+        visitor: {
+          Program: {
+            exit: function (node) {
+              program = clone(node);
+            }
+          }
+        }
+      };
+    }
+
+    var options = (0, _index.compileOptions)({
+      moduleName: '-top-level'
+    });
+    options.plugins.ast.push(extractProgram);
+    (0, _compiler.precompile)(template, options);
+    return program;
+  }
+
+  function clone(node) {
+    var out = Object.create(null);
+    var keys = Object.keys(node);
+    keys.forEach(function (key) {
+      var value = node[key];
+
+      if (value !== null && typeof value === 'object') {
+        out[key] = clone(value);
+      } else {
+        out[key] = value;
+      }
+    });
+    return out;
+  }
+
+  function deloc(node) {
+    var out = Object.create(null);
+    var keys = Object.keys(node);
+    keys.forEach(function (key) {
+      var value = node[key];
+
+      if (key === 'loc') {
+        return;
+      } else if (value !== null && typeof value === 'object') {
+        out[key] = deloc(value);
+      } else {
+        out[key] = value;
+      }
+    });
+    return out;
+  }
+});
 enifed("ember/version", ["exports"], function (_exports) {
   "use strict";
 
   _exports.default = void 0;
-  var _default = "3.9.0";
+  var _default = "3.10.0";
   _exports.default = _default;
 });
 enifed("handlebars", ["exports"], function (_exports) {

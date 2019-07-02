@@ -2,8 +2,8 @@ import { schedule, join } from '@ember/runloop';
 /**
 @module ember
 */
-import { Mixin } from '@ember/-internals/metal';
 
+import { Mixin } from '@ember/-internals/metal';
 /**
   ContainerProxyMixin is used to provide public access to specific
   container functionality.
@@ -11,11 +11,11 @@ import { Mixin } from '@ember/-internals/metal';
   @class ContainerProxyMixin
   @private
 */
+
 let containerProxyMixin = {
   /**
    The container stores state.
-
-   @private
+    @private
    @property {Ember.Container} __container__
    */
   __container__: null,
@@ -23,21 +23,16 @@ let containerProxyMixin = {
   /**
    Returns an object that can be used to provide an owner to a
    manually created instance.
-
-   Example:
-
-   ```
+    Example:
+    ```
    import { getOwner } from '@ember/application';
-
-   let owner = getOwner(this);
-
-   User.create(
+    let owner = getOwner(this);
+    User.create(
      owner.ownerInjection(),
      { username: 'rwjblue' }
    )
    ```
-
-   @public
+    @public
    @method ownerInjection
    @since 2.3.0
    @return {Object}
@@ -48,43 +43,30 @@ let containerProxyMixin = {
 
   /**
    Given a fullName return a corresponding instance.
-
-   The default behavior is for lookup to return a singleton instance.
+    The default behavior is for lookup to return a singleton instance.
    The singleton is scoped to the container, allowing multiple containers
    to all have their own locally scoped singletons.
-
-   ```javascript
+    ```javascript
    let registry = new Registry();
    let container = registry.container();
-
-   registry.register('api:twitter', Twitter);
-
-   let twitter = container.lookup('api:twitter');
-
-   twitter instanceof Twitter; // => true
-
-   // by default the container will return singletons
+    registry.register('api:twitter', Twitter);
+    let twitter = container.lookup('api:twitter');
+    twitter instanceof Twitter; // => true
+    // by default the container will return singletons
    let twitter2 = container.lookup('api:twitter');
    twitter2 instanceof Twitter; // => true
-
-   twitter === twitter2; //=> true
+    twitter === twitter2; //=> true
    ```
-
-   If singletons are not wanted an optional flag can be provided at lookup.
-
-   ```javascript
+    If singletons are not wanted an optional flag can be provided at lookup.
+    ```javascript
    let registry = new Registry();
    let container = registry.container();
-
-   registry.register('api:twitter', Twitter);
-
-   let twitter = container.lookup('api:twitter', { singleton: false });
+    registry.register('api:twitter', Twitter);
+    let twitter = container.lookup('api:twitter', { singleton: false });
    let twitter2 = container.lookup('api:twitter', { singleton: false });
-
-   twitter === twitter2; //=> false
+    twitter === twitter2; //=> false
    ```
-
-   @public
+    @public
    @method lookup
    @param {String} fullName
    @param {Object} options
@@ -108,43 +90,33 @@ let containerProxyMixin = {
   },
 
   /**
- Given a fullName return a factory manager.
-
-  This method returns a manager which can be used for introspection of the
+  Given a fullName return a factory manager.
+   This method returns a manager which can be used for introspection of the
   factory's class or for the creation of factory instances with initial
   properties. The manager is an object with the following properties:
-
-  * `class` - The registered or resolved class.
+   * `class` - The registered or resolved class.
   * `create` - A function that will create an instance of the class with
     any dependencies injected.
-
-  For example:
-
-  ```javascript
+   For example:
+   ```javascript
   import { getOwner } from '@ember/application';
-
-  let owner = getOwner(otherInstance);
+   let owner = getOwner(otherInstance);
   // the owner is commonly the `applicationInstance`, and can be accessed via
   // an instance initializer.
-
-  let factory = owner.factoryFor('service:bespoke');
-
-  factory.class;
+   let factory = owner.factoryFor('service:bespoke');
+   factory.class;
   // The registered or resolved class. For example when used with an Ember-CLI
   // app, this would be the default export from `app/services/bespoke.js`.
-
-  let instance = factory.create({
+   let instance = factory.create({
     someProperty: 'an initial property value'
   });
   // Create an instance with any injections and the passed options as
   // initial properties.
   ```
-
-  Any instances created via the factory's `.create()` method *must* be destroyed
+   Any instances created via the factory's `.create()` method *must* be destroyed
   manually by the caller of `.create()`. Typically, this is done during the creating
   objects own `destroy` or `willDestroy` methods.
-
-  @public
+   @public
   @method factoryFor
   @param {String} fullName
   @param {Object} options
@@ -152,7 +124,7 @@ let containerProxyMixin = {
   */
   factoryFor(fullName, options = {}) {
     return this.__container__.factoryFor(fullName, options);
-  },
-};
+  }
 
+};
 export default Mixin.create(containerProxyMixin);

@@ -1,17 +1,5 @@
 export { default as jQuery, jQueryDisabled } from './lib/system/jquery';
-export {
-  addChildView,
-  isSimpleClick,
-  getViewBounds,
-  getViewClientRects,
-  getViewBoundingClientRect,
-  getRootViews,
-  getChildViews,
-  getViewId,
-  getViewElement,
-  setViewElement,
-  constructStyleDeprecationMessage,
-} from './lib/system/utils';
+export { addChildView, isSimpleClick, getViewBounds, getViewClientRects, getViewBoundingClientRect, getRootViews, getChildViews, getViewId, getElementView, getViewElement, setElementView, setViewElement, clearElementView, clearViewElement, constructStyleDeprecationMessage } from './lib/system/utils';
 export { default as EventDispatcher } from './lib/system/event_dispatcher';
 export { default as ComponentLookup } from './lib/component_lookup';
 export { default as TextSupport } from './lib/mixins/text_support';
@@ -25,4 +13,3 @@ export { MUTABLE_CELL } from './lib/compat/attrs';
 export { default as lookupPartial, hasPartial } from './lib/system/lookup_partial';
 export { default as lookupComponent } from './lib/utils/lookup-component';
 export { default as ActionManager } from './lib/system/action_manager';
-export { default as fallbackViewRegistry } from './lib/compat/fallback-view-registry';

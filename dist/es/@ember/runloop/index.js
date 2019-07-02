@@ -3,7 +3,6 @@ import { onErrorTarget } from '@ember/-internals/error-handling';
 import { beginPropertyChanges, endPropertyChanges } from '@ember/-internals/metal';
 import Backburner from 'backburner';
 import { RUN_SYNC } from '@ember/deprecated-features';
-
 let currentRunLoop = null;
 export function getCurrentRunLoop() {
   return currentRunLoop;
@@ -18,7 +17,6 @@ function onEnd(current, next) {
 }
 
 export const _rsvpErrorQueue = `${Math.random()}${Date.now()}`.replace('.', '');
-
 /**
   Array of named queues. This array determines the order in which queues
   are flushed at the end of the RunLoop. You can define your own queues by
@@ -30,41 +28,29 @@ export const _rsvpErrorQueue = `${Math.random()}${Date.now()}`.replace('.', '');
   @default ['actions', 'destroy']
   @private
 */
-export const queues = [
-  'actions',
 
-  // used in router transitions to prevent unnecessary loading state entry
-  // if all context promises resolve on the 'actions' queue first
-  'routerTransitions',
-
-  'render',
-  'afterRender',
-  'destroy',
-
-  // used to re-throw unhandled RSVP rejection errors specifically in this
-  // position to avoid breaking anything rendered in the other sections
-  _rsvpErrorQueue,
-];
-
+export const queues = ['actions', // used in router transitions to prevent unnecessary loading state entry
+// if all context promises resolve on the 'actions' queue first
+'routerTransitions', 'render', 'afterRender', 'destroy', // used to re-throw unhandled RSVP rejection errors specifically in this
+// position to avoid breaking anything rendered in the other sections
+_rsvpErrorQueue];
 let backburnerOptions = {
   defaultQueue: 'actions',
   onBegin,
   onEnd,
   onErrorTarget,
-  onErrorMethod: 'onerror',
+  onErrorMethod: 'onerror'
 };
 
 if (RUN_SYNC) {
   queues.unshift('sync');
-
   backburnerOptions.sync = {
     before: beginPropertyChanges,
-    after: endPropertyChanges,
+    after: endPropertyChanges
   };
 }
 
 export const backburner = new Backburner(queues, backburnerOptions);
-
 /**
  @module @ember/runloop
 */
@@ -100,13 +86,12 @@ export const backburner = new Backburner(queues, backburnerOptions);
   @return {Object} return value from invoking the passed function.
   @public
 */
+
 export function run() {
   return backburner.run(...arguments);
-}
+} // used for the Ember.run global only
 
-// used for the Ember.run global only
 export const _globalsRun = run.bind(null);
-
 /**
   If no run-loop is present, it creates a new one. If a run loop is
   present it will queue itself to run on the existing run-loops action
@@ -151,10 +136,10 @@ export const _globalsRun = run.bind(null);
   when called within an existing loop, no return value is possible.
   @public
 */
+
 export function join() {
   return backburner.join(...arguments);
 }
-
 /**
   Allows you to specify which context to call the specified function in while
   adding the execution of that function to the Ember run loop. This ability
@@ -217,31 +202,27 @@ export function join() {
   @since 1.4.0
   @public
 */
-export const bind = (...curried) => {
-  assert(
-    'could not find a suitable method to bind',
-    (function(methodOrTarget, methodOrArg) {
-      // Applies the same logic as backburner parseArgs for detecting if a method
-      // is actually being passed.
-      let length = arguments.length;
 
-      if (length === 0) {
-        return false;
-      } else if (length === 1) {
-        return typeof methodOrTarget === 'function';
-      } else {
-        let type = typeof methodOrArg;
-        return (
-          type === 'function' || // second argument is a function
-          (methodOrTarget !== null && type === 'string' && methodOrArg in methodOrTarget) || // second argument is the name of a method in first argument
-          typeof methodOrTarget === 'function' //first argument is a function
-        );
-      }
-    })(...curried)
-  );
+export const bind = (...curried) => {
+  assert('could not find a suitable method to bind', function (methodOrTarget, methodOrArg) {
+    // Applies the same logic as backburner parseArgs for detecting if a method
+    // is actually being passed.
+    let length = arguments.length;
+
+    if (length === 0) {
+      return false;
+    } else if (length === 1) {
+      return typeof methodOrTarget === 'function';
+    } else {
+      let type = typeof methodOrArg;
+      return type === 'function' || // second argument is a function
+      methodOrTarget !== null && type === 'string' && methodOrArg in methodOrTarget || // second argument is the name of a method in first argument
+      typeof methodOrTarget === 'function' //first argument is a function
+      ;
+    }
+  }(...curried));
   return (...args) => join(...curried.concat(args));
 };
-
 /**
   Begins a new RunLoop. Any deferred actions invoked after the begin will
   be buffered until you invoke a matching call to `end()`. This is
@@ -261,10 +242,10 @@ export const bind = (...curried) => {
   @return {void}
   @public
 */
+
 export function begin() {
   backburner.begin();
 }
-
 /**
   Ends a RunLoop. This must be called sometime after you call
   `begin()` to flush any deferred actions. This is a lower-level way
@@ -284,10 +265,10 @@ export function begin() {
   @return {void}
   @public
 */
+
 export function end() {
   backburner.end();
 }
-
 /**
   Adds the passed target/method and any optional arguments to the named
   queue to be executed at the end of the RunLoop. If you have not already
@@ -324,25 +305,24 @@ export function end() {
   @return {*} Timer information for use in canceling, see `cancel`.
   @public
 */
-export function schedule(queue /*, target, method */) {
+
+export function schedule(queue
+/*, target, method */
+) {
   deprecate(`Scheduling into the '${queue}' run loop queue is deprecated.`, queue !== 'sync', {
     id: 'ember-metal.run.sync',
-    until: '3.5.0',
+    until: '3.5.0'
   });
-
   return backburner.schedule(...arguments);
-}
+} // Used by global test teardown
 
-// Used by global test teardown
 export function hasScheduledTimers() {
   return backburner.hasTimers();
-}
+} // Used by global test teardown
 
-// Used by global test teardown
 export function cancelTimers() {
   backburner.cancelTimers();
 }
-
 /**
   Invokes the passed target/method and optional arguments after a specified
   period of time. The last parameter of this method must always be a number
@@ -373,10 +353,12 @@ export function cancelTimers() {
   @return {*} Timer information for use in canceling, see `cancel`.
   @public
 */
-export function later(/*target, method*/) {
+
+export function later()
+/*target, method*/
+{
   return backburner.later(...arguments);
 }
-
 /**
  Schedule a function to run one time during the current RunLoop. This is equivalent
   to calling `scheduleOnce` with the "actions" queue.
@@ -392,11 +374,11 @@ export function later(/*target, method*/) {
   @return {Object} Timer information for use in canceling, see `cancel`.
   @public
 */
+
 export function once(...args) {
   args.unshift('actions');
   return backburner.scheduleOnce(...args);
 }
-
 /**
   Schedules a function to run one time in a given queue of the current RunLoop.
   Calling this method with the same queue/target/method combination will have
@@ -469,14 +451,16 @@ export function once(...args) {
   @return {Object} Timer information for use in canceling, see `cancel`.
   @public
 */
-export function scheduleOnce(queue /*, target, method*/) {
+
+export function scheduleOnce(queue
+/*, target, method*/
+) {
   deprecate(`Scheduling into the '${queue}' run loop queue is deprecated.`, queue !== 'sync', {
     id: 'ember-metal.run.sync',
-    until: '3.5.0',
+    until: '3.5.0'
   });
   return backburner.scheduleOnce(...arguments);
 }
-
 /**
   Schedules an item to run from within a separate run loop, after
   control has been returned to the system. This is equivalent to calling
@@ -547,11 +531,11 @@ export function scheduleOnce(queue /*, target, method*/) {
   @return {Object} Timer information for use in canceling, see `cancel`.
   @public
 */
+
 export function next(...args) {
   args.push(1);
   return backburner.later(...args);
 }
-
 /**
   Cancels a scheduled item. Must be a value returned by `later()`,
   `once()`, `scheduleOnce()`, `next()`, `debounce()`, or
@@ -619,10 +603,10 @@ export function next(...args) {
   @return {Boolean} true if canceled or false/undefined if it wasn't found
   @public
 */
+
 export function cancel(timer) {
   return backburner.cancel(timer);
 }
-
 /**
   Delay calling the target method until the debounce period has elapsed
   with no additional debounce calls. If `debounce` is called again before
@@ -697,10 +681,10 @@ export function cancel(timer) {
   @return {Array} Timer information for use in canceling, see `cancel`.
   @public
 */
+
 export function debounce() {
   return backburner.debounce(...arguments);
 }
-
 /**
   Ensure that the target method is never called more frequently than
   the specified spacing period. The target method is called immediately.
@@ -744,6 +728,7 @@ export function debounce() {
   @return {Array} Timer information for use in canceling, see `cancel`.
   @public
 */
+
 export function throttle() {
   return backburner.throttle(...arguments);
 }

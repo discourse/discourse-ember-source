@@ -15,13 +15,12 @@ class FirstObjectTests extends AbstractTestCase {
 
   '@test can not be set'() {
     let obj = this.newObject([]);
-
     this.assert.equal(get(obj, 'firstObject'), this.toArray(obj)[0]);
-
     this.assert.throws(() => {
       set(obj, 'firstObject', 'foo!');
     }, /Cannot set read-only property "firstObject" on object/);
   }
+
 }
 
 runArrayTests('firstObject', FirstObjectTests);

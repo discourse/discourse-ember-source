@@ -1,5 +1,4 @@
 import EmberError from '@ember/error';
-
 const _default = {
   // appendChild is only legal while rendering the buffer.
   appendChild() {
@@ -13,7 +12,7 @@ const _default = {
 
   rerender() {},
 
-  destroy() {},
-};
+  destroy() {}
 
+};
 export default Object.freeze(_default);

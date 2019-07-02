@@ -1,11 +1,13 @@
-import { GLIMMER_MODIFIER_MANAGER } from '@ember/canary-features';
 import { getManager, setManager } from './managers';
 export function setModifierManager(factory, obj) {
-    return setManager(factory, obj);
+    return setManager({ factory, internal: false, type: 'modifier' }, obj);
 }
 export function getModifierManager(obj) {
-    if (!GLIMMER_MODIFIER_MANAGER) {
-        return;
+    let wrapper = getManager(obj);
+    if (wrapper && !wrapper.internal && wrapper.type === 'modifier') {
+        return wrapper.factory;
     }
-    return getManager(obj);
+    else {
+        return undefined;
+    }
 }

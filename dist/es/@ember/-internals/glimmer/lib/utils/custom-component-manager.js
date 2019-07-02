@@ -1,4 +1,3 @@
-import { GLIMMER_CUSTOM_COMPONENT_MANAGER } from '@ember/canary-features';
 import { deprecate } from '@ember/debug';
 import { COMPONENT_MANAGER_STRING_LOOKUP } from '@ember/deprecated-features';
 import { getManager, setManager } from './managers';
@@ -17,11 +16,14 @@ export function setComponentManager(stringOrFunction, obj) {
     else {
         factory = stringOrFunction;
     }
-    return setManager(factory, obj);
+    return setManager({ factory, internal: false, type: 'component' }, obj);
 }
 export function getComponentManager(obj) {
-    if (!GLIMMER_CUSTOM_COMPONENT_MANAGER) {
-        return;
+    let wrapper = getManager(obj);
+    if (wrapper && !wrapper.internal && wrapper.type === 'component') {
+        return wrapper.factory;
     }
-    return getManager(obj);
+    else {
+        return undefined;
+    }
 }

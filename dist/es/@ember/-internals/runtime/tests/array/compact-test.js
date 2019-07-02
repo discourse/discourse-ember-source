@@ -7,6 +7,7 @@ class CompactTests extends AbstractTestCase {
     let ary = obj.compact();
     this.assert.deepEqual(ary, [1, false, '', 0]);
   }
+
 }
 
 runArrayTests('compact', CompactTests);

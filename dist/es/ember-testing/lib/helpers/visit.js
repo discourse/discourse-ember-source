@@ -1,5 +1,4 @@
 import { run } from '@ember/runloop';
-
 /**
   Loads a route, sets up any controllers, and renders any templates associated
   with the route as though a real user had triggered the route change while
@@ -18,10 +17,11 @@ import { run } from '@ember/runloop';
   @return {RSVP.Promise<undefined>}
   @public
 */
+
 export default function visit(app, url) {
   let router = app.__container__.lookup('router:main');
-  let shouldHandleURL = false;
 
+  let shouldHandleURL = false;
   app.boot().then(() => {
     router.location.setURL(url);
 

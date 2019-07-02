@@ -1,29 +1,28 @@
 import { assert, deprecate } from '@ember/debug';
 import EmberObject from './system/object';
 import Copyable from './mixins/copyable';
-
 /**
  @module @ember/object
 */
+
 function _copy(obj, deep, seen, copies) {
   // primitive data types are immutable, just return them.
   if (typeof obj !== 'object' || obj === null) {
     return obj;
   }
 
-  let ret, loc;
+  let ret, loc; // avoid cyclical loops
 
-  // avoid cyclical loops
   if (deep && (loc = seen.indexOf(obj)) >= 0) {
     return copies[loc];
   }
 
   if (deep) {
     seen.push(obj);
-  }
-
-  // IMPORTANT: this specific test will detect a native array only. Any other
+  } // IMPORTANT: this specific test will detect a native array only. Any other
   // object will need to implement Copyable.
+
+
   if (Array.isArray(obj)) {
     ret = obj.slice();
 
@@ -37,34 +36,34 @@ function _copy(obj, deep, seen, copies) {
     }
   } else if (Copyable.detect(obj)) {
     ret = obj.copy(deep, seen, copies);
+
     if (deep) {
       copies.push(ret);
     }
   } else if (obj instanceof Date) {
     ret = new Date(obj.getTime());
+
     if (deep) {
       copies.push(ret);
     }
   } else {
-    assert(
-      'Cannot clone an EmberObject that does not implement Copyable',
-      !(obj instanceof EmberObject) || Copyable.detect(obj)
-    );
-
+    assert('Cannot clone an EmberObject that does not implement Copyable', !(obj instanceof EmberObject) || Copyable.detect(obj));
     ret = {};
+
     if (deep) {
       copies.push(ret);
     }
 
     let key;
+
     for (key in obj) {
       // support Null prototype
       if (!Object.prototype.hasOwnProperty.call(obj, key)) {
         continue;
-      }
-
-      // Prevents browsers that don't respect non-enumerability from
+      } // Prevents browsers that don't respect non-enumerability from
       // copying internal Ember properties
+
+
       if (key.substring(0, 2) === '__') {
         continue;
       }
@@ -75,7 +74,6 @@ function _copy(obj, deep, seen, copies) {
 
   return ret;
 }
-
 /**
   Creates a shallow copy of the passed object. A deep copy of the object is
   returned if the optional `deep` argument is `true`.
@@ -96,14 +94,15 @@ function _copy(obj, deep, seen, copies) {
   @return {Object} The copied object
   @public
 */
+
+
 export default function copy(obj, deep) {
   deprecate('Use ember-copy addon instead of copy method and Copyable mixin.', false, {
     id: 'ember-runtime.deprecate-copy-copyable',
     until: '4.0.0',
-    url: 'https://emberjs.com/deprecations/v3.x/#toc_ember-runtime-deprecate-copy-copyable',
-  });
+    url: 'https://emberjs.com/deprecations/v3.x/#toc_ember-runtime-deprecate-copy-copyable'
+  }); // fast paths
 
-  // fast paths
   if ('object' !== typeof obj || obj === null) {
     return obj; // can't copy primitives
   }

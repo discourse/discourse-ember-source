@@ -1,11 +1,4 @@
-import {
-  Mixin,
-  addListener,
-  removeListener,
-  hasListeners,
-  sendEvent,
-} from '@ember/-internals/metal';
-
+import { Mixin, addListener, removeListener, hasListeners, sendEvent } from '@ember/-internals/metal';
 /**
 @module @ember/object
 */
@@ -50,22 +43,20 @@ import {
   @class Evented
   @public
  */
+
 export default Mixin.create({
   /**
     Subscribes to a named event with given function.
-
-    ```javascript
+     ```javascript
     person.on('didLoad', function() {
       // fired once the person has loaded
     });
     ```
-
-    An optional target can be passed in as the 2nd argument that will
+     An optional target can be passed in as the 2nd argument that will
     be set as the "this" for the callback. This is a good way to give your
     function access to the object triggering the event. When the target
     parameter is used the callback method becomes the third argument.
-
-    @method on
+     @method on
     @param {String} name The name of the event
     @param {Object} [target] The "this" binding for the callback
     @param {Function|String} method A function or the name of a function to be called on `target`
@@ -81,12 +72,10 @@ export default Mixin.create({
     Subscribes a function to a named event and then cancels the subscription
     after the first time the event is triggered. It is good to use ``one`` when
     you only care about the first time an event has taken place.
-
-    This function takes an optional 2nd argument that will become the "this"
+     This function takes an optional 2nd argument that will become the "this"
     value for the callback. When the target parameter is used the callback method
     becomes the third argument.
-
-    @method one
+     @method one
     @param {String} name The name of the event
     @param {Object} [target] The "this" binding for the callback
     @param {Function|String} method A function or the name of a function to be called on `target`
@@ -102,15 +91,12 @@ export default Mixin.create({
     Triggers a named event for the object. Any additional arguments
     will be passed as parameters to the functions that are subscribed to the
     event.
-
-    ```javascript
+     ```javascript
     person.on('didEat', function(food) {
       console.log('person ate some ' + food);
     });
-
-    person.trigger('didEat', 'broccoli');
-
-    // outputs: person ate some broccoli
+     person.trigger('didEat', 'broccoli');
+     // outputs: person ate some broccoli
     ```
     @method trigger
     @param {String} name The name of the event
@@ -123,8 +109,7 @@ export default Mixin.create({
 
   /**
     Cancels subscription for given name, target, and method.
-
-    @method off
+     @method off
     @param {String} name The name of the event
     @param {Object} target The target of the subscription
     @param {Function|String} method The function or the name of a function of the subscription
@@ -138,13 +123,13 @@ export default Mixin.create({
 
   /**
     Checks to see if object has any subscriptions for named event.
-
-    @method has
+     @method has
     @param {String} name The name of the event
     @return {Boolean} does the object have a subscription for event
     @public
    */
   has(name) {
     return hasListeners(this, name);
-  },
+  }
+
 });

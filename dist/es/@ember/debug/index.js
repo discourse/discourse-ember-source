@@ -185,9 +185,9 @@ if (DEBUG) {
     setDebugFunction('deprecateFunc', function deprecateFunc(...args) {
         if (args.length === 3) {
             let [message, options, func] = args;
-            return function () {
+            return function (...args) {
                 deprecate(message, false, options);
-                return func.apply(this, arguments);
+                return func.apply(this, args);
             };
         }
         else {
@@ -236,7 +236,13 @@ if (DEBUG) {
         Object.seal(obj);
     });
     setDebugFunction('debugFreeze', function debugFreeze(obj) {
-        Object.freeze(obj);
+        // re-freezing an already frozen object introduces a significant
+        // performance penalty on Chrome (tested through 59).
+        //
+        // See: https://bugs.chromium.org/p/v8/issues/detail?id=6450
+        if (!Object.isFrozen(obj)) {
+            Object.freeze(obj);
+        }
     });
     setDebugFunction('deprecate', _deprecate);
     setDebugFunction('warn', _warn);

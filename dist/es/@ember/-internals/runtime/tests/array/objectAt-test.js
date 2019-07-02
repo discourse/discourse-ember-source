@@ -14,21 +14,12 @@ class ObjectAtTests extends AbstractTestCase {
 
   '@test should return undefined when requesting objects beyond index'() {
     let obj;
-
     obj = this.newObject(newFixture(3));
-    this.assert.equal(
-      obj.objectAt(obj, 5),
-      undefined,
-      'should return undefined for obj.objectAt(5) when len = 3'
-    );
-
+    this.assert.equal(obj.objectAt(obj, 5), undefined, 'should return undefined for obj.objectAt(5) when len = 3');
     obj = this.newObject([]);
-    this.assert.equal(
-      obj.objectAt(obj, 0),
-      undefined,
-      'should return undefined for obj.objectAt(0) when len = 0'
-    );
+    this.assert.equal(obj.objectAt(obj, 0), undefined, 'should return undefined for obj.objectAt(0) when len = 0');
   }
+
 }
 
 runArrayTests('objectAt', ObjectAtTests);

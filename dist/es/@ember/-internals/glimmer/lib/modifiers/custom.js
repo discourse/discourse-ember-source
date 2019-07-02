@@ -1,4 +1,3 @@
-import { valueForCapturedArgs } from '../utils/managers';
 // Currently there are no capabilities for modifiers
 export function capabilities(_managerAPI, _optionalFeatures) {
     return {};
@@ -25,8 +24,7 @@ export class CustomModifierState {
     }
     destroy() {
         const { delegate, modifier, args } = this;
-        let modifierArgs = valueForCapturedArgs(args);
-        delegate.destroyModifier(modifier, modifierArgs);
+        delegate.destroyModifier(modifier, args.value());
     }
 }
 /**
@@ -53,8 +51,7 @@ export class CustomModifierState {
 class CustomModifierManager {
     create(element, definition, args) {
         const capturedArgs = args.capture();
-        let modifierArgs = valueForCapturedArgs(capturedArgs);
-        let instance = definition.delegate.createModifier(definition.ModifierClass, modifierArgs);
+        let instance = definition.delegate.createModifier(definition.ModifierClass, capturedArgs.value());
         return new CustomModifierState(element, definition.delegate, instance, capturedArgs);
     }
     getTag({ args }) {
@@ -62,13 +59,11 @@ class CustomModifierManager {
     }
     install(state) {
         let { element, args, delegate, modifier } = state;
-        let modifierArgs = valueForCapturedArgs(args);
-        delegate.installModifier(modifier, element, modifierArgs);
+        delegate.installModifier(modifier, element, args.value());
     }
     update(state) {
         let { args, delegate, modifier } = state;
-        let modifierArgs = valueForCapturedArgs(args);
-        delegate.updateModifier(modifier, modifierArgs);
+        delegate.updateModifier(modifier, args.value());
     }
     getDestructor(state) {
         return state;

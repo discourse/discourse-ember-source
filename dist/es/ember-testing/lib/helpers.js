@@ -12,7 +12,6 @@ import { pauseTest, resumeTest } from './helpers/pause_test';
 import triggerEvent from './helpers/trigger_event';
 import visit from './helpers/visit';
 import wait from './helpers/wait';
-
 asyncHelper('visit', visit);
 asyncHelper('click', click);
 asyncHelper('keyEvent', keyEvent);
@@ -21,7 +20,6 @@ asyncHelper('wait', wait);
 asyncHelper('andThen', andThen);
 asyncHelper('pauseTest', pauseTest);
 asyncHelper('triggerEvent', triggerEvent);
-
 helper('find', find);
 helper('findWithAssert', findWithAssert);
 helper('currentRouteName', currentRouteName);

@@ -1,9 +1,7 @@
 /**
 @module ember
 */
-
 export default function ActionManager() {}
-
 /**
   Global action id hash.
 
@@ -11,4 +9,5 @@ export default function ActionManager() {}
   @property registeredActions
   @type Object
 */
+
 ActionManager.registeredActions = {};

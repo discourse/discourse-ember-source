@@ -141,7 +141,7 @@ export default class ActionModifierManager {
                 actionName = actionNameRef;
             }
             else {
-                let actionLabel = actionNameRef._propertyKey;
+                let actionLabel = actionNameRef.propertyKey;
                 actionName = actionNameRef.value();
                 assert('You specified a quoteless path, `' +
                     actionLabel +

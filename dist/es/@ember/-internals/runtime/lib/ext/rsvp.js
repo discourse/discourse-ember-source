@@ -2,21 +2,19 @@ import * as RSVP from 'rsvp';
 import { backburner, _rsvpErrorQueue } from '@ember/runloop';
 import { getDispatchOverride } from '@ember/-internals/error-handling';
 import { assert } from '@ember/debug';
-
 RSVP.configure('async', (callback, promise) => {
   backburner.schedule('actions', null, callback, promise);
 });
-
 RSVP.configure('after', cb => {
   backburner.schedule(_rsvpErrorQueue, null, cb);
 });
-
 RSVP.on('error', onerrorDefault);
-
 export function onerrorDefault(reason) {
   let error = errorFor(reason);
+
   if (error) {
     let overrideDispatch = getDispatchOverride();
+
     if (overrideDispatch) {
       overrideDispatch(error);
     } else {
@@ -46,12 +44,14 @@ function errorFor(reason) {
 
 function unwrapErrorThrown(reason) {
   let error = reason.errorThrown;
+
   if (typeof error === 'string') {
     error = new Error(error);
   }
+
   Object.defineProperty(error, '__reason_with_error_thrown__', {
     value: reason,
-    enumerable: false,
+    enumerable: false
   });
   return error;
 }

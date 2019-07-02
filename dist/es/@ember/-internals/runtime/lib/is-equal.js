@@ -1,6 +1,7 @@
 /**
  @module @ember/utils
 */
+
 /**
   Compares two objects, returning true if they are equal.
 

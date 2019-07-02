@@ -278,7 +278,7 @@ export default function (_vm, args) {
     // Anything else is an action argument.
     let [context, action, ...restArgs] = capturedArgs.references;
     // TODO: Is there a better way of doing this?
-    let debugKey = action._propertyKey;
+    let debugKey = action.propertyKey;
     let target = named.has('target') ? named.get('target') : context;
     let processArgs = makeArgsProcessor(named.has('value') && named.get('value'), restArgs);
     let fn;

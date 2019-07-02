@@ -2,7 +2,6 @@ import preRender from './states/pre_render';
 import hasElement from './states/has_element';
 import inDOM from './states/in_dom';
 import destroying from './states/destroying';
-
 /*
   Describe how the specified actions should behave in the various
   states that a view can exist in. Possible states:
@@ -18,11 +17,11 @@ import destroying from './states/destroying';
     method), it is in this state. No further actions can be invoked
     on a destroyed view.
 */
+
 const states = Object.freeze({
   preRender,
   inDOM,
   hasElement,
-  destroying,
+  destroying
 });
-
 export default states;

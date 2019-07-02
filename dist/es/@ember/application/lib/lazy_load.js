@@ -1,8 +1,6 @@
 /*globals CustomEvent */
-
 import { ENV } from '@ember/-internals/environment';
 import { window } from '@ember/-internals/browser-environment';
-
 /**
   @module @ember/application
 */
@@ -10,7 +8,6 @@ import { window } from '@ember/-internals/browser-environment';
 const loadHooks = ENV.EMBER_LOAD_HOOKS || {};
 const loaded = {};
 export let _loaded = loaded;
-
 /**
   Detects when a specific package of Ember (e.g. 'Application')
   has fully loaded and is available for extension.
@@ -33,9 +30,9 @@ export let _loaded = loaded;
   @param callback {Function} callback to be called
   @private
 */
+
 export function onLoad(name, callback) {
   let object = loaded[name];
-
   loadHooks[name] = loadHooks[name] || [];
   loadHooks[name].push(callback);
 
@@ -43,7 +40,6 @@ export function onLoad(name, callback) {
     callback(object);
   }
 }
-
 /**
   Called when an Ember.js package (e.g Application) has finished
   loading. Triggers any callbacks registered for this event.
@@ -55,11 +51,15 @@ export function onLoad(name, callback) {
   @param object {Object} object to pass to callbacks
   @private
 */
+
 export function runLoadHooks(name, object) {
   loaded[name] = object;
 
   if (window && typeof CustomEvent === 'function') {
-    let event = new CustomEvent(name, { detail: object, name });
+    let event = new CustomEvent(name, {
+      detail: object,
+      name
+    });
     window.dispatchEvent(event);
   }
 

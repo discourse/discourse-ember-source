@@ -5,9 +5,7 @@ import { helpers, registerHelper, registerAsyncHelper, unregisterHelper } from '
 import { onInjectHelpers } from './test/on_inject_helpers';
 import TestPromise, { promise, resolve } from './test/promise';
 import { checkWaiters, registerWaiter, unregisterWaiter } from './test/waiters';
-
 import { getAdapter, setAdapter } from './test/adapter';
-
 /**
   This is a container for an assortment of testing related functionality:
 
@@ -20,16 +18,15 @@ import { getAdapter, setAdapter } from './test/adapter';
   @namespace Ember
   @public
 */
+
 const Test = {
   /**
     Hash containing all known test helpers.
-
-    @property _helpers
+     @property _helpers
     @private
     @since 1.7.0
   */
   _helpers: helpers,
-
   registerHelper,
   registerAsyncHelper,
   unregisterHelper,
@@ -39,9 +36,8 @@ const Test = {
   resolve,
   registerWaiter,
   unregisterWaiter,
-  checkWaiters,
+  checkWaiters
 };
-
 /**
  Used to allow ember-testing to communicate with a specific testing
  framework.
@@ -62,9 +58,9 @@ const Test = {
  @type {Class} The adapter to be used.
  @default Ember.Test.QUnitAdapter
 */
+
 Object.defineProperty(Test, 'adapter', {
   get: getAdapter,
-  set: setAdapter,
+  set: setAdapter
 });
-
 export default Test;

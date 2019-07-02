@@ -2,25 +2,46 @@ import { meta as metaFor } from '@ember/-internals/meta';
 import { inspect } from '@ember/-internals/utils';
 import { assert } from '@ember/debug';
 import EmberError from '@ember/error';
-import { ComputedProperty } from './computed';
 import { getCachedValueFor, getCacheFor } from './computed_cache';
-import { addDependentKeys, removeDependentKeys, } from './dependent_keys';
-import { defineProperty, Descriptor } from './properties';
+import { addDependentKeys, ComputedDescriptor, isElementDescriptor, makeComputedDecorator, removeDependentKeys, } from './decorator';
+import { descriptorForDecorator } from './descriptor_map';
+import { defineProperty } from './properties';
 import { get } from './property_get';
 import { set } from './property_set';
 const CONSUMED = Object.freeze({});
 export default function alias(altKey) {
-    return new AliasedProperty(altKey);
+    assert('You attempted to use @alias as a decorator directly, but it requires a `altKey` parameter', !isElementDescriptor(Array.prototype.slice.call(arguments)));
+    return makeComputedDecorator(new AliasedProperty(altKey), AliasDecoratorImpl);
 }
-export class AliasedProperty extends Descriptor {
+// TODO: This class can be svelted once `meta` has been deprecated
+class AliasDecoratorImpl extends Function {
+    readOnly() {
+        descriptorForDecorator(this).readOnly();
+        return this;
+    }
+    oneWay() {
+        descriptorForDecorator(this).oneWay();
+        return this;
+    }
+    meta(meta) {
+        let prop = descriptorForDecorator(this);
+        if (arguments.length === 0) {
+            return prop._meta || {};
+        }
+        else {
+            prop._meta = meta;
+        }
+    }
+}
+export class AliasedProperty extends ComputedDescriptor {
     constructor(altKey) {
         super();
         this.altKey = altKey;
         this._dependentKeys = [altKey];
     }
-    setup(obj, keyName, meta) {
+    setup(obj, keyName, propertyDesc, meta) {
         assert(`Setting alias '${keyName}' on self`, this.altKey !== keyName);
-        super.setup(obj, keyName, meta);
+        super.setup(obj, keyName, propertyDesc, meta);
         if (meta.peekWatching(keyName) > 0) {
             this.consume(obj, keyName, meta);
         }
@@ -58,11 +79,9 @@ export class AliasedProperty extends Descriptor {
     }
     readOnly() {
         this.set = AliasedProperty_readOnlySet;
-        return this;
     }
     oneWay() {
         this.set = AliasedProperty_oneWaySet;
-        return this;
     }
 }
 function AliasedProperty_readOnlySet(obj, keyName) {
@@ -73,6 +92,3 @@ function AliasedProperty_oneWaySet(obj, keyName, value) {
     defineProperty(obj, keyName, null);
     return set(obj, keyName, value);
 }
-// Backwards compatibility with Ember Data.
-AliasedProperty.prototype._meta = undefined;
-AliasedProperty.prototype.meta = ComputedProperty.prototype.meta;

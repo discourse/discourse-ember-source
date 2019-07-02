@@ -1,5 +1,4 @@
 import { Mixin } from '@ember/-internals/metal';
-
 /**
 @module @ember/enumerable
 @private
@@ -13,4 +12,5 @@ import { Mixin } from '@ember/-internals/metal';
   @class Enumerable
   @private
 */
+
 export default Mixin.create();

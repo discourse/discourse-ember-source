@@ -1,7 +1,6 @@
 import { DEBUG } from '@glimmer/env';
 import { CONSTANT_TAG } from '@glimmer/reference';
 import { generateControllerFactory } from '@ember/-internals/routing';
-import { EMBER_ENGINES_MOUNT_PARAMS } from '@ember/canary-features';
 import { RootReference } from '../utils/references';
 import AbstractManager from './abstract';
 const CAPABILITIES = {
@@ -44,28 +43,20 @@ class MountManager extends AbstractManager {
         let self;
         let bucket;
         let tag;
-        if (EMBER_ENGINES_MOUNT_PARAMS) {
-            let modelRef = state.modelRef;
-            if (modelRef === undefined) {
-                controller = controllerFactory.create();
-                self = new RootReference(controller);
-                tag = CONSTANT_TAG;
-                bucket = { engine, controller, self, tag };
-            }
-            else {
-                let model = modelRef.value();
-                let modelRev = modelRef.tag.value();
-                controller = controllerFactory.create({ model });
-                self = new RootReference(controller);
-                tag = modelRef.tag;
-                bucket = { engine, controller, self, tag, modelRef, modelRev };
-            }
-        }
-        else {
+        let modelRef = state.modelRef;
+        if (modelRef === undefined) {
             controller = controllerFactory.create();
             self = new RootReference(controller);
             tag = CONSTANT_TAG;
             bucket = { engine, controller, self, tag };
+        }
+        else {
+            let model = modelRef.value();
+            let modelRev = modelRef.tag.value();
+            controller = controllerFactory.create({ model });
+            self = new RootReference(controller);
+            tag = modelRef.tag;
+            bucket = { engine, controller, self, tag, modelRef, modelRev };
         }
         return bucket;
     }
@@ -84,13 +75,11 @@ class MountManager extends AbstractManager {
         }
     }
     update(bucket) {
-        if (EMBER_ENGINES_MOUNT_PARAMS) {
-            let { controller, modelRef, modelRev } = bucket;
-            if (!modelRef.tag.validate(modelRev)) {
-                let model = modelRef.value();
-                bucket.modelRev = modelRef.tag.value();
-                controller.set('model', model);
-            }
+        let { controller, modelRef, modelRev } = bucket;
+        if (!modelRef.tag.validate(modelRev)) {
+            let model = modelRef.value();
+            bucket.modelRev = modelRef.tag.value();
+            controller.set('model', model);
         }
     }
 }

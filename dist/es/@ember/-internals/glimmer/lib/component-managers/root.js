@@ -53,7 +53,7 @@ export const ROOT_CAPABILITIES = {
     createCaller: true,
     dynamicScope: true,
     updateHook: true,
-    createInstance: false,
+    createInstance: true,
 };
 export class RootComponentDefinition {
     constructor(component) {

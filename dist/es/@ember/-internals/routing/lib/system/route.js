@@ -1,7 +1,7 @@
 import { computed, defineProperty, get, getProperties, isEmpty, set, setProperties, } from '@ember/-internals/metal';
 import { getOwner } from '@ember/-internals/owner';
 import { A as emberA, ActionHandler, Evented, Object as EmberObject, typeOf, } from '@ember/-internals/runtime';
-import { EMBER_ROUTING_BUILD_ROUTEINFO_METADATA, EMBER_ROUTING_ROUTER_SERVICE, } from '@ember/canary-features';
+import { EMBER_ROUTING_BUILD_ROUTEINFO_METADATA } from '@ember/canary-features';
 import { assert, deprecate, info, isTesting } from '@ember/debug';
 import { ROUTER_EVENTS } from '@ember/deprecated-features';
 import { assign } from '@ember/polyfills';
@@ -132,6 +132,10 @@ class Route extends EmberObject {
     }
     /**
       Returns a hash containing the parameters of an ancestor route.
+  
+      You may notice that `this.paramsFor` sometimes works when referring to a
+      child route, but this behavior should not be relied upon as only ancestor
+      routes are certain to be loaded in time.
   
       Example
   
@@ -809,9 +813,9 @@ class Route extends EmberObject {
       @method setup
     */
     setup(context, transition) {
-        let controller;
         let controllerName = this.controllerName || this.routeName;
         let definedController = this.controllerFor(controllerName, true);
+        let controller;
         if (definedController) {
             controller = definedController;
         }
@@ -1084,10 +1088,7 @@ class Route extends EmberObject {
       Router.js hook.
      */
     deserialize(_params, transition) {
-        if (EMBER_ROUTING_ROUTER_SERVICE) {
-            return this.model(this._paramsFor(this.routeName, _params), transition);
-        }
-        return this.model(this.paramsFor(this.routeName), transition);
+        return this.model(this._paramsFor(this.routeName, _params), transition);
     }
     /**
   
@@ -1704,8 +1705,7 @@ function getQueryParamsFor(route, state) {
     let fullQueryParams = getFullQueryParams(route._router, state);
     let params = (state['queryParamsFor'][name] = {});
     // Copy over all the query params for this route/controller into params hash.
-    let qpMeta = get(route, '_qp');
-    let qps = qpMeta.qps;
+    let qps = get(route, '_qp.qps');
     for (let i = 0; i < qps.length; ++i) {
         // Put deserialized qp on params hash.
         let qp = qps[i];
@@ -2011,9 +2011,7 @@ Route.reopen(ActionHandler, Evented, {
             }
             let urlKey = desc.as || this.serializeQueryParamKey(propName);
             let defaultValue = get(controller, propName);
-            if (Array.isArray(defaultValue)) {
-                defaultValue = emberA(defaultValue.slice());
-            }
+            defaultValue = copyDefaultValue(defaultValue);
             let type = desc.type || typeOf(defaultValue);
             let defaultValueSerialized = this.serializeQueryParam(defaultValue, urlKey, type);
             let scopedPropertyName = `${controllerName}:${propName}`;
@@ -2269,7 +2267,7 @@ Route.reopen(ActionHandler, Evented, {
     },
 });
 export let ROUTER_EVENT_DEPRECATIONS;
-if (EMBER_ROUTING_ROUTER_SERVICE && ROUTER_EVENTS) {
+if (ROUTER_EVENTS) {
     ROUTER_EVENT_DEPRECATIONS = {
         on(name) {
             this._super(...arguments);
@@ -2336,7 +2334,7 @@ if (EMBER_ROUTING_BUILD_ROUTEINFO_METADATA) {
           ```
     
           @return any
-          @category ember-routing-build-routeinfo-metadata
+          @category EMBER_ROUTING_BUILD_ROUTEINFO_METADATA
          */
         buildRouteInfoMetadata() { },
     });

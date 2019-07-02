@@ -1,7 +1,6 @@
 /**
 @module @ember/application
 */
-
 import { dictionary } from '@ember/-internals/utils';
 import { get, findNamespace } from '@ember/-internals/metal';
 import { assert, info } from '@ember/debug';
@@ -10,7 +9,6 @@ import { Object as EmberObject } from '@ember/-internals/runtime';
 import validateType from './lib/validate-type';
 import { getTemplate } from '@ember/-internals/glimmer';
 import { DEBUG } from '@glimmer/env';
-
 /**
   The DefaultResolver defines the default lookup rules to resolve
   container lookups before consulting the container for registered
@@ -87,14 +85,13 @@ class DefaultResolver extends EmberObject {
     // without it, create(props) in our tests would lose props on a deopt.
     return super.create(props);
   }
-
   /**
     This will be set to the Application instance when it is
     created.
-
-    @property namespace
+     @property namespace
     @public
   */
+
 
   init() {
     this._parseNameCache = dictionary(null);
@@ -102,33 +99,26 @@ class DefaultResolver extends EmberObject {
 
   normalize(fullName) {
     let [type, name] = fullName.split(':');
-
-    assert(
-      'Tried to normalize a container name without a colon (:) in it. ' +
-        'You probably tried to lookup a name that did not contain a type, ' +
-        'a colon, and a name. A proper lookup name would be `view:post`.',
-      fullName.split(':').length === 2
-    );
+    assert('Tried to normalize a container name without a colon (:) in it. ' + 'You probably tried to lookup a name that did not contain a type, ' + 'a colon, and a name. A proper lookup name would be `view:post`.', fullName.split(':').length === 2);
 
     if (type !== 'template') {
       let result = name.replace(/(\.|_|-)./g, m => m.charAt(1).toUpperCase());
-
       return `${type}:${result}`;
     } else {
       return fullName;
     }
   }
-
   /**
     This method is called via the container's resolver method.
     It parses the provided `fullName` and then looks up and
     returns the appropriate template or class.
-
-    @method resolve
+     @method resolve
     @param {String} fullName the lookup string
     @return {Object} the resolved factory
     @public
   */
+
+
   resolve(fullName) {
     let parsedName = this.parseName(fullName);
     let resolveMethodName = parsedName.resolveMethodName;
@@ -152,26 +142,22 @@ class DefaultResolver extends EmberObject {
 
     return resolved;
   }
-
   /**
     Convert the string name of the form 'type:name' to
     a Javascript object with the parsed aspects of the name
     broken out.
-
-    @param {String} fullName the lookup string
+     @param {String} fullName the lookup string
     @method parseName
     @protected
   */
 
+
   parseName(fullName) {
-    return (
-      this._parseNameCache[fullName] || (this._parseNameCache[fullName] = this._parseName(fullName))
-    );
+    return this._parseNameCache[fullName] || (this._parseNameCache[fullName] = this._parseName(fullName));
   }
 
   _parseName(fullName) {
     let [type, fullNameWithoutType] = fullName.split(':');
-
     let name = fullNameWithoutType;
     let namespace = get(this, 'namespace');
     let root = namespace;
@@ -183,11 +169,7 @@ class DefaultResolver extends EmberObject {
       name = parts[parts.length - 1];
       let namespaceName = capitalize(parts.slice(0, -1).join('.'));
       root = findNamespace(namespaceName);
-
-      assert(
-        `You are looking for a ${name} ${type} in the ${namespaceName} namespace, but the namespace could not be found`,
-        root
-      );
+      assert(`You are looking for a ${name} ${type} in the ${namespaceName} namespace, but the namespace could not be found`, root);
     }
 
     let resolveMethodName = fullNameWithoutType === 'main' ? 'Main' : classify(type);
@@ -203,20 +185,20 @@ class DefaultResolver extends EmberObject {
       dirname,
       name,
       root,
-      resolveMethodName: `resolve${resolveMethodName}`,
+      resolveMethodName: `resolve${resolveMethodName}`
     };
   }
-
   /**
     Returns a human-readable description for a fullName. Used by the
     Application namespace in assertions to describe the
     precise name of the class that Ember is looking for, rather than
     container keys.
-
-    @param {String} fullName the lookup string
+     @param {String} fullName the lookup string
     @method lookupDescription
     @protected
   */
+
+
   lookupDescription(fullName) {
     let parsedName = this.parseName(fullName);
     let description;
@@ -237,16 +219,16 @@ class DefaultResolver extends EmberObject {
   makeToString(factory) {
     return factory.toString();
   }
-
   /**
     Given a parseName object (output from `parseName`), apply
     the conventions expected by `Router`
-
-    @param {Object} parsedName a parseName object with the parsed
+     @param {Object} parsedName a parseName object with the parsed
       fullName lookup string
     @method useRouterNaming
     @protected
   */
+
+
   useRouterNaming(parsedName) {
     if (parsedName.name === 'basic') {
       parsedName.name = '';
@@ -256,91 +238,93 @@ class DefaultResolver extends EmberObject {
   }
   /**
     Look up the template in Ember.TEMPLATES
-
-    @param {Object} parsedName a parseName object with the parsed
+     @param {Object} parsedName a parseName object with the parsed
       fullName lookup string
     @method resolveTemplate
     @protected
   */
+
+
   resolveTemplate(parsedName) {
     let templateName = parsedName.fullNameWithoutType.replace(/\./g, '/');
-
     return getTemplate(templateName) || getTemplate(decamelize(templateName));
   }
-
   /**
     Lookup the view using `resolveOther`
-
-    @param {Object} parsedName a parseName object with the parsed
+     @param {Object} parsedName a parseName object with the parsed
       fullName lookup string
     @method resolveView
     @protected
   */
+
+
   resolveView(parsedName) {
     this.useRouterNaming(parsedName);
     return this.resolveOther(parsedName);
   }
-
   /**
     Lookup the controller using `resolveOther`
-
-    @param {Object} parsedName a parseName object with the parsed
+     @param {Object} parsedName a parseName object with the parsed
       fullName lookup string
     @method resolveController
     @protected
   */
+
+
   resolveController(parsedName) {
     this.useRouterNaming(parsedName);
     return this.resolveOther(parsedName);
   }
   /**
     Lookup the route using `resolveOther`
-
-    @param {Object} parsedName a parseName object with the parsed
+     @param {Object} parsedName a parseName object with the parsed
       fullName lookup string
     @method resolveRoute
     @protected
   */
+
+
   resolveRoute(parsedName) {
     this.useRouterNaming(parsedName);
     return this.resolveOther(parsedName);
   }
-
   /**
     Lookup the model on the Application namespace
-
-    @param {Object} parsedName a parseName object with the parsed
+     @param {Object} parsedName a parseName object with the parsed
       fullName lookup string
     @method resolveModel
     @protected
   */
+
+
   resolveModel(parsedName) {
     let className = classify(parsedName.name);
     let factory = get(parsedName.root, className);
-
     return factory;
   }
   /**
     Look up the specified object (from parsedName) on the appropriate
     namespace (usually on the Application)
-
-    @param {Object} parsedName a parseName object with the parsed
+     @param {Object} parsedName a parseName object with the parsed
       fullName lookup string
     @method resolveHelper
     @protected
   */
+
+
   resolveHelper(parsedName) {
     return this.resolveOther(parsedName);
   }
   /**
     Look up the specified object (from parsedName) on the appropriate
     namespace (usually on the Application)
-
-    @param {Object} parsedName a parseName object with the parsed
+     @param {Object} parsedName a parseName object with the parsed
       fullName lookup string
     @method resolveOther
     @protected
   */
+
+
   resolveOther(parsedName) {
     let className = classify(parsedName.name) + classify(parsedName.type);
     let factory = get(parsedName.root, className);
@@ -351,54 +335,51 @@ class DefaultResolver extends EmberObject {
     let className = classify(parsedName.type);
     return get(parsedName.root, className);
   }
-
   /**
     Used to iterate all items of a given type.
-
-    @method knownForType
+     @method knownForType
     @param {String} type the type to search for
     @private
   */
+
+
   knownForType(type) {
     let namespace = get(this, 'namespace');
     let suffix = classify(type);
     let typeRegexp = new RegExp(`${suffix}$`);
-
     let known = dictionary(null);
     let knownKeys = Object.keys(namespace);
+
     for (let index = 0; index < knownKeys.length; index++) {
       let name = knownKeys[index];
 
       if (typeRegexp.test(name)) {
         let containerName = this.translateToContainerFullname(type, name);
-
         known[containerName] = true;
       }
     }
 
     return known;
   }
-
   /**
     Converts provided name from the backing namespace into a container lookup name.
-
-    Examples:
-
-    * App.FooBarHelper -> helper:foo-bar
+     Examples:
+     * App.FooBarHelper -> helper:foo-bar
     * App.THelper -> helper:t
-
-    @method translateToContainerFullname
+     @method translateToContainerFullname
     @param {String} type
     @param {String} name
     @private
   */
+
+
   translateToContainerFullname(type, name) {
     let suffix = classify(type);
     let namePrefix = name.slice(0, suffix.length * -1);
     let dasherizedName = dasherize(namePrefix);
-
     return `${type}:${dasherizedName}`;
   }
+
 }
 
 export default DefaultResolver;
@@ -410,10 +391,10 @@ if (DEBUG) {
       @param {Object} parsedName
       @private
     */
-  DefaultResolver.prototype._logLookup = function(found, parsedName) {
+  DefaultResolver.prototype._logLookup = function (found, parsedName) {
     let symbol = found ? '[✓]' : '[ ]';
-
     let padding;
+
     if (parsedName.fullName.length > 60) {
       padding = '.';
     } else {

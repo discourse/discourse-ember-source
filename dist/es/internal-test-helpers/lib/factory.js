@@ -7,7 +7,6 @@ function setProperties(object, properties) {
 }
 
 let guids = 0;
-
 export default function factory() {
   function Klass(options) {
     setProperties(this, options);
@@ -16,11 +15,12 @@ export default function factory() {
   }
 
   Klass.prototype.constructor = Klass;
-  Klass.prototype.destroy = function() {
+
+  Klass.prototype.destroy = function () {
     this.isDestroyed = true;
   };
 
-  Klass.prototype.toString = function() {
+  Klass.prototype.toString = function () {
     return '<Factory:' + this._guid + '>';
   };
 
@@ -28,7 +28,6 @@ export default function factory() {
   Klass.extend = extend;
   Klass.reopen = extend;
   Klass.reopenClass = reopenClass;
-
   return Klass;
 
   function create(options) {
@@ -45,19 +44,14 @@ export default function factory() {
     }
 
     let Parent = this;
-
     Child.prototype = new Parent();
     Child.prototype.constructor = Child;
-
     setProperties(Child, Klass);
     setProperties(Child.prototype, options);
-
     Child.create = create;
     Child.extend = extend;
     Child.reopen = extend;
-
     Child.reopenClass = reopenClass;
-
     return Child;
   }
 }

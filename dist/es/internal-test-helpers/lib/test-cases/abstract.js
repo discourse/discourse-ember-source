@@ -1,14 +1,11 @@
 /* global Element */
-
 import { assign } from '@ember/polyfills';
-
 import NodeQuery from '../node-query';
 import equalInnerHTML from '../equal-inner-html';
 import equalTokens from '../equal-tokens';
 import { getElement } from '../element-helpers';
 import { equalsElement, regex, classes } from '../matchers';
 import { runLoopSettled, runTask } from '../run';
-
 const TextNode = window.Text;
 const HTMLElement = window.HTMLElement;
 const Comment = window.Comment;
@@ -30,22 +27,24 @@ export default class AbstractTestCase {
     this.element = null;
     this.snapshot = null;
     this.assert = assert;
+    let {
+      fixture
+    } = this;
 
-    let { fixture } = this;
     if (fixture) {
       this.setupFixture(fixture);
     }
   }
 
   teardown() {}
+
   afterEach() {}
 
   setupFixture(innerHTML) {
     let fixture = document.getElementById('qunit-fixture');
     fixture.innerHTML = innerHTML;
-  }
+  } // The following methods require `this.element` to work
 
-  // The following methods require `this.element` to work
 
   get firstChild() {
     return this.nthChild(0);
@@ -103,6 +102,7 @@ export default class AbstractTestCase {
 
   click(selector) {
     let element;
+
     if (typeof selector === 'string') {
       element = getElement().querySelector(selector);
     } else {
@@ -110,7 +110,6 @@ export default class AbstractTestCase {
     }
 
     let event = element.click();
-
     return runLoopSettled(event);
   }
 
@@ -119,8 +118,7 @@ export default class AbstractTestCase {
   }
 
   takeSnapshot() {
-    let snapshot = (this.snapshot = []);
-
+    let snapshot = this.snapshot = [];
     let node = getElement().firstChild;
 
     while (node) {
@@ -135,11 +133,7 @@ export default class AbstractTestCase {
   }
 
   assertText(text) {
-    this.assert.strictEqual(
-      this.textValue(),
-      text,
-      `#qunit-fixture content should be: \`${text}\``
-    );
+    this.assert.strictEqual(this.textValue(), text, `#qunit-fixture content should be: \`${text}\``);
   }
 
   assertInnerHTML(html) {
@@ -150,7 +144,12 @@ export default class AbstractTestCase {
     equalTokens(getElement(), html, `#qunit-fixture content should be: \`${html}\``);
   }
 
-  assertElement(node, { ElementType = HTMLElement, tagName, attrs = null, content = null }) {
+  assertElement(node, {
+    ElementType = HTMLElement,
+    tagName,
+    attrs = null,
+    content = null
+  }) {
     if (!(node instanceof ElementType)) {
       throw new Error(`Expecting a ${ElementType.name}, but got ${node}`);
     }
@@ -158,12 +157,22 @@ export default class AbstractTestCase {
     equalsElement(this.assert, node, tagName, attrs, content);
   }
 
-  assertComponentElement(
-    node,
-    { ElementType = HTMLElement, tagName = 'div', attrs = null, content = null }
-  ) {
-    attrs = assign({}, { id: regex(/^ember\d*$/), class: classes('ember-view') }, attrs || {});
-    this.assertElement(node, { ElementType, tagName, attrs, content });
+  assertComponentElement(node, {
+    ElementType = HTMLElement,
+    tagName = 'div',
+    attrs = null,
+    content = null
+  }) {
+    attrs = assign({}, {
+      id: regex(/^ember\d*$/),
+      class: classes('ember-view')
+    }, attrs || {});
+    this.assertElement(node, {
+      ElementType,
+      tagName,
+      attrs,
+      content
+    });
   }
 
   assertSameNode(actual, expected) {
@@ -173,7 +182,6 @@ export default class AbstractTestCase {
   assertInvariants(oldSnapshot, newSnapshot) {
     oldSnapshot = oldSnapshot || this.snapshot;
     newSnapshot = newSnapshot || this.takeSnapshot();
-
     this.assert.strictEqual(newSnapshot.length, oldSnapshot.length, 'Same number of nodes');
 
     for (let i = 0; i < oldSnapshot.length; i++) {
@@ -190,4 +198,5 @@ export default class AbstractTestCase {
     runTask(() => this.rerender());
     this.assertInvariants();
   }
+
 }

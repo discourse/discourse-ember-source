@@ -2,7 +2,6 @@
 @module ember
 */
 import { get } from '@ember/-internals/metal';
-
 /**
   Returns the current path.
 
@@ -21,7 +20,9 @@ click('#some-link-id').then(validateURL);
 @since 1.5.0
 @public
 */
+
 export default function currentPath(app) {
   let routingService = app.__container__.lookup('service:-routing');
+
   return get(routingService, 'currentPath');
 }

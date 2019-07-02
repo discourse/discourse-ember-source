@@ -1,8 +1,7 @@
-import EmberObject from './system/object';
-
-// ........................................
+import EmberObject from './system/object'; // ........................................
 // TYPING & ARRAY MESSAGING
 //
+
 const TYPE_MAP = {
   '[object Boolean]': 'boolean',
   '[object Number]': 'number',
@@ -12,14 +11,15 @@ const TYPE_MAP = {
   '[object Date]': 'date',
   '[object RegExp]': 'regexp',
   '[object Object]': 'object',
-  '[object FileList]': 'filelist',
+  '[object FileList]': 'filelist'
 };
-
-const { toString } = Object.prototype;
-
+const {
+  toString
+} = Object.prototype;
 /**
  @module @ember/utils
 */
+
 /**
   Returns a consistent type for the passed object.
 
@@ -80,13 +80,16 @@ const { toString } = Object.prototype;
   @public
   @static
 */
+
 export function typeOf(item) {
   if (item === null) {
     return 'null';
   }
+
   if (item === undefined) {
     return 'undefined';
   }
+
   let ret = TYPE_MAP[toString.call(item)] || 'object';
 
   if (ret === 'function') {

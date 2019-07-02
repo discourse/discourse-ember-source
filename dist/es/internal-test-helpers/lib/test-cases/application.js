@@ -2,16 +2,14 @@ import TestResolverApplicationTestCase from './test-resolver-application';
 import Application from '@ember/application';
 import { Router } from '@ember/-internals/routing';
 import { assign } from '@ember/polyfills';
-
 import { runTask } from '../run';
-
 export default class ApplicationTestCase extends TestResolverApplicationTestCase {
   constructor() {
     super(...arguments);
-
-    let { applicationOptions } = this;
+    let {
+      applicationOptions
+    } = this;
     this.application = runTask(this.createApplication.bind(this, applicationOptions));
-
     this.resolver = this.application.__registry__.resolver;
 
     if (this.resolver) {
@@ -25,7 +23,7 @@ export default class ApplicationTestCase extends TestResolverApplicationTestCase
 
   get applicationOptions() {
     return assign(super.applicationOptions, {
-      autoboot: false,
+      autoboot: false
     });
   }
 
@@ -38,4 +36,5 @@ export default class ApplicationTestCase extends TestResolverApplicationTestCase
       return this.appRouter.transitionTo(...arguments);
     });
   }
+
 }
