@@ -2501,7 +2501,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   _exports.OutletView = _exports.DebugStack = _exports.INVOKE = _exports.UpdatableReference = _exports.AbstractComponentManager = _exports._experimentalMacros = _exports.InteractiveRenderer = _exports.InertRenderer = _exports.Renderer = _exports.SafeString = _exports.Environment = _exports.Helper = _exports.ROOT_REF = _exports.Component = _exports.LinkComponent = _exports.TextArea = _exports.TextField = _exports.Checkbox = _exports.RootTemplate = void 0;
 
   function _templateObject9() {
-    const data = _taggedTemplateLiteralLoose(["component:-default"]);
+    var data = _taggedTemplateLiteralLoose(["component:-default"]);
 
     _templateObject9 = function () {
       return data;
@@ -2511,7 +2511,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject8() {
-    const data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
+    var data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
 
     _templateObject8 = function () {
       return data;
@@ -2521,7 +2521,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject7() {
-    const data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
+    var data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
 
     _templateObject7 = function () {
       return data;
@@ -2531,7 +2531,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject6() {
-    const data = _taggedTemplateLiteralLoose(["template:components/-default"]);
+    var data = _taggedTemplateLiteralLoose(["template:components/-default"]);
 
     _templateObject6 = function () {
       return data;
@@ -2541,7 +2541,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject5() {
-    const data = _taggedTemplateLiteralLoose(["template:-root"]);
+    var data = _taggedTemplateLiteralLoose(["template:-root"]);
 
     _templateObject5 = function () {
       return data;
@@ -2551,7 +2551,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject4() {
-    const data = _taggedTemplateLiteralLoose(["template:-root"]);
+    var data = _taggedTemplateLiteralLoose(["template:-root"]);
 
     _templateObject4 = function () {
       return data;
@@ -2561,7 +2561,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject3() {
-    const data = _taggedTemplateLiteralLoose(["component:-default"]);
+    var data = _taggedTemplateLiteralLoose(["component:-default"]);
 
     _templateObject3 = function () {
       return data;
@@ -2571,7 +2571,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject2() {
-    const data = _taggedTemplateLiteralLoose(["template:components/-default"]);
+    var data = _taggedTemplateLiteralLoose(["template:components/-default"]);
 
     _templateObject2 = function () {
       return data;
@@ -2581,7 +2581,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject() {
-    const data = _taggedTemplateLiteralLoose(["template:components/-default"]);
+    var data = _taggedTemplateLiteralLoose(["template:components/-default"]);
 
     _templateObject = function () {
       return data;
@@ -34808,7 +34808,7 @@ enifed("@ember/application/lib/application", ["exports", "@ember/-internals/util
   _exports.default = void 0;
 
   function _templateObject() {
-    const data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
+    var data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
 
     _templateObject = function () {
       return data;
@@ -36805,7 +36805,7 @@ enifed("@ember/engine/index", ["exports", "@ember/engine/lib/engine-parent", "@e
   _exports.default = void 0;
 
   function _templateObject2() {
-    const data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
+    var data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
 
     _templateObject2 = function () {
       return data;
@@ -36815,7 +36815,7 @@ enifed("@ember/engine/index", ["exports", "@ember/engine/lib/engine-parent", "@e
   }
 
   function _templateObject() {
-    const data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
+    var data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
 
     _templateObject = function () {
       return data;
@@ -37272,7 +37272,7 @@ enifed("@ember/engine/instance", ["exports", "@ember/-internals/utils", "@ember/
   _exports.default = void 0;
 
   function _templateObject2() {
-    const data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
+    var data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
 
     _templateObject2 = function () {
       return data;
@@ -37282,7 +37282,7 @@ enifed("@ember/engine/instance", ["exports", "@ember/-internals/utils", "@ember/
   }
 
   function _templateObject() {
-    const data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
+    var data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
 
     _templateObject = function () {
       return data;
