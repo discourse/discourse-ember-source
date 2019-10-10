@@ -2,7 +2,7 @@ import { get, set, objectAt, addObserver, observer as emberObserver, computed, a
 import EmberObject from '../../lib/system/object';
 import EmberArray from '../../lib/mixins/array';
 import { A as emberA } from '../../lib/mixins/array';
-import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 /*
   Implement a basic fake mutable array.  This validates that any non-native
   enumerable can impl this API.
@@ -85,7 +85,7 @@ let obj, observer; // ..........................................................
 //
 
 moduleFor('mixins/array/arrayContent[Will|Did]Change', class extends AbstractTestCase {
-  ['@test should notify observers of []'](assert) {
+  async ['@test should notify observers of []'](assert) {
     obj = DummyArray.extend({
       enumerablePropertyDidChange: emberObserver('[]', function () {
         this._count++;
@@ -96,6 +96,7 @@ moduleFor('mixins/array/arrayContent[Will|Did]Change', class extends AbstractTes
     assert.equal(obj._count, 0, 'should not have invoked yet');
     arrayContentWillChange(obj, 0, 1, 1);
     arrayContentDidChange(obj, 0, 1, 1);
+    await runLoopSettled();
     assert.equal(obj._count, 1, 'should have invoked');
   }
 
@@ -119,25 +120,31 @@ moduleFor('notify observers of length', class extends AbstractTestCase {
     obj = null;
   }
 
-  ['@test should notify observers when call with no params'](assert) {
+  async ['@test should notify observers when call with no params'](assert) {
     arrayContentWillChange(obj);
+    await runLoopSettled();
     assert.equal(obj._after, 0);
     arrayContentDidChange(obj);
+    await runLoopSettled();
     assert.equal(obj._after, 1);
   } // API variation that included items only
 
 
-  ['@test should not notify when passed lengths are same'](assert) {
+  async ['@test should not notify when passed lengths are same'](assert) {
     arrayContentWillChange(obj, 0, 1, 1);
+    await runLoopSettled();
     assert.equal(obj._after, 0);
     arrayContentDidChange(obj, 0, 1, 1);
+    await runLoopSettled();
     assert.equal(obj._after, 0);
   }
 
-  ['@test should notify when passed lengths are different'](assert) {
+  async ['@test should notify when passed lengths are different'](assert) {
     arrayContentWillChange(obj, 0, 1, 2);
+    await runLoopSettled();
     assert.equal(obj._after, 0);
     arrayContentDidChange(obj, 0, 1, 2);
+    await runLoopSettled();
     assert.equal(obj._after, 1);
   }
 
@@ -230,7 +237,7 @@ moduleFor('EmberArray.@each support', class extends AbstractTestCase {
     ary = null;
   }
 
-  ['@test adding an object should notify (@each.isDone)'](assert) {
+  async ['@test adding an object should notify (@each.isDone)'](assert) {
     let called = 0;
     let observerObject = EmberObject.create({
       wasCalled() {
@@ -243,10 +250,11 @@ moduleFor('EmberArray.@each support', class extends AbstractTestCase {
       desc: 'foo',
       isDone: false
     }));
+    await runLoopSettled();
     assert.equal(called, 1, 'calls observer when object is pushed');
   }
 
-  ['@test using @each to observe arrays that does not return objects raise error'](assert) {
+  async ['@test using @each to observe arrays that does not return objects raise error'](assert) {
     let called = 0;
     let observerObject = EmberObject.create({
       wasCalled() {
@@ -260,13 +268,14 @@ moduleFor('EmberArray.@each support', class extends AbstractTestCase {
       }
 
     });
-    addObserver(ary, '@each.isDone', observerObject, 'wasCalled');
-    expectAssertion(() => {
-      ary.addObject(EmberObject.create({
-        desc: 'foo',
-        isDone: false
-      }));
+    ary.addObject({
+      desc: 'foo',
+      isDone: false
+    });
+    assert.throwsAssertion(() => {
+      addObserver(ary, '@each.isDone', observerObject, 'wasCalled');
     }, /When using @each to observe the array/);
+    await runLoopSettled();
     assert.equal(called, 0, 'not calls observer when object is pushed');
   }
 
@@ -296,7 +305,7 @@ moduleFor('EmberArray.@each support', class extends AbstractTestCase {
     assert.equal('BYE!', get(obj, 'common'));
   }
 
-  ['@test observers that contain @each in the path should fire only once the first time they are accessed'](assert) {
+  async ['@test observers that contain @each in the path should fire only once the first time they are accessed'](assert) {
     let count = 0;
     let obj = EmberObject.extend({
       init() {
@@ -307,14 +316,16 @@ moduleFor('EmberArray.@each support', class extends AbstractTestCase {
       },
 
       commonDidChange: emberObserver('resources.@each.common', () => count++)
-    }).create(); // Observer fires second time when new object is added
+    }).create(); // Observer fires first time when new object is added
 
     get(obj, 'resources').pushObject(EmberObject.create({
       common: 'HI!'
-    })); // Observer fires third time when property on an object is changed
+    }));
+    await runLoopSettled(); // Observer fires second time when property on an object is changed
 
     set(objectAt(get(obj, 'resources'), 0), 'common', 'BYE!');
-    assert.equal(count, 2, 'observers should only be called once');
+    await runLoopSettled();
+    assert.equal(count, 2, 'observers should be called twice');
   }
 
 });

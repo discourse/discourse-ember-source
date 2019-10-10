@@ -1,11 +1,11 @@
-import { HAS_NATIVE_SYMBOL, symbol as emberSymbol } from '@ember/-internals/utils';
+import { HAS_NATIVE_SYMBOL, isEmberArray, symbol as emberSymbol } from '@ember/-internals/utils';
 import { EMBER_NATIVE_DECORATOR_SUPPORT } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
 import { combine, CONSTANT_TAG } from '@glimmer/reference';
 import { isElementDescriptor } from './decorator';
 import { setClassicDecorator } from './descriptor_map';
-import { dirty, ensureRunloop, tagFor, tagForProperty } from './tags';
+import { markObjectAsDirty, tagForProperty, update } from './tags';
 // For some reason TS can't infer that these two functions are compatible-ish,
 // so we need to corece the type
 let symbol = (HAS_NATIVE_SYMBOL ? Symbol : emberSymbol);
@@ -48,7 +48,7 @@ export function tracked(...args) {
         if (DEBUG && propertyDesc) {
             let keys = Object.keys(propertyDesc);
             assert(`The options object passed to tracked() may only contain a 'value' or 'initializer' property, not both. Received: [${keys}]`, keys.length <= 1 &&
-                (keys[0] === undefined || keys[0] === 'value' || keys[0] === 'undefined'));
+                (keys[0] === undefined || keys[0] === 'value' || keys[0] === 'initializer'));
             assert(`The initializer passed to tracked must be a function. Received ${propertyDesc.initializer}`, !('initializer' in propertyDesc) || typeof propertyDesc.initializer === 'function');
         }
         let initializer = propertyDesc ? propertyDesc.initializer : undefined;
@@ -79,19 +79,27 @@ function descriptorForField([_target, key, desc]) {
         enumerable: true,
         configurable: true,
         get() {
+            let propertyTag = tagForProperty(this, key);
             if (CURRENT_TRACKER)
-                CURRENT_TRACKER.add(tagForProperty(this, key));
+                CURRENT_TRACKER.add(propertyTag);
             // If the field has never been initialized, we should initialize it
             if (!(secretKey in this)) {
                 this[secretKey] = typeof initializer === 'function' ? initializer.call(this) : undefined;
             }
+            let value = this[secretKey];
+            // Add the tag of the returned value if it is an array, since arrays
+            // should always cause updates if they are consumed and then changed
+            if (Array.isArray(value) || isEmberArray(value)) {
+                update(propertyTag, tagForProperty(value, '[]'));
+            }
             return this[secretKey];
         },
         set(newValue) {
-            tagFor(this).inner['dirty']();
-            dirty(tagForProperty(this, key));
+            markObjectAsDirty(this, key);
             this[secretKey] = newValue;
-            propertyDidChange();
+            if (propertyDidChange !== null) {
+                propertyDidChange();
+            }
         },
     };
 }
@@ -111,13 +119,27 @@ function descriptorForField([_target, key, desc]) {
   itself, including child tracked computed properties.
 */
 let CURRENT_TRACKER = null;
-export function getCurrentTracker() {
-    return CURRENT_TRACKER;
+export function track(callback) {
+    let parent = CURRENT_TRACKER;
+    let current = new Tracker();
+    CURRENT_TRACKER = current;
+    try {
+        callback();
+    }
+    finally {
+        CURRENT_TRACKER = parent;
+    }
+    return current.combine();
 }
-export function setCurrentTracker(tracker = new Tracker()) {
-    return (CURRENT_TRACKER = tracker);
+export function consume(tag) {
+    if (CURRENT_TRACKER !== null) {
+        CURRENT_TRACKER.add(tag);
+    }
 }
-let propertyDidChange = ensureRunloop;
+export function isTracking() {
+    return CURRENT_TRACKER !== null;
+}
+let propertyDidChange = null;
 export function setPropertyDidChange(cb) {
     propertyDidChange = cb;
 }

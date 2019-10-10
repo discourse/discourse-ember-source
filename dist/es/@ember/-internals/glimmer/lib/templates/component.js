@@ -1,7 +1,7 @@
 import template from '../template';
 export default template({
-  "id": "TfnYOdXy",
-  "block": "{\"symbols\":[\"&default\"],\"statements\":[[15,1]],\"hasEval\":false}",
+  "id": "chfQcH83",
+  "block": "{\"symbols\":[\"&default\"],\"statements\":[[14,1]],\"hasEval\":false}",
   "meta": {
     "moduleName": "packages/@ember/-internals/glimmer/lib/templates/component.hbs"
   }

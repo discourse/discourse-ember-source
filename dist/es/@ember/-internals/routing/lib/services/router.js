@@ -48,6 +48,7 @@ function cleanURL(url, rootURL) {
    Like any service, it can also be injected into helpers, routes, etc.
 
    @public
+   @extends Service
    @class RouterService
  */
 export default class RouterService extends Service {

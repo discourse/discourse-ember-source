@@ -1,5 +1,6 @@
 /* globals EmberDev */
 import { RenderingTestCase, moduleFor, runDestroy, runTask } from 'internal-test-helpers';
+import { Helper } from '@ember/-internals/glimmer';
 import { set } from '@ember/-internals/metal';
 moduleFor('Helpers test: custom helpers', class extends RenderingTestCase {
   ['@test it cannot override built-in syntax']() {
@@ -129,6 +130,38 @@ moduleFor('Helpers test: custom helpers', class extends RenderingTestCase {
     runTask(() => this.rerender());
     this.assertText('1');
     runTask(() => helper.recompute());
+    this.assertText('2');
+    assert.strictEqual(destroyCount, 0, 'destroy is not called on recomputation');
+  } // https://github.com/emberjs/ember.js/issues/14774
+
+
+  ['@test class-based helper with static arguments can recompute a new value without a runloop'](assert) {
+    let destroyCount = 0;
+    let computeCount = 0;
+    let helper;
+    this.registerHelper('hello-world', {
+      init() {
+        this._super(...arguments);
+
+        helper = this;
+      },
+
+      compute() {
+        return ++computeCount;
+      },
+
+      destroy() {
+        destroyCount++;
+
+        this._super();
+      }
+
+    });
+    this.render('{{hello-world "whut"}}');
+    this.assertText('1');
+    runTask(() => this.rerender());
+    this.assertText('1');
+    helper.recompute();
     this.assertText('2');
     assert.strictEqual(destroyCount, 0, 'destroy is not called on recomputation');
   }
@@ -502,6 +535,23 @@ moduleFor('Helpers test: custom helpers', class extends RenderingTestCase {
     let instance = this.owner.factoryFor('helper:some-helper').create();
     assert.equal(typeof instance.compute, 'function', 'expected instance.compute to be present');
     assert.equal(instance.compute(), 'lolol', 'can invoke `.compute`');
+  }
+
+  ['@feature(EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT) class-based helper in native ES syntax receives owner'](assert) {
+    let testContext = this;
+    this.add('helper:hello-world', class extends Helper {
+      constructor(owner) {
+        super(owner);
+        assert.equal(owner, testContext.owner, 'owner was passed as a constructor argument');
+      }
+
+      compute() {
+        return 'huzza!';
+      }
+
+    });
+    this.render('{{hello-world}}');
+    this.assertText('huzza!');
   }
 
 });

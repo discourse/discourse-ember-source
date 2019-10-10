@@ -1,4 +1,4 @@
-import { AbstractTestCase } from 'internal-test-helpers';
+import { AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 import { get } from '@ember/-internals/metal';
 import { runArrayTests, newFixture } from '../helpers/array';
 
@@ -9,7 +9,7 @@ class UnshiftObjectTests extends AbstractTestCase {
     this.assert.equal(obj.unshiftObject(item), item, 'should return unshifted object');
   }
 
-  '@test [].unshiftObject(X) => [X] + notify'() {
+  async '@test [].unshiftObject(X) => [X] + notify'() {
     let before = [];
     let item = newFixture(1)[0];
     let after = [item];
@@ -18,7 +18,9 @@ class UnshiftObjectTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    obj.unshiftObject(item);
+    obj.unshiftObject(item); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
     this.assert.equal(observer.timesCalled('[]'), 1, 'should have notified [] once');
@@ -28,7 +30,7 @@ class UnshiftObjectTests extends AbstractTestCase {
     this.assert.equal(observer.timesCalled('lastObject'), 1, 'should have notified lastObject once');
   }
 
-  '@test [A,B,C].unshiftObject(X) => [X,A,B,C] + notify'() {
+  async '@test [A,B,C].unshiftObject(X) => [X,A,B,C] + notify'() {
     let before = newFixture(3);
     let item = newFixture(1)[0];
     let after = [item, before[0], before[1], before[2]];
@@ -37,7 +39,9 @@ class UnshiftObjectTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    obj.unshiftObject(item);
+    obj.unshiftObject(item); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
     this.assert.equal(observer.timesCalled('[]'), 1, 'should have notified [] once');
@@ -47,7 +51,7 @@ class UnshiftObjectTests extends AbstractTestCase {
     this.assert.equal(observer.validate('lastObject'), false, 'should NOT have notified lastObject');
   }
 
-  '@test [A,B,C].unshiftObject(A) => [A,A,B,C] + notify'() {
+  async '@test [A,B,C].unshiftObject(A) => [A,A,B,C] + notify'() {
     let before = newFixture(3);
     let item = before[0]; // note same object as current head. should end up twice
 
@@ -57,7 +61,9 @@ class UnshiftObjectTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    obj.unshiftObject(item);
+    obj.unshiftObject(item); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
     this.assert.equal(observer.timesCalled('[]'), 1, 'should have notified [] once');

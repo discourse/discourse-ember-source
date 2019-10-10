@@ -3,7 +3,7 @@ import EmberObject from '../../../lib/system/object';
 import { observer } from '@ember/-internals/metal';
 import { oneWay as reads, not } from '@ember/object/computed';
 import { A as a } from '../../../lib/mixins/array';
-import { moduleFor, AbstractTestCase, runTask } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, runTask, runLoopSettled } from 'internal-test-helpers';
 import { set, get } from '@ember/-internals/metal';
 moduleFor('Ember.ArrayProxy - content change (length)', class extends AbstractTestCase {
   ['@test should update length for null content'](assert) {
@@ -130,7 +130,7 @@ moduleFor('Ember.ArrayProxy - content change (length)', class extends AbstractTe
     assert.deepEqual(obj.content, ['foo'], 'content length was truncated');
   }
 
-  ['@test array proxy + aliasedProperty complex test'](assert) {
+  async ['@test array proxy + aliasedProperty complex test'](assert) {
     let aCalled, bCalled, cCalled, dCalled, eCalled;
     aCalled = bCalled = cCalled = dCalled = eCalled = 0;
     let obj = EmberObject.extend({
@@ -144,7 +144,10 @@ moduleFor('Ember.ArrayProxy - content change (length)', class extends AbstractTe
     }).create();
     obj.set('model', ArrayProxy.create({
       content: a(['red', 'yellow', 'blue'])
-    }));
+    })); // bootstrap aliases
+
+    obj.length;
+    await runLoopSettled();
     assert.equal(obj.get('colors.content.length'), 3);
     assert.equal(obj.get('colors.length'), 3);
     assert.equal(obj.get('length'), 3);
@@ -154,6 +157,7 @@ moduleFor('Ember.ArrayProxy - content change (length)', class extends AbstractTe
     assert.equal(dCalled, 1, 'expected observer `colors.[]` to be called ONCE');
     assert.equal(eCalled, 1, 'expected observer `colors.content.[]` to be called ONCE');
     obj.get('colors').pushObjects(['green', 'red']);
+    await runLoopSettled();
     assert.equal(obj.get('colors.content.length'), 5);
     assert.equal(obj.get('colors.length'), 5);
     assert.equal(obj.get('length'), 5);

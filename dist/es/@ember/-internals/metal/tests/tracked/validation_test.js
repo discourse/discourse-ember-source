@@ -4,10 +4,10 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
 
 function _initializerWarningHelper(descriptor, context) { throw new Error('Decorating class property failed. Please ensure that ' + 'proposal-class-properties is enabled and set to use loose mode. ' + 'To use proposal-class-properties in spec mode with decorators, wait for ' + 'the next major version of decorators in stage 2.'); }
 
-import { computed, defineProperty, get, set, tagForProperty, tracked } from '../..';
+import { computed, defineProperty, get, set, tagForProperty, tracked, track, notifyPropertyChange } from '../..';
 import { EMBER_METAL_TRACKED_PROPERTIES, EMBER_NATIVE_DECORATOR_SUPPORT } from '@ember/canary-features';
+import { EMBER_ARRAY } from '@ember/-internals/utils';
 import { AbstractTestCase, moduleFor } from 'internal-test-helpers';
-import { track } from './support';
 
 if (EMBER_METAL_TRACKED_PROPERTIES && EMBER_NATIVE_DECORATOR_SUPPORT) {
   moduleFor('@tracked get validation', class extends AbstractTestCase {
@@ -191,7 +191,7 @@ if (EMBER_METAL_TRACKED_PROPERTIES && EMBER_NATIVE_DECORATOR_SUPPORT) {
 
       }
 
-      defineProperty(EmberObject.prototype, 'full', computed('name', function () {
+      defineProperty(EmberObject.prototype, 'full', computed('name.first', 'name.last', function () {
         let name = get(this, 'name');
         return `${name.first} ${name.last}`;
       }));
@@ -297,6 +297,60 @@ if (EMBER_METAL_TRACKED_PROPERTIES && EMBER_NATIVE_DECORATOR_SUPPORT) {
       set(tom, 'first', 'Tizzle');
       assert.equal(tag.validate(snapshot), false, 'invalid after setting with Ember.set');
       assert.equal(get(obj, 'full'), 'Tizzle Dale');
+    }
+
+    ['@test interaction with arrays'](assert) {
+      var _class11, _descriptor9, _temp6;
+
+      let EmberObject = (_class11 = (_temp6 = class EmberObject {
+        constructor() {
+          _initializerDefineProperty(this, "array", _descriptor9, this);
+        }
+
+      }, _temp6), (_descriptor9 = _applyDecoratedDescriptor(_class11.prototype, "array", [tracked], {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        initializer: function () {
+          return [];
+        }
+      })), _class11);
+      let obj = new EmberObject();
+      let tag = tagForProperty(obj, 'array');
+      let snapshot = tag.value();
+      let array = get(obj, 'array');
+      assert.deepEqual(array, []);
+      assert.equal(tag.validate(snapshot), true);
+      array.push(1);
+      notifyPropertyChange(array, '[]');
+      assert.equal(tag.validate(snapshot), false, 'invalid after pushing an object and notifying on the array');
+    }
+
+    ['@test interaction with ember arrays'](assert) {
+      var _class13, _descriptor10, _temp7;
+
+      let EmberObject = (_class13 = (_temp7 = class EmberObject {
+        constructor() {
+          _initializerDefineProperty(this, "emberArray", _descriptor10, this);
+        }
+
+      }, _temp7), (_descriptor10 = _applyDecoratedDescriptor(_class13.prototype, "emberArray", [tracked], {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        initializer: function () {
+          return {
+            [EMBER_ARRAY]: true
+          };
+        }
+      })), _class13);
+      let obj = new EmberObject();
+      let tag = tagForProperty(obj, 'emberArray');
+      let snapshot = tag.value();
+      let emberArray = get(obj, 'emberArray');
+      assert.equal(tag.validate(snapshot), true);
+      notifyPropertyChange(emberArray, '[]');
+      assert.equal(tag.validate(snapshot), false, 'invalid after setting a property on the object');
     }
 
   });

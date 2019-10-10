@@ -1,4 +1,8 @@
+import { consume } from '@ember/-internals/metal';
+import { HAS_NATIVE_PROXY } from '@ember/-internals/utils';
+import { EMBER_CUSTOM_COMPONENT_ARG_PROXY } from '@ember/canary-features';
 import { assert } from '@ember/debug';
+import { DEBUG } from '@glimmer/env';
 import { RootReference } from '../utils/references';
 import AbstractComponentManager from './abstract';
 const CAPABILITIES = {
@@ -15,9 +19,14 @@ const CAPABILITIES = {
 };
 export function capabilities(managerAPI, options = {}) {
     assert('Invalid component manager compatibility specified', managerAPI === '3.4');
+    let updateHook = true;
+    if (EMBER_CUSTOM_COMPONENT_ARG_PROXY) {
+        updateHook = 'updateHook' in options ? Boolean(options.updateHook) : true;
+    }
     return {
         asyncLifeCycleCallbacks: Boolean(options.asyncLifecycleCallbacks),
         destructor: Boolean(options.destructor),
+        updateHook,
     };
 }
 export function hasAsyncLifeCycleCallbacks(delegate) {
@@ -55,11 +64,60 @@ export default class CustomComponentManager extends AbstractComponentManager {
     create(_env, definition, args) {
         const { delegate } = definition;
         const capturedArgs = args.capture();
-        const component = delegate.createComponent(definition.ComponentClass.class, capturedArgs.value());
-        return new CustomComponentState(delegate, component, capturedArgs);
+        let value;
+        let namedArgsProxy = {};
+        if (EMBER_CUSTOM_COMPONENT_ARG_PROXY) {
+            if (HAS_NATIVE_PROXY) {
+                let handler = {
+                    get(_target, prop) {
+                        assert('args can only be strings', typeof prop === 'string');
+                        let ref = capturedArgs.named.get(prop);
+                        consume(ref.tag);
+                        return ref.value();
+                    },
+                };
+                if (DEBUG) {
+                    handler.set = function (_target, prop) {
+                        assert(`You attempted to set ${definition.ComponentClass.class}#${String(prop)} on a components arguments. Component arguments are immutable and cannot be updated directly, they always represent the values that are passed to your component. If you want to set default values, you should use a getter instead`);
+                        return false;
+                    };
+                }
+                namedArgsProxy = new Proxy(namedArgsProxy, handler);
+            }
+            else {
+                capturedArgs.named.names.forEach(name => {
+                    Object.defineProperty(namedArgsProxy, name, {
+                        get() {
+                            let ref = capturedArgs.named.get(name);
+                            consume(ref.tag);
+                            return ref.value();
+                        },
+                    });
+                });
+            }
+            value = {
+                named: namedArgsProxy,
+                positional: capturedArgs.positional.value(),
+            };
+        }
+        else {
+            value = capturedArgs.value();
+        }
+        const component = delegate.createComponent(definition.ComponentClass.class, value);
+        return new CustomComponentState(delegate, component, capturedArgs, namedArgsProxy);
     }
-    update({ delegate, component, args }) {
-        delegate.updateComponent(component, args.value());
+    update({ delegate, component, args, namedArgsProxy }) {
+        let value;
+        if (EMBER_CUSTOM_COMPONENT_ARG_PROXY) {
+            value = {
+                named: namedArgsProxy,
+                positional: args.positional.value(),
+            };
+        }
+        else {
+            value = args.value();
+        }
+        delegate.updateComponent(component, value);
     }
     didCreate({ delegate, component }) {
         if (hasAsyncLifeCycleCallbacks(delegate)) {
@@ -85,8 +143,10 @@ export default class CustomComponentManager extends AbstractComponentManager {
             return null;
         }
     }
-    getCapabilities() {
-        return CAPABILITIES;
+    getCapabilities({ delegate, }) {
+        return Object.assign({}, CAPABILITIES, {
+            updateHook: delegate.capabilities.updateHook,
+        });
     }
     getTag({ args }) {
         return args.tag;
@@ -104,10 +164,11 @@ const CUSTOM_COMPONENT_MANAGER = new CustomComponentManager();
  * Stores internal state about a component instance after it's been created.
  */
 export class CustomComponentState {
-    constructor(delegate, component, args) {
+    constructor(delegate, component, args, namedArgsProxy) {
         this.delegate = delegate;
         this.component = component;
         this.args = args;
+        this.namedArgsProxy = namedArgsProxy;
     }
     destroy() {
         const { delegate, component } = this;

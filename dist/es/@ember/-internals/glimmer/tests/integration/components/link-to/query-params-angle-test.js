@@ -2,7 +2,7 @@ import { EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS } from '@ember/canary-features';
 import Controller from '@ember/controller';
 import { RSVP } from '@ember/-internals/runtime';
 import { Route } from '@ember/-internals/routing';
-import { ApplicationTestCase, classes as classMatcher, moduleFor, runTask } from 'internal-test-helpers';
+import { ApplicationTestCase, classes as classMatcher, moduleFor, runTask, runLoopSettled } from 'internal-test-helpers';
 
 if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
   moduleFor('<LinkTo /> component with query-params (rendering)', class extends ApplicationTestCase {
@@ -187,7 +187,7 @@ if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
 
           {{outlet}}
           `);
-      return this.visit('/').then(() => {
+      return this.visit('/').then(async () => {
         assert.equal(this.$('#good-link').length, 1, 'good-link should be in the DOM');
         assert.equal(this.$('#bad-link').length, 1, 'bad-link should be in the DOM');
         let goodLink = this.$('#good-link');
@@ -245,21 +245,22 @@ if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
       });
     }
 
-    ['@test href updates when unsupplied controller QP props change'](assert) {
+    async ['@test href updates when unsupplied controller QP props change'](assert) {
       this.addTemplate('index', `
           <LinkTo id="the-link" @query={{hash foo='lol'}}>
             Index
           </LinkTo>
           `);
-      return this.visit('/').then(() => {
-        let indexController = this.getController('index');
-        let theLink = this.$('#the-link');
-        assert.equal(theLink.attr('href'), '/?foo=lol');
-        runTask(() => indexController.set('bar', 'BORF'));
-        assert.equal(theLink.attr('href'), '/?bar=BORF&foo=lol');
-        runTask(() => indexController.set('foo', 'YEAH'));
-        assert.equal(theLink.attr('href'), '/?bar=BORF&foo=lol');
-      });
+      await this.visit('/');
+      let indexController = this.getController('index');
+      let theLink = this.$('#the-link');
+      assert.equal(theLink.attr('href'), '/?foo=lol');
+      indexController.set('bar', 'BORF');
+      await runLoopSettled();
+      assert.equal(theLink.attr('href'), '/?bar=BORF&foo=lol');
+      indexController.set('foo', 'YEAH');
+      await runLoopSettled();
+      assert.equal(theLink.attr('href'), '/?bar=BORF&foo=lol');
     }
 
     ['@test The <LinkTo /> component with only query params always transitions to the current route with the query params applied'](assert) {
@@ -447,7 +448,7 @@ if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
       });
     }
 
-    ['@test The <LinkTo /> component disregards query-params in activeness computation when current-when is specified'](assert) {
+    async ['@test The <LinkTo /> component disregards query-params in activeness computation when current-when is specified'](assert) {
       let appLink;
       this.router.map(function () {
         this.route('parent');
@@ -468,27 +469,27 @@ if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
         queryParams: ['page'],
         page: 1
       }));
-      return this.visit('/').then(() => {
-        appLink = this.$('#app-link');
-        assert.equal(appLink.attr('href'), '/parent');
-        this.shouldNotBeActive(assert, '#app-link');
-        return this.visit('/parent?page=2');
-      }).then(() => {
-        appLink = this.$('#app-link');
-        let router = this.appRouter;
-        assert.equal(appLink.attr('href'), '/parent');
-        this.shouldBeActive(assert, '#app-link');
-        assert.equal(this.$('#parent-link').attr('href'), '/parent');
-        this.shouldBeActive(assert, '#parent-link');
-        let parentController = this.getController('parent');
-        assert.equal(parentController.get('page'), 2);
-        runTask(() => parentController.set('page', 3));
-        assert.equal(router.get('location.path'), '/parent?page=3');
-        this.shouldBeActive(assert, '#app-link');
-        this.shouldBeActive(assert, '#parent-link');
-        runTask(() => this.click('#app-link'));
-        assert.equal(router.get('location.path'), '/parent');
-      });
+      await this.visit('/');
+      appLink = this.$('#app-link');
+      assert.equal(appLink.attr('href'), '/parent');
+      this.shouldNotBeActive(assert, '#app-link');
+      await this.visit('/parent?page=2');
+      appLink = this.$('#app-link');
+      let router = this.appRouter;
+      assert.equal(appLink.attr('href'), '/parent');
+      this.shouldBeActive(assert, '#app-link');
+      assert.equal(this.$('#parent-link').attr('href'), '/parent');
+      this.shouldBeActive(assert, '#parent-link');
+      let parentController = this.getController('parent');
+      assert.equal(parentController.get('page'), 2);
+      parentController.set('page', 3);
+      await runLoopSettled();
+      assert.equal(router.get('location.path'), '/parent?page=3');
+      this.shouldBeActive(assert, '#app-link');
+      this.shouldBeActive(assert, '#parent-link');
+      this.click('#app-link');
+      await runLoopSettled();
+      assert.equal(router.get('location.path'), '/parent');
     }
 
     ['@test the <LinkTo /> component default query params while in active transition regression test'](assert) {

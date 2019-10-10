@@ -1,4 +1,5 @@
-import { Object as EmberObject } from '@ember/-internals/runtime';
+import { EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT } from '@ember/canary-features';
+import { FrameworkObject, setFrameworkClass } from '@ember/-internals/runtime';
 import { inject as metalInject } from '@ember/-internals/metal';
 /**
  @module @ember/service
@@ -63,8 +64,13 @@ export function inject() {
   @public
 */
 
-const Service = EmberObject.extend();
+const Service = FrameworkObject.extend();
 Service.reopenClass({
   isServiceFactory: true
 });
+
+if (EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT) {
+  setFrameworkClass(Service);
+}
+
 export default Service;

@@ -1,8 +1,10 @@
 /**
 @module @ember/component
 */
-import { FrameworkObject } from '@ember/-internals/runtime';
+import { FrameworkObject, setFrameworkClass } from '@ember/-internals/runtime';
 import { symbol } from '@ember/-internals/utils';
+import { EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT } from '@ember/canary-features';
+import { join } from '@ember/runloop';
 import { DirtyableTag } from '@glimmer/reference';
 export const RECOMPUTE_TAG = symbol('RECOMPUTE_TAG');
 export function isHelperFactory(helper) {
@@ -84,10 +86,13 @@ let Helper = FrameworkObject.extend({
       @since 1.13.0
     */
     recompute() {
-        this[RECOMPUTE_TAG].inner.dirty();
+        join(() => this[RECOMPUTE_TAG].inner.dirty());
     },
 });
 Helper.isHelperFactory = true;
+if (EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT) {
+    setFrameworkClass(Helper);
+}
 class Wrapper {
     constructor(compute) {
         this.compute = compute;

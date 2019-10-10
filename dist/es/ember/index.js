@@ -6,7 +6,7 @@ import { Registry, Container } from '@ember/-internals/container';
 import * as instrumentation from '@ember/instrumentation';
 import { deleteMeta, meta } from '@ember/-internals/meta';
 import * as metal from '@ember/-internals/metal';
-import { FEATURES, isEnabled } from '@ember/canary-features';
+import { FEATURES, isEnabled, EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT } from '@ember/canary-features';
 import * as EmberDebug from '@ember/debug';
 import { assert, deprecate } from '@ember/debug';
 import Backburner from 'backburner';
@@ -17,7 +17,7 @@ import { _getStrings, _setStrings, dasherize, camelize, capitalize, classify, de
 import Service, { inject as injectService } from '@ember/service';
 import { action } from '@ember/object';
 import { and, bool, collect, deprecatingAlias, empty, equal, filterBy, filter, gte, gt, intersect, lte, lt, mapBy, map, match, max, min, none, notEmpty, not, oneWay, or, readOnly, setDiff, sort, sum, union, uniqBy, uniq } from '@ember/object/computed';
-import { Object as EmberObject, RegistryProxyMixin, ContainerProxyMixin, compare, copy, isEqual, Array as EmberArray, Copyable, MutableEnumerable, MutableArray, TargetActionSupport, Evented, PromiseProxyMixin, Observable, typeOf, isArray, _ProxyMixin, RSVP, Comparable, Namespace, Enumerable, ArrayProxy, ObjectProxy, ActionHandler, CoreObject, NativeArray, A } from '@ember/-internals/runtime';
+import { Object as EmberObject, RegistryProxyMixin, ContainerProxyMixin, compare, copy, isEqual, Array as EmberArray, Copyable, MutableEnumerable, MutableArray, TargetActionSupport, Evented, PromiseProxyMixin, Observable, typeOf, isArray, _ProxyMixin, RSVP, Comparable, Namespace, Enumerable, ArrayProxy, ObjectProxy, ActionHandler, CoreObject, NativeArray, A, setFrameworkClass } from '@ember/-internals/runtime';
 import { Checkbox, Component, setComponentManager, capabilities, escapeExpression, getTemplates, Helper, helper, htmlSafe, isHTMLSafe, LinkComponent, setTemplates, template, TextField, TextArea, isSerializationFirstNode, setModifierManager, modifierCapabilties } from '@ember/-internals/glimmer'; // eslint-disable-next-line import/no-unresolved
 
 import VERSION from './version';
@@ -285,6 +285,10 @@ Ember._ContainerProxyMixin = ContainerProxyMixin;
 Ember.compare = compare;
 Ember.copy = copy;
 Ember.isEqual = isEqual;
+
+if (EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT) {
+  Ember._setFrameworkClass = setFrameworkClass;
+}
 /**
 @module ember
 */
@@ -297,6 +301,7 @@ Ember.isEqual = isEqual;
   @static
   @public
 */
+
 
 Ember.inject = function inject() {
   assert(`Injected properties must be created through helpers, see '${Object.keys(inject).map(k => `'inject.${k}'`).join(' or ')}'`);

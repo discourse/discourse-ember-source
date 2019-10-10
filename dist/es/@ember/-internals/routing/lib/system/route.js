@@ -1,7 +1,7 @@
-import { computed, defineProperty, get, getProperties, isEmpty, set, setProperties, } from '@ember/-internals/metal';
+import { computed, defineProperty, flushInvalidActiveObservers, get, getProperties, isEmpty, set, setProperties, } from '@ember/-internals/metal';
 import { getOwner } from '@ember/-internals/owner';
-import { A as emberA, ActionHandler, Evented, Object as EmberObject, typeOf, } from '@ember/-internals/runtime';
-import { EMBER_ROUTING_BUILD_ROUTEINFO_METADATA } from '@ember/canary-features';
+import { A as emberA, ActionHandler, Evented, Object as EmberObject, setFrameworkClass, typeOf, } from '@ember/-internals/runtime';
+import { EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT, EMBER_METAL_TRACKED_PROPERTIES, EMBER_ROUTING_BUILD_ROUTEINFO_METADATA, } from '@ember/canary-features';
 import { assert, deprecate, info, isTesting } from '@ember/debug';
 import { ROUTER_EVENTS } from '@ember/deprecated-features';
 import { assign } from '@ember/polyfills';
@@ -295,6 +295,12 @@ class Route extends EmberObject {
         let controller = this.controller;
         controller._qpDelegate = get(this, '_qp.states.inactive');
         this.resetController(controller, isExiting, transition);
+        // TODO: Once tags are enabled by default, we should refactor QP changes to
+        // use autotracking. This will likely be a large refactor, and for now we
+        // just need to trigger observers eagerly.
+        if (EMBER_METAL_TRACKED_PROPERTIES) {
+            flushInvalidActiveObservers(false);
+        }
     }
     /**
       @private
@@ -852,6 +858,12 @@ class Route extends EmberObject {
         this.setupController(controller, context, transition);
         if (this._environment.options.shouldRender) {
             this.renderTemplate(controller, context);
+        }
+        // TODO: Once tags are enabled by default, we should refactor QP changes to
+        // use autotracking. This will likely be a large refactor, and for now we
+        // just need to trigger observers eagerly.
+        if (EMBER_METAL_TRACKED_PROPERTIES) {
+            flushInvalidActiveObservers(false);
         }
     }
     /*
@@ -2338,5 +2350,8 @@ if (EMBER_ROUTING_BUILD_ROUTEINFO_METADATA) {
          */
         buildRouteInfoMetadata() { },
     });
+}
+if (EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT) {
+    setFrameworkClass(Route);
 }
 export default Route;

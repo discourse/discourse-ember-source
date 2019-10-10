@@ -1,5 +1,5 @@
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
-import { Object as EmberObject } from '@ember/-internals/runtime';
+import { Object as EmberObject, A } from '@ember/-internals/runtime';
 import { tracked, nativeDescDecorator as descriptor } from '@ember/-internals/metal';
 import { moduleFor, RenderingTestCase, strip, runTask } from 'internal-test-helpers';
 import { Component } from '../../utils/helpers';
@@ -108,6 +108,34 @@ if (EMBER_METAL_TRACKED_PROPERTIES) {
       runTask(() => this.$('button').click());
       this.assertText('Kris Selden');
       assert.strictEqual(computeCount, 2, 'compute is called exactly 2 times');
+    }
+
+    '@test array properties rerender when updated'() {
+      let NumListComponent = Component.extend({
+        numbers: tracked({
+          initializer: () => A([1, 2, 3])
+        }),
+
+        addNumber() {
+          this.numbers.pushObject(4);
+        }
+
+      });
+      this.registerComponent('num-list', {
+        ComponentClass: NumListComponent,
+        template: strip`
+            <button {{action this.addNumber}}>
+              {{join this.numbers}}
+            </button>
+          `
+      });
+      this.registerHelper('join', ([value]) => {
+        return value.join(', ');
+      });
+      this.render('<NumList />');
+      this.assertText('1, 2, 3');
+      runTask(() => this.$('button').click());
+      this.assertText('1, 2, 3, 4');
     }
 
     '@test nested getters update when dependent properties are invalidated'(assert) {

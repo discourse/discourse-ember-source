@@ -1,5 +1,6 @@
 import { peekMeta } from '@ember/-internals/meta';
-import { HAS_NATIVE_PROXY, lookupDescriptor, toString } from '@ember/-internals/utils';
+import { HAS_NATIVE_PROXY, lookupDescriptor, setWithMandatorySetter as trackedSetWithMandatorySetter, toString, } from '@ember/-internals/utils';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import EmberError from '@ember/error';
 import { DEBUG } from '@glimmer/env';
@@ -68,7 +69,12 @@ export function set(obj, keyName, value, tolerant) {
     }
     else {
         if (DEBUG) {
-            setWithMandatorySetter(meta, obj, keyName, value);
+            if (EMBER_METAL_TRACKED_PROPERTIES) {
+                trackedSetWithMandatorySetter(obj, keyName, value);
+            }
+            else {
+                setWithMandatorySetter(obj, keyName, value, meta);
+            }
         }
         else {
             obj[keyName] = value;
@@ -80,7 +86,7 @@ export function set(obj, keyName, value, tolerant) {
     return value;
 }
 if (DEBUG) {
-    setWithMandatorySetter = (meta, obj, keyName, value) => {
+    setWithMandatorySetter = (obj, keyName, value, meta) => {
         if (meta !== null && meta.peekWatching(keyName) > 0) {
             makeEnumerable(obj, keyName);
             meta.writeValue(obj, keyName, value);

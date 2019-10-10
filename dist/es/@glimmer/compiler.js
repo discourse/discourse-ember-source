@@ -446,29 +446,18 @@ class JavaScriptCompiler {
         let component = new ComponentBlock(tag, element['symbols'], element.selfClosing);
         this.blocks.push(component);
     }
-    openSplattedElement(element) {
+    openElement([element, simple]) {
         let tag = element.tag;
         if (element.blockParams.length > 0) {
             throw new Error(`Compile Error: <${element.tag}> is not a component and doesn't support block parameters`);
         } else {
-            this.push([Ops.OpenSplattedElement, tag]);
-        }
-    }
-    openElement(element) {
-        let tag = element.tag;
-        if (element.blockParams.length > 0) {
-            throw new Error(`Compile Error: <${element.tag}> is not a component and doesn't support block parameters`);
-        } else {
-            this.push([Ops.OpenElement, tag]);
+            this.push([Ops.OpenElement, tag, simple]);
         }
     }
     flushElement() {
         this.push([Ops.FlushElement]);
     }
     closeComponent(_element) {
-        if (_element.modifiers.length > 0) {
-            throw new Error('Compile Error: Element modifiers are not allowed in components');
-        }
         let [tag, attrs, args, block] = this.endComponent();
         this.push([Ops.Component, tag, attrs, args, block]);
     }
@@ -744,7 +733,6 @@ class SymbolAllocator {
     comment(_op) {}
     openComponent(_op) {}
     openElement(_op) {}
-    openSplattedElement(_op) {}
     staticArg(_op) {}
     dynamicArg(_op) {}
     staticAttr(_op) {}
@@ -816,13 +804,16 @@ class TemplateCompiler {
     }
     openElement([action]) {
         let attributes = action.attributes;
-        let hasSplat = false;
+        let simple = true;
         for (let i = 0; i < attributes.length; i++) {
             let attr = attributes[i];
             if (attr.name === '...attributes') {
-                hasSplat = true;
+                simple = false;
                 break;
             }
+        }
+        if (action.modifiers.length > 0) {
+            simple = false;
         }
         let actionIsComponent = false;
         if (isDynamicComponent(action)) {
@@ -837,10 +828,8 @@ class TemplateCompiler {
         } else if (isComponent(action)) {
             this.opcode(['openComponent', action], action);
             actionIsComponent = true;
-        } else if (hasSplat) {
-            this.opcode(['openSplattedElement', action], action);
         } else {
-            this.opcode(['openElement', action], action);
+            this.opcode(['openElement', [action, simple]], action);
         }
         let typeAttr = null;
         let attrs = action.attributes;
@@ -849,10 +838,13 @@ class TemplateCompiler {
                 typeAttr = attrs[i];
                 continue;
             }
-            this.attribute([attrs[i]], hasSplat || actionIsComponent);
+            this.attribute([attrs[i]], !simple || actionIsComponent);
         }
         if (typeAttr) {
-            this.attribute([typeAttr], hasSplat || actionIsComponent);
+            this.attribute([typeAttr], !simple || actionIsComponent);
+        }
+        for (let i = 0; i < action.modifiers.length; i++) {
+            this.modifier([action.modifiers[i]]);
         }
         this.opcode(['flushElement', action], null);
     }
@@ -861,11 +853,6 @@ class TemplateCompiler {
             this.opcode(['closeDynamicComponent', action], action);
         } else if (isComponent(action)) {
             this.opcode(['closeComponent', action], action);
-        } else if (action.modifiers.length > 0) {
-            for (let i = 0; i < action.modifiers.length; i++) {
-                this.modifier([action.modifiers[i]]);
-            }
-            this.opcode(['closeElement', action], action);
         } else {
             this.opcode(['closeElement', action], action);
         }

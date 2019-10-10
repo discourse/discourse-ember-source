@@ -1,5 +1,5 @@
 import { set, get, computed, defineProperty, notifyPropertyChange, beginPropertyChanges, endPropertyChanges, addObserver } from '..';
-import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 /*
   This test file is designed to capture performance regressions related to
   deferred computation. Things like run loops, computed properties, and bindings
@@ -8,7 +8,7 @@ import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
 */
 
 moduleFor('Computed Properties - Number of times evaluated', class extends AbstractTestCase {
-  ['@test computed properties that depend on multiple properties should run only once per run loop'](assert) {
+  async ['@test computed properties that depend on multiple properties should run only once per run loop'](assert) {
     let obj = {
       a: 'a',
       b: 'b',
@@ -31,6 +31,7 @@ moduleFor('Computed Properties - Number of times evaluated', class extends Abstr
     set(obj, 'c', 'cc');
     endPropertyChanges();
     get(obj, 'abc');
+    await runLoopSettled();
     assert.equal(cpCount, 1, 'The computed property is only invoked once');
     assert.equal(obsCount, 1, 'The observer is only invoked once');
   }

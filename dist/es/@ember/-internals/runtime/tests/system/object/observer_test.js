@@ -1,9 +1,9 @@
 import { run } from '@ember/runloop';
 import { observer, get, set } from '@ember/-internals/metal';
 import EmberObject from '../../../lib/system/object';
-import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 moduleFor('EmberObject observer', class extends AbstractTestCase {
-  ['@test observer on class'](assert) {
+  async ['@test observer on class'](assert) {
     let MyClass = EmberObject.extend({
       count: 0,
       foo: observer('bar', function () {
@@ -13,10 +13,11 @@ moduleFor('EmberObject observer', class extends AbstractTestCase {
     let obj = MyClass.create();
     assert.equal(get(obj, 'count'), 0, 'should not invoke observer immediately');
     set(obj, 'bar', 'BAZ');
+    await runLoopSettled();
     assert.equal(get(obj, 'count'), 1, 'should invoke observer after change');
   }
 
-  ['@test observer on subclass'](assert) {
+  async ['@test observer on subclass'](assert) {
     let MyClass = EmberObject.extend({
       count: 0,
       foo: observer('bar', function () {
@@ -31,12 +32,14 @@ moduleFor('EmberObject observer', class extends AbstractTestCase {
     let obj = Subclass.create();
     assert.equal(get(obj, 'count'), 0, 'should not invoke observer immediately');
     set(obj, 'bar', 'BAZ');
+    await runLoopSettled();
     assert.equal(get(obj, 'count'), 0, 'should not invoke observer after change');
     set(obj, 'baz', 'BAZ');
+    await runLoopSettled();
     assert.equal(get(obj, 'count'), 1, 'should invoke observer after change');
   }
 
-  ['@test observer on instance'](assert) {
+  async ['@test observer on instance'](assert) {
     let obj = EmberObject.extend({
       foo: observer('bar', function () {
         set(this, 'count', get(this, 'count') + 1);
@@ -46,10 +49,11 @@ moduleFor('EmberObject observer', class extends AbstractTestCase {
     });
     assert.equal(get(obj, 'count'), 0, 'should not invoke observer immediately');
     set(obj, 'bar', 'BAZ');
+    await runLoopSettled();
     assert.equal(get(obj, 'count'), 1, 'should invoke observer after change');
   }
 
-  ['@test observer on instance overriding class'](assert) {
+  async ['@test observer on instance overriding class'](assert) {
     let MyClass = EmberObject.extend({
       count: 0,
       foo: observer('bar', function () {
@@ -64,8 +68,10 @@ moduleFor('EmberObject observer', class extends AbstractTestCase {
     }).create();
     assert.equal(get(obj, 'count'), 0, 'should not invoke observer immediately');
     set(obj, 'bar', 'BAZ');
+    await runLoopSettled();
     assert.equal(get(obj, 'count'), 0, 'should not invoke observer after change');
     set(obj, 'baz', 'BAZ');
+    await runLoopSettled();
     assert.equal(get(obj, 'count'), 1, 'should invoke observer after change');
   }
 
@@ -87,7 +93,7 @@ moduleFor('EmberObject observer', class extends AbstractTestCase {
   //
 
 
-  ['@test chain observer on class'](assert) {
+  async ['@test chain observer on class'](assert) {
     let MyClass = EmberObject.extend({
       count: 0,
       foo: observer('bar.baz', function () {
@@ -107,14 +113,16 @@ moduleFor('EmberObject observer', class extends AbstractTestCase {
     assert.equal(get(obj1, 'count'), 0, 'should not invoke yet');
     assert.equal(get(obj2, 'count'), 0, 'should not invoke yet');
     set(get(obj1, 'bar'), 'baz', 'BIFF1');
+    await runLoopSettled();
     assert.equal(get(obj1, 'count'), 1, 'should invoke observer on obj1');
     assert.equal(get(obj2, 'count'), 0, 'should not invoke yet');
     set(get(obj2, 'bar'), 'baz', 'BIFF2');
+    await runLoopSettled();
     assert.equal(get(obj1, 'count'), 1, 'should not invoke again');
     assert.equal(get(obj2, 'count'), 1, 'should invoke observer on obj2');
   }
 
-  ['@test chain observer on class'](assert) {
+  async ['@test chain observer on class'](assert) {
     let MyClass = EmberObject.extend({
       count: 0,
       foo: observer('bar.baz', function () {
@@ -141,17 +149,20 @@ moduleFor('EmberObject observer', class extends AbstractTestCase {
     assert.equal(get(obj1, 'count'), 0, 'should not invoke yet');
     assert.equal(get(obj2, 'count'), 0, 'should not invoke yet');
     set(get(obj1, 'bar'), 'baz', 'BIFF1');
+    await runLoopSettled();
     assert.equal(get(obj1, 'count'), 1, 'should invoke observer on obj1');
     assert.equal(get(obj2, 'count'), 0, 'should not invoke yet');
     set(get(obj2, 'bar'), 'baz', 'BIFF2');
+    await runLoopSettled();
     assert.equal(get(obj1, 'count'), 1, 'should not invoke again');
     assert.equal(get(obj2, 'count'), 0, 'should not invoke yet');
     set(get(obj2, 'bar2'), 'baz', 'BIFF3');
+    await runLoopSettled();
     assert.equal(get(obj1, 'count'), 1, 'should not invoke again');
     assert.equal(get(obj2, 'count'), 1, 'should invoke observer on obj2');
   }
 
-  ['@test chain observer on class that has a reference to an uninitialized object will finish chains that reference it'](assert) {
+  async ['@test chain observer on class that has a reference to an uninitialized object will finish chains that reference it'](assert) {
     let changed = false;
     let ChildClass = EmberObject.extend({
       parent: null,
@@ -174,10 +185,12 @@ moduleFor('EmberObject observer', class extends AbstractTestCase {
     let parent = ParentClass.create();
     assert.equal(changed, false, 'precond');
     set(parent, 'one.two', 'new');
+    await runLoopSettled();
     assert.equal(changed, true, 'child should have been notified of change to path');
     set(parent, 'one', {
       two: 'newer'
     });
+    await runLoopSettled();
     assert.equal(changed, true, 'child should have been notified of change to path');
   }
 

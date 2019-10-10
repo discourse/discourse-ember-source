@@ -409,7 +409,7 @@ class FactoryManager {
             validationCache[this.fullName] = true;
         }
         if (!this.class.create) {
-            throw new Error(`Failed to create an instance of '${this.normalizedName}'. Most likely an improperly defined class or` + ` an invalid module export.`);
+            throw new Error(`Failed to create an instance of '${this.normalizedName}'. Most likely an improperly defined class or an invalid module export.`);
         }
         // required to allow access to things like
         // the customized toString, _debugContainerKey,

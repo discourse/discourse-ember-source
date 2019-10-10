@@ -6,20 +6,19 @@ import { moduleFor, ApplicationTestCase } from 'internal-test-helpers';
 import { computed } from '@ember/-internals/metal';
 import { EMBER_MODULE_UNIFICATION } from '@ember/canary-features';
 moduleFor('Service Injection', class extends ApplicationTestCase {
-  ['@test Service can be injected and is resolved'](assert) {
+  async ['@test Service can be injected and is resolved'](assert) {
     this.add('controller:application', Controller.extend({
       myService: injectService('my-service')
     }));
     let MyService = Service.extend();
     this.add('service:my-service', MyService);
     this.addTemplate('application', '');
-    this.visit('/').then(() => {
-      let controller = this.applicationInstance.lookup('controller:application');
-      assert.ok(controller.get('myService') instanceof MyService);
-    });
+    await this.visit('/');
+    let controller = this.applicationInstance.lookup('controller:application');
+    assert.ok(controller.get('myService') instanceof MyService);
   }
 
-  ['@test Service can be an object proxy and access owner in init GH#16484'](assert) {
+  async ['@test Service can be an object proxy and access owner in init GH#16484'](assert) {
     let serviceOwner;
     this.add('controller:application', Controller.extend({
       myService: injectService('my-service')
@@ -34,16 +33,15 @@ moduleFor('Service Injection', class extends ApplicationTestCase {
     });
     this.add('service:my-service', MyService);
     this.addTemplate('application', '');
-    this.visit('/').then(instance => {
-      let controller = this.applicationInstance.lookup('controller:application');
-      assert.ok(controller.get('myService') instanceof MyService);
-      assert.equal(serviceOwner, instance, 'should be able to `getOwner` in init');
-    });
+    let instance = await this.visit('/');
+    let controller = this.applicationInstance.lookup('controller:application');
+    assert.ok(controller.get('myService') instanceof MyService);
+    assert.equal(serviceOwner, instance, 'should be able to `getOwner` in init');
   }
 
 });
 moduleFor('Service Injection with ES5 Getters', class extends ApplicationTestCase {
-  ['@test Service can be injected and is resolved without calling `get`'](assert) {
+  async ['@test Service can be injected and is resolved without calling `get`'](assert) {
     this.add('controller:application', Controller.extend({
       myService: injectService('my-service')
     }));
@@ -54,11 +52,10 @@ moduleFor('Service Injection with ES5 Getters', class extends ApplicationTestCas
     });
     this.add('service:my-service', MyService);
     this.addTemplate('application', '');
-    this.visit('/').then(() => {
-      let controller = this.applicationInstance.lookup('controller:application');
-      assert.ok(controller.myService instanceof MyService);
-      assert.equal(controller.myService.name, 'The service name', 'service property accessible');
-    });
+    await this.visit('/');
+    let controller = this.applicationInstance.lookup('controller:application');
+    assert.ok(controller.myService instanceof MyService);
+    assert.equal(controller.myService.name, 'The service name', 'service property accessible');
   }
 
 });
@@ -181,7 +178,7 @@ if (EMBER_MODULE_UNIFICATION) {
       });
     }
 
-    ['@test Service with namespace can be injected and is resolved'](assert) {
+    async ['@test Service with namespace can be injected and is resolved'](assert) {
       this.add('controller:application', Controller.extend({
         myService: injectService('my-namespace::my-service')
       }));
@@ -190,10 +187,9 @@ if (EMBER_MODULE_UNIFICATION) {
         specifier: 'service:my-service',
         namespace: 'my-namespace'
       }, MyService);
-      this.visit('/').then(() => {
-        let controller = this.applicationInstance.lookup('controller:application');
-        assert.ok(controller.get('myService') instanceof MyService);
-      });
+      await this.visit('/');
+      let controller = this.applicationInstance.lookup('controller:application');
+      assert.ok(controller.get('myService') instanceof MyService);
     }
 
   });

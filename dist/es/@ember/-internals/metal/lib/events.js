@@ -56,19 +56,22 @@ export function addListener(obj, eventName, target, method, once) {
   @param {Function|String} method A function or the name of a function to be called on `target`
   @public
 */
-export function removeListener(obj, eventName, target, method) {
-    assert('You must pass at least an object and event name to removeListener', Boolean(obj) && Boolean(eventName));
-    if (!method && 'function' === typeof target) {
-        method = target;
-        target = null;
-    }
-    let m = metaFor(obj);
-    if (method === undefined) {
-        m.removeAllListeners(eventName);
+export function removeListener(obj, eventName, targetOrFunction, functionOrName) {
+    assert('You must pass at least an object, event name, and method or target and method/method name to removeListener', Boolean(obj) &&
+        Boolean(eventName) &&
+        (typeof targetOrFunction === 'function' ||
+            (typeof targetOrFunction === 'object' && Boolean(functionOrName))));
+    let target, method;
+    if (typeof targetOrFunction === 'object') {
+        target = targetOrFunction;
+        method = functionOrName;
     }
     else {
-        m.removeFromListeners(eventName, target, method);
+        target = null;
+        method = targetOrFunction;
     }
+    let m = metaFor(obj);
+    m.removeFromListeners(eventName, target, method);
 }
 /**
   Send an event. The execution of suspended listeners

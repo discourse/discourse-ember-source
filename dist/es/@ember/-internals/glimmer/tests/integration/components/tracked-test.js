@@ -4,8 +4,8 @@ function _applyDecoratedDescriptor(target, property, decorators, descriptor, con
 
 function _initializerWarningHelper(descriptor, context) { throw new Error('Decorating class property failed. Please ensure that ' + 'proposal-class-properties is enabled and set to use loose mode. ' + 'To use proposal-class-properties in spec mode with decorators, wait for ' + 'the next major version of decorators in stage 2.'); }
 
-import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
-import { Object as EmberObject } from '@ember/-internals/runtime';
+import { Object as EmberObject, A } from '@ember/-internals/runtime';
+import { EMBER_CUSTOM_COMPONENT_ARG_PROXY, EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { tracked, nativeDescDecorator as descriptor } from '@ember/-internals/metal';
 import { moduleFor, RenderingTestCase, strip, runTask } from 'internal-test-helpers';
 import GlimmerishComponent from '../../utils/glimmerish-component';
@@ -154,6 +154,31 @@ if (EMBER_METAL_TRACKED_PROPERTIES) {
       this.assertText('0');
       runTask(() => this.$('button').click());
       this.assertText('1');
+    }
+
+    '@test array properties rerender when updated'() {
+      let NumListComponent = Component.extend({
+        numbers: tracked({
+          initializer: () => A([1, 2, 3])
+        }),
+
+        addNumber() {
+          this.numbers.pushObject(4);
+        }
+
+      });
+      this.registerComponent('num-list', {
+        ComponentClass: NumListComponent,
+        template: strip`
+            <button {{action this.addNumber}}>
+              {{#each this.numbers as |num|}}{{num}}{{/each}}
+            </button>
+          `
+      });
+      this.render('<NumList />');
+      this.assertText('123');
+      runTask(() => this.$('button').click());
+      this.assertText('1234');
     }
 
     '@test getters update when dependent properties are invalidated'() {
@@ -342,4 +367,71 @@ if (EMBER_METAL_TRACKED_PROPERTIES) {
     }
 
   });
+
+  if (EMBER_CUSTOM_COMPONENT_ARG_PROXY) {
+    moduleFor('Component Tracked Properties w/ Args Proxy', class extends RenderingTestCase {
+      '@test downstream property changes do not invalidate upstream component getters/arguments'(assert) {
+        var _class3, _descriptor3, _temp2;
+
+        let outerRenderCount = 0;
+        let innerRenderCount = 0;
+
+        class OuterComponent extends GlimmerishComponent {
+          get count() {
+            outerRenderCount++;
+            return this.args.count;
+          }
+
+        }
+
+        let InnerComponent = (_class3 = (_temp2 = class InnerComponent extends GlimmerishComponent {
+          constructor(...args) {
+            super(...args);
+
+            _initializerDefineProperty(this, "count", _descriptor3, this);
+          }
+
+          get combinedCounts() {
+            innerRenderCount++;
+            return this.args.count + this.count;
+          }
+
+          updateInnerCount() {
+            this.count++;
+          }
+
+        }, _temp2), (_descriptor3 = _applyDecoratedDescriptor(_class3.prototype, "count", [tracked], {
+          configurable: true,
+          enumerable: true,
+          writable: true,
+          initializer: function () {
+            return 0;
+          }
+        })), _class3);
+        this.registerComponent('outer', {
+          ComponentClass: OuterComponent,
+          template: '<Inner @count={{this.count}}/>'
+        });
+        this.registerComponent('inner', {
+          ComponentClass: InnerComponent,
+          template: '<button {{action this.updateInnerCount}}>{{this.combinedCounts}}</button>'
+        });
+        this.render('<Outer @count={{this.count}}/>', {
+          count: 0
+        });
+        this.assertText('0');
+        assert.equal(outerRenderCount, 1);
+        assert.equal(innerRenderCount, 1);
+        runTask(() => this.$('button').click());
+        this.assertText('1');
+        assert.equal(outerRenderCount, 1, 'updating inner component does not cause outer component to rerender');
+        assert.equal(innerRenderCount, 2, 'updating inner component causes inner component to rerender');
+        runTask(() => this.context.set('count', 1));
+        this.assertText('2');
+        assert.equal(outerRenderCount, 2, 'outer component updates based on context');
+        assert.equal(innerRenderCount, 3, 'inner component updates based on outer component');
+      }
+
+    });
+  }
 }

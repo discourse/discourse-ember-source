@@ -3,9 +3,9 @@
 */
 import { DEBUG } from '@glimmer/env';
 import { PROXY_CONTENT } from '@ember/-internals/metal';
-import { symbol, HAS_NATIVE_PROXY, tryInvoke } from '@ember/-internals/utils';
+import { EMBER_ARRAY, HAS_NATIVE_PROXY, tryInvoke } from '@ember/-internals/utils';
 import { get, set, objectAt, replaceInNativeArray, replace, computed, Mixin, hasListeners, beginPropertyChanges, endPropertyChanges, addArrayObserver, removeArrayObserver, arrayContentWillChange, arrayContentDidChange } from '@ember/-internals/metal';
-import { assert, deprecate } from '@ember/debug';
+import { assert } from '@ember/debug';
 import Enumerable from './enumerable';
 import compare from '../compare';
 import { ENV } from '@ember/-internals/environment';
@@ -13,10 +13,6 @@ import Observable from '../mixins/observable';
 import MutableEnumerable from './mutable_enumerable';
 import { typeOf } from '../type-of';
 const EMPTY_ARRAY = Object.freeze([]);
-const EMBER_ARRAY = symbol('EMBER_ARRAY');
-export function isEmberArray(obj) {
-  return obj && obj[EMBER_ARRAY];
-}
 
 const identityFunction = item => item;
 
@@ -656,6 +652,11 @@ const ArrayMixin = Mixin.create(Enumerable, {
     Returns an array with just the items with the matched property. You
     can pass an optional second argument with the target value. Otherwise
     this will match any property that evaluates to `true`.
+     Example Usage:
+     ```javascript
+    const things = Ember.A().addObjects([{food: 'apple'}, {food: 'beans'}]);
+    things.filterBy('food', 'beans'); // [{food: 'beans'}]
+    ```
      @method filterBy
     @param {String} key the property to test
     @param {*} [value] optional value to test against.
@@ -1438,20 +1439,12 @@ if (ENV.EXTEND_PROTOTYPES.Array) {
   NativeArray.apply(Array.prototype);
 
   A = function (arr) {
-    deprecate('`new A()` has been deprecated, please update to calling A as a function: `A()`', !(this instanceof A), {
-      id: 'array.new-array-wrapper',
-      until: '3.9.0',
-      url: 'https://emberjs.com/deprecations/v3.x#toc_array-new-array-wrapper'
-    });
+    assert('You cannot create an Ember Array with `new A()`, please update to calling A as a function: `A()`', !(this instanceof A));
     return arr || [];
   };
 } else {
   A = function (arr) {
-    deprecate('`new A()` has been deprecated, please update to calling A as a function: `A()`', !(this instanceof A), {
-      id: 'array.new-array-wrapper',
-      until: '3.9.0',
-      url: 'https://emberjs.com/deprecations/v3.x#toc_array-new-array-wrapper'
-    });
+    assert('You cannot create an Ember Array with `new A()`, please update to calling A as a function: `A()`', !(this instanceof A));
 
     if (!arr) {
       arr = [];

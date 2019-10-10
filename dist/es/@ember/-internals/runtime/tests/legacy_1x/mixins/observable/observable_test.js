@@ -5,7 +5,7 @@ import { w } from '@ember/string';
 import EmberObject from '../../../../lib/system/object';
 import Observable from '../../../../lib/mixins/observable';
 import { A as emberA } from '../../../../lib/mixins/array';
-import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 /*
   NOTE: This test is adapted from the 1.x series of unit tests.  The tests
   are the same except for places where we intend to break the API we instead
@@ -628,8 +628,9 @@ moduleFor('Observable objects & object properties ', class extends AbstractTestC
     assert.equal(object.toggleProperty('toggleVal', undefined, undefined), object.get('toggleVal'));
   }
 
-  ['@test should notify array observer when array changes'](assert) {
+  async ['@test should notify array observer when array changes'](assert) {
     get(object, 'normalArray').replace(0, 0, [6]);
+    await runLoopSettled();
     assert.equal(object.abnormal, 'notifiedObserver', 'observer should be notified');
   }
 
@@ -660,18 +661,21 @@ moduleFor('object.addObserver()', class extends AbstractTestCase {
     });
   }
 
-  ['@test should register an observer for a property'](assert) {
+  async ['@test should register an observer for a property'](assert) {
     ObjectC.addObserver('normal', ObjectC, 'action');
     ObjectC.set('normal', 'newValue');
+    await runLoopSettled();
     assert.equal(ObjectC.normal1, 'newZeroValue');
   }
 
-  ['@test should register an observer for a property - Special case of chained property'](assert) {
+  async ['@test should register an observer for a property - Special case of chained property'](assert) {
     ObjectC.addObserver('objectE.propertyVal', ObjectC, 'chainedObserver');
     ObjectC.objectE.set('propertyVal', 'chainedPropertyValue');
+    await runLoopSettled();
     assert.equal('chainedPropertyObserved', ObjectC.normal2);
     ObjectC.normal2 = 'dependentValue';
     ObjectC.set('objectE', '');
+    await runLoopSettled();
     assert.equal('chainedPropertyObserved', ObjectC.normal2);
   }
 
@@ -718,28 +722,33 @@ moduleFor('object.removeObserver()', class extends AbstractTestCase {
     });
   }
 
-  ['@test should unregister an observer for a property'](assert) {
+  async ['@test should unregister an observer for a property'](assert) {
     ObjectD.addObserver('normal', ObjectD, 'addAction');
     ObjectD.set('normal', 'newValue');
+    await runLoopSettled();
     assert.equal(ObjectD.normal1, 'newZeroValue');
     ObjectD.set('normal1', 'zeroValue');
+    await runLoopSettled();
     ObjectD.removeObserver('normal', ObjectD, 'addAction');
     ObjectD.set('normal', 'newValue');
     assert.equal(ObjectD.normal1, 'zeroValue');
   }
 
-  ["@test should unregister an observer for a property - special case when key has a '.' in it."](assert) {
+  async ["@test should unregister an observer for a property - special case when key has a '.' in it."](assert) {
     ObjectD.addObserver('objectF.propertyVal', ObjectD, 'removeChainedObserver');
     ObjectD.objectF.set('propertyVal', 'chainedPropertyValue');
+    await runLoopSettled();
     ObjectD.removeObserver('objectF.propertyVal', ObjectD, 'removeChainedObserver');
     ObjectD.normal2 = 'dependentValue';
     ObjectD.objectF.set('propertyVal', 'removedPropertyValue');
+    await runLoopSettled();
     assert.equal('dependentValue', ObjectD.normal2);
     ObjectD.set('objectF', '');
+    await runLoopSettled();
     assert.equal('dependentValue', ObjectD.normal2);
   }
 
-  ['@test removing an observer inside of an observer shouldn’t cause any problems'](assert) {
+  async ['@test removing an observer inside of an observer shouldn’t cause any problems'](assert) {
     // The observable system should be protected against clients removing
     // observers in the middle of observer notification.
     var encounteredError = false;
@@ -748,9 +757,8 @@ moduleFor('object.removeObserver()', class extends AbstractTestCase {
       ObjectD.addObserver('observableValue', null, 'observer1');
       ObjectD.addObserver('observableValue', null, 'observer2');
       ObjectD.addObserver('observableValue', null, 'observer3');
-      run(function () {
-        ObjectD.set('observableValue', 'hi world');
-      });
+      ObjectD.set('observableValue', 'hi world');
+      await runLoopSettled();
     } catch (e) {
       encounteredError = true;
     }

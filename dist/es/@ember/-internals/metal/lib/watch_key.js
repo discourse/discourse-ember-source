@@ -1,5 +1,6 @@
 import { meta as metaFor, peekMeta, UNDEFINED } from '@ember/-internals/meta';
 import { lookupDescriptor } from '@ember/-internals/utils';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { DEBUG } from '@glimmer/env';
 import { descriptorForProperty, isClassicDecorator } from './descriptor_map';
 import { DEFAULT_GETTER_FUNCTION, INHERITING_GETTER_FUNCTION, MANDATORY_SETTER_FUNCTION, } from './properties';
@@ -14,8 +15,10 @@ export function watchKey(obj, keyName, _meta) {
         if (possibleDesc !== undefined && possibleDesc.willWatch !== undefined) {
             possibleDesc.willWatch(obj, keyName, meta);
         }
-        if (typeof obj.willWatchProperty === 'function') {
-            obj.willWatchProperty(keyName);
+        if (!EMBER_METAL_TRACKED_PROPERTIES) {
+            if (typeof obj.willWatchProperty === 'function') {
+                obj.willWatchProperty(keyName);
+            }
         }
         if (DEBUG) {
             // NOTE: this is dropped for prod + minified builds

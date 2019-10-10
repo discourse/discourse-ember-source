@@ -1,14 +1,14 @@
 /**
 @module @ember/object
 */
-import { HAS_NATIVE_PROXY, symbol } from '@ember/-internals/utils';
+import { HAS_NATIVE_PROXY, isEmberArray, symbol } from '@ember/-internals/utils';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
 import { descriptorForProperty } from './descriptor_map';
 import { isPath } from './path_cache';
 import { tagForProperty } from './tags';
-import { getCurrentTracker } from './tracked';
+import { consume, isTracking } from './tracked';
 export const PROXY_CONTENT = symbol('PROXY_CONTENT');
 export let getPossibleMandatoryProxyValue;
 if (DEBUG && HAS_NATIVE_PROXY) {
@@ -74,10 +74,11 @@ export function get(obj, keyName) {
     }
     let value;
     if (isObjectLike) {
+        let tracking = isTracking();
         if (EMBER_METAL_TRACKED_PROPERTIES) {
-            let tracker = getCurrentTracker();
-            if (tracker)
-                tracker.add(tagForProperty(obj, keyName));
+            if (tracking) {
+                consume(tagForProperty(obj, keyName));
+            }
         }
         let descriptor = descriptorForProperty(obj, keyName);
         if (descriptor !== undefined) {
@@ -88,6 +89,13 @@ export function get(obj, keyName) {
         }
         else {
             value = obj[keyName];
+        }
+        // Add the tag of the returned value if it is an array, since arrays
+        // should always cause updates if they are consumed and then changed
+        if (EMBER_METAL_TRACKED_PROPERTIES &&
+            tracking &&
+            (Array.isArray(value) || isEmberArray(value))) {
+            consume(tagForProperty(value, '[]'));
         }
     }
     else {

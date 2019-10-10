@@ -22,7 +22,7 @@ class DebugAssert {
     }
     // Run an expectation callback within the context of a new tracker, optionally
     // accepting a function to run, which asserts immediately
-    runExpectation(func, callback) {
+    runExpectation(func, callback, async = false) {
         let originalTracker = null;
         // When helpers are passed a callback, they get a new tracker context
         if (func) {
@@ -37,10 +37,19 @@ class DebugAssert {
         // Once the given callback is invoked, the pending assertions should be
         // flushed immediately
         if (func) {
-            func();
-            this.assert();
-            this.reset();
-            this.tracker = originalTracker;
+            let maybePromise = func();
+            if (async && typeof maybePromise.then === 'function') {
+                return maybePromise.then(() => {
+                    this.assert();
+                    this.reset();
+                    this.tracker = originalTracker;
+                });
+            }
+            else {
+                this.assert();
+                this.reset();
+                this.tracker = originalTracker;
+            }
         }
     }
 }

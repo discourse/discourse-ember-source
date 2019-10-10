@@ -2,24 +2,26 @@
   @module @ember/object
 */
 import { FACTORY_FOR } from '@ember/-internals/container';
+import { getOwner } from '@ember/-internals/owner';
 import { assign, _WeakSet as WeakSet } from '@ember/polyfills';
-import { guidFor, getName, setName, makeArray, HAS_NATIVE_PROXY, isInternalSymbol } from '@ember/-internals/utils';
+import { guidFor, getName, setName, symbol, makeArray, HAS_NATIVE_PROXY, isInternalSymbol } from '@ember/-internals/utils';
+import { EMBER_METAL_TRACKED_PROPERTIES, EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT } from '@ember/canary-features';
 import { schedule } from '@ember/runloop';
 import { meta, peekMeta, deleteMeta } from '@ember/-internals/meta';
-import { PROXY_CONTENT, finishChains, sendEvent, Mixin, applyMixin, defineProperty, descriptorForProperty, classToString, isClassicDecorator, DEBUG_INJECTION_FUNCTIONS } from '@ember/-internals/metal';
+import { PROXY_CONTENT, finishChains, sendEvent, Mixin, activateObserver, applyMixin, defineProperty, descriptorForProperty, classToString, isClassicDecorator, DEBUG_INJECTION_FUNCTIONS } from '@ember/-internals/metal';
 import ActionHandler from '../mixins/action_handler';
-import { assert, deprecate } from '@ember/debug';
+import { assert } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
 const reopen = Mixin.prototype.reopen;
 const wasApplied = new WeakSet();
 const factoryMap = new WeakMap();
 const prototypeMixinMap = new WeakMap();
-const DELAY_INIT = Object.freeze({});
-let initCalled; // only used in debug builds to enable the proxy trap
-// using DEBUG here to avoid the extraneous variable when not needed
+const initCalled = DEBUG ? new WeakSet() : undefined; // only used in debug builds to enable the proxy trap
 
-if (DEBUG) {
-  initCalled = new WeakSet();
+const PASSED_FROM_CREATE = DEBUG ? symbol('PASSED_FROM_CREATE') : undefined;
+const FRAMEWORK_CLASSES = EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT ? symbol('FRAMEWORK_CLASS') : undefined;
+export function setFrameworkClass(klass) {
+  klass[FRAMEWORK_CLASSES] = true;
 }
 
 function initialize(obj, properties) {
@@ -78,10 +80,22 @@ function initialize(obj, properties) {
     initCalled.add(obj);
   }
 
-  obj.init(properties); // re-enable chains
-
+  obj.init(properties);
   m.unsetInitializing();
-  finishChains(m);
+
+  if (EMBER_METAL_TRACKED_PROPERTIES) {
+    let observerEvents = m.observerEvents();
+
+    if (observerEvents !== undefined) {
+      for (let i = 0; i < observerEvents.length; i++) {
+        activateObserver(obj, observerEvents[i]);
+      }
+    }
+  } else {
+    // re-enable chains
+    finishChains(m);
+  }
+
   sendEvent(obj, 'init', undefined, undefined, undefined, m);
 }
 /**
@@ -152,7 +166,7 @@ class CoreObject {
     factoryMap.set(this, factory);
   }
 
-  constructor(properties) {
+  constructor(passedFromCreate) {
     // pluck off factory
     let initFactory = factoryMap.get(this.constructor);
 
@@ -195,16 +209,25 @@ class CoreObject {
 
     let m = meta(self);
     m.setInitializing();
+    assert(`An EmberObject based class, ${this.constructor}, was not instantiated correctly. You may have either used \`new\` instead of \`.create()\`, or not passed arguments to your call to super in the constructor: \`super(...arguments)\`. If you are trying to use \`new\`, consider using native classes without extending from EmberObject.`, (() => {
+      if (passedFromCreate === PASSED_FROM_CREATE) {
+        return true;
+      }
 
-    if (properties !== DELAY_INIT) {
-      deprecate('using `new` with EmberObject has been deprecated. Please use `create` instead, or consider using native classes without extending from EmberObject.', false, {
-        id: 'object.new-constructor',
-        until: '3.9.0',
-        url: 'https://emberjs.com/deprecations/v3.x#toc_object-new-constructor'
-      });
-      initialize(self, properties);
-    } // only return when in debug builds and `self` is the proxy created above
+      if (!EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT) {
+        return false;
+      }
 
+      if (initFactory === undefined) {
+        return false;
+      }
+
+      if (passedFromCreate === initFactory.owner) {
+        return true;
+      }
+
+      return false;
+    })()); // only return when in debug builds and `self` is the proxy created above
 
     if (DEBUG && self !== this) {
       return self;
@@ -603,7 +626,29 @@ class CoreObject {
 
   static create(props, extra) {
     let C = this;
-    let instance = new C(DELAY_INIT);
+    let instance;
+
+    if (EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT && this[FRAMEWORK_CLASSES]) {
+      let initFactory = factoryMap.get(this);
+      let owner;
+
+      if (initFactory !== undefined) {
+        owner = initFactory.owner;
+      } else if (props !== undefined) {
+        owner = getOwner(props);
+      }
+
+      if (owner === undefined) {
+        // fallback to passing the special PASSED_FROM_CREATE symbol
+        // to avoid an error when folks call things like Controller.extend().create()
+        // we should do a subsequent deprecation pass to ensure this isn't allowed
+        owner = PASSED_FROM_CREATE;
+      }
+
+      instance = new C(owner);
+    } else {
+      instance = DEBUG ? new C(PASSED_FROM_CREATE) : new C();
+    }
 
     if (extra === undefined) {
       initialize(instance, props);

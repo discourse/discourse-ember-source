@@ -1,5 +1,5 @@
 import { lookupDescriptor, symbol, toString } from '@ember/-internals/utils';
-import { assert, deprecate } from '@ember/debug';
+import { assert } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
 const objectPrototype = Object.prototype;
 let counters;
@@ -12,6 +12,7 @@ if (DEBUG) {
         metaCalls: 0,
         metaInstantiated: 0,
         matchingListenersCalls: 0,
+        observerEventsCalls: 0,
         addToListenersCalls: 0,
         removeFromListenersCalls: 0,
         removeAllListenersCalls: 0,
@@ -20,6 +21,8 @@ if (DEBUG) {
         parentListenersUsed: 0,
         flattenedListenersCalls: 0,
         reopensAfterFlatten: 0,
+        readableLazyChainsCalls: 0,
+        writableLazyChainsCalls: 0,
     };
 }
 /**
@@ -236,6 +239,25 @@ export class Meta {
     readableTag() {
         return this._tag;
     }
+    writableLazyChainsFor(key) {
+        if (DEBUG) {
+            counters.writableLazyChainsCalls++;
+        }
+        let lazyChains = this._getOrCreateOwnMap('_lazyChains');
+        if (!(key in lazyChains)) {
+            lazyChains[key] = [];
+        }
+        return lazyChains[key];
+    }
+    readableLazyChainsFor(key) {
+        if (DEBUG) {
+            counters.readableLazyChainsCalls++;
+        }
+        let lazyChains = this._lazyChains;
+        if (lazyChains !== undefined) {
+            return lazyChains[key];
+        }
+    }
     writableChainWatchers(create) {
         assert(this.isMetaDestroyed()
             ? `Cannot create a new chain watcher for \`${toString(this.source)}\` after it has been destroyed.`
@@ -351,37 +373,6 @@ export class Meta {
         }
         this.pushListener(eventName, target, method, 2 /* REMOVE */);
     }
-    removeAllListeners(event) {
-        deprecate('The remove all functionality of removeListener and removeObserver has been deprecated. Remove each listener/observer individually instead.', false, {
-            id: 'events.remove-all-listeners',
-            until: '3.9.0',
-            url: 'https://emberjs.com/deprecations/v3.x#toc_events-remove-all-listeners',
-        });
-        if (DEBUG) {
-            counters.removeAllListenersCalls++;
-        }
-        let listeners = this.writableListeners();
-        let inheritedEnd = this._inheritedEnd;
-        // remove all listeners of event name
-        // adjusting the inheritedEnd if listener is below it
-        for (let i = listeners.length - 1; i >= 0; i--) {
-            let listener = listeners[i];
-            if (listener.event === event) {
-                listeners.splice(i, 1);
-                if (i < inheritedEnd) {
-                    inheritedEnd--;
-                }
-            }
-        }
-        this._inheritedEnd = inheritedEnd;
-        // we put remove alls at start because rare and easy to check there
-        listeners.splice(inheritedEnd, 0, {
-            event,
-            target: null,
-            method: null,
-            kind: 3 /* REMOVE_ALL */,
-        });
-    }
     pushListener(event, target, method, kind) {
         let listeners = this.writableListeners();
         let i = indexOfListener(listeners, event, target, method);
@@ -395,18 +386,10 @@ export class Meta {
         // found, even in the case of a function listener remove, because we may be
         // attempting to add or remove listeners _before_ flattening has occured.
         if (i === -1) {
-            deprecate('Adding function listeners to prototypes has been deprecated. Convert the listener to a string listener, or add it to the instance instead.', !(this.isPrototypeMeta(this.source) && typeof method === 'function'), {
-                id: 'events.inherited-function-listeners',
-                until: '3.9.0',
-                url: 'https://emberjs.com/deprecations/v3.x#toc_events-inherited-function-listeners',
-            });
-            deprecate('You attempted to remove a function listener which did not exist on the instance, which means it was an inherited prototype listener, or you attempted to remove it before it was added. Prototype function listeners have been deprecated, and attempting to remove a non-existent function listener this will error in the future.', !(!this.isPrototypeMeta(this.source) &&
+            assert('You cannot add function listeners to prototypes. Convert the listener to a string listener, or add it to the instance instead.', !(this.isPrototypeMeta(this.source) && typeof method === 'function'));
+            assert('You attempted to remove a function listener which did not exist on the instance, which means you may have attempted to remove it before it was added.', !(!this.isPrototypeMeta(this.source) &&
                 typeof method === 'function' &&
-                kind === 2 /* REMOVE */), {
-                id: 'events.inherited-function-listeners',
-                until: '3.9.0',
-                url: 'https://emberjs.com/deprecations/v3.x#toc_events-inherited-function-listeners',
-            });
+                kind === 2 /* REMOVE */));
             listeners.push({
                 event,
                 target,
@@ -416,20 +399,14 @@ export class Meta {
         }
         else {
             let listener = listeners[i];
-            // If the listener is our own function listener and we are trying to
-            // remove it, we want to splice it out entirely so we don't hold onto a
-            // reference.
-            if (kind === 2 /* REMOVE */ &&
-                listener.kind !== 2 /* REMOVE */ &&
-                typeof method === 'function') {
+            // If the listener is our own listener and we are trying to remove it, we
+            // want to splice it out entirely so we don't hold onto a reference.
+            if (kind === 2 /* REMOVE */ && listener.kind !== 2 /* REMOVE */) {
                 listeners.splice(i, 1);
             }
             else {
                 // update own listener
                 listener.kind = kind;
-                // TODO: Remove this when removing REMOVE_ALL, it won't be necessary
-                listener.target = target;
-                listener.method = method;
             }
         }
     }
@@ -521,7 +498,7 @@ export class Meta {
         if (listeners !== undefined) {
             for (let index = 0; index < listeners.length; index++) {
                 let listener = listeners[index];
-                // REMOVE and REMOVE_ALL listeners are placeholders that tell us not to
+                // REMOVE listeners are placeholders that tell us not to
                 // inherit, so they never match. Only ADD and ONCE can match.
                 if (listener.event === eventName &&
                     (listener.kind === 0 /* ADD */ || listener.kind === 1 /* ONCE */)) {
@@ -531,6 +508,30 @@ export class Meta {
                         result = [];
                     }
                     result.push(listener.target, listener.method, listener.kind === 1 /* ONCE */);
+                }
+            }
+        }
+        return result;
+    }
+    observerEvents() {
+        let listeners = this.flattenedListeners();
+        let result;
+        if (DEBUG) {
+            counters.observerEventsCalls++;
+        }
+        if (listeners !== undefined) {
+            for (let index = 0; index < listeners.length; index++) {
+                let listener = listeners[index];
+                // REMOVE listeners are placeholders that tell us not to
+                // inherit, so they never match. Only ADD and ONCE can match.
+                if ((listener.kind === 0 /* ADD */ || listener.kind === 1 /* ONCE */) &&
+                    listener.event.indexOf(':change') !== -1) {
+                    if (result === undefined) {
+                        // we create this array only after we've found a listener that
+                        // matches to avoid allocations when no matches are found.
+                        result = [];
+                    }
+                    result.push(listener.event);
                 }
             }
         }
@@ -681,9 +682,7 @@ export { counters };
 function indexOfListener(listeners, event, target, method) {
     for (let i = listeners.length - 1; i >= 0; i--) {
         let listener = listeners[i];
-        if (listener.event === event &&
-            ((listener.target === target && listener.method === method) ||
-                listener.kind === 3 /* REMOVE_ALL */)) {
+        if (listener.event === event && (listener.target === target && listener.method === method)) {
             return i;
         }
     }
