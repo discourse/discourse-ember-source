@@ -2,6 +2,8 @@
 @module @ember/object
 */
 import { meta as metaFor, peekMeta, UNDEFINED } from '@ember/-internals/meta';
+import { setWithMandatorySetter } from '@ember/-internals/utils';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
 import { descriptorForProperty, isClassicDecorator } from './descriptor_map';
@@ -148,7 +150,12 @@ export function defineProperty(obj, keyName, desc, data, meta) {
             });
         }
         else {
-            obj[keyName] = data;
+            if (EMBER_METAL_TRACKED_PROPERTIES && DEBUG) {
+                setWithMandatorySetter(obj, keyName, data);
+            }
+            else {
+                obj[keyName] = data;
+            }
         }
     }
     else {

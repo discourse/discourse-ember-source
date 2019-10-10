@@ -1,8 +1,9 @@
 /* globals EmberDev */
-import { moduleFor, RenderingTestCase, strip, classes, equalTokens, equalsElement, styles, runTask } from 'internal-test-helpers';
+import { moduleFor, RenderingTestCase, strip, classes, equalTokens, equalsElement, styles, runTask, runLoopSettled } from 'internal-test-helpers';
 import { run } from '@ember/runloop';
 import { DEBUG } from '@glimmer/env';
 import { alias, set, get, observer, on, computed } from '@ember/-internals/metal';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import Service, { inject as injectService } from '@ember/service';
 import { Object as EmberObject, A as emberA } from '@ember/-internals/runtime';
 import { jQueryDisabled } from '@ember/-internals/views';
@@ -2223,16 +2224,10 @@ moduleFor('Components test: curly components', class extends RenderingTestCase {
     assert.equal(outer.parentView, this.context, 'x-outer receives the ambient scope as its parentView');
   }
 
-  ["@test when a property is changed during children's rendering"](assert) {
-    let outer, middle;
+  ["@test when a property is changed during children's rendering"]() {
+    let middle;
     this.registerComponent('x-outer', {
       ComponentClass: Component.extend({
-        init() {
-          this._super(...arguments);
-
-          outer = this;
-        },
-
         value: 1
       }),
       template: '{{#x-middle}}{{x-inner value=value}}{{/x-middle}}'
@@ -2252,21 +2247,17 @@ moduleFor('Components test: curly components', class extends RenderingTestCase {
     this.registerComponent('x-inner', {
       ComponentClass: Component.extend({
         value: null,
-        pushDataUp: observer('value', function () {
+
+        didReceiveAttrs() {
           middle.set('value', this.get('value'));
-        })
+        }
+
       }),
       template: '<div id="inner-value">{{value}}</div>'
     });
-    this.render('{{x-outer}}');
-    assert.equal(this.$('#inner-value').text(), '1', 'initial render of inner');
-    assert.equal(this.$('#middle-value').text(), '', 'initial render of middle (observers do not run during init)');
-    runTask(() => this.rerender());
-    assert.equal(this.$('#inner-value').text(), '1', 'initial render of inner');
-    assert.equal(this.$('#middle-value').text(), '', 'initial render of middle (observers do not run during init)');
     let expectedBacktrackingMessage = /modified "value" twice on <.+?> in a single render\. It was rendered in "component:x-middle" and modified in "component:x-inner"/;
     expectAssertion(() => {
-      runTask(() => outer.set('value', 2));
+      this.render('{{x-outer}}');
     }, expectedBacktrackingMessage);
   }
 
@@ -2399,9 +2390,10 @@ moduleFor('Components test: curly components', class extends RenderingTestCase {
     this.assertText('initial value - initial value');
 
     if (DEBUG) {
+      let message = EMBER_METAL_TRACKED_PROPERTIES ? /You attempted to update .*, but it is being tracked by a tracking context/ : /You must use set\(\) to set the `bar` property \(of .+\) to `foo-bar`\./;
       expectAssertion(() => {
         component.bar = 'foo-bar';
-      }, /You must use set\(\) to set the `bar` property \(of .+\) to `foo-bar`\./);
+      }, message);
       this.assertText('initial value - initial value');
     }
 
@@ -2803,7 +2795,7 @@ moduleFor('Components test: curly components', class extends RenderingTestCase {
     this.assertText('things');
   }
 
-  ['@test didReceiveAttrs fires after .init() but before observers become active'](assert) {
+  async ['@test didReceiveAttrs fires after .init() but before observers become active'](assert) {
     let barCopyDidChangeCount = 0;
     this.registerComponent('foo-bar', {
       ComponentClass: Component.extend({
@@ -2824,12 +2816,13 @@ moduleFor('Components test: curly components', class extends RenderingTestCase {
       }),
       template: '{{bar}}-{{barCopy}}'
     });
-    this.render(`{{foo-bar bar=bar}}`, {
+    await this.render(`{{foo-bar bar=bar}}`, {
       bar: 3
     });
     this.assertText('3-4');
     assert.strictEqual(barCopyDidChangeCount, 1, 'expected observer firing for: barCopy');
-    runTask(() => set(this.context, 'bar', 7));
+    set(this.context, 'bar', 7);
+    await runLoopSettled();
     this.assertText('7-8');
     assert.strictEqual(barCopyDidChangeCount, 2, 'expected observer firing for: barCopy');
   }
@@ -3136,6 +3129,28 @@ moduleFor('Components test: curly components', class extends RenderingTestCase {
     this.assertText('[second][]');
     runTask(() => set(fooInstance, 'source', 'third'));
     this.assertText('[third][]');
+  }
+
+  ['@feature(EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT) it can render a basic component in native ES class syntax'](assert) {
+    let testContext = this;
+    this.registerComponent('foo-bar', {
+      ComponentClass: class extends Component {
+        constructor(owner) {
+          super(owner);
+          assert.equal(owner, testContext.owner, 'owner was passed as a constructor argument');
+        }
+
+      },
+      template: 'hello'
+    });
+    this.render('{{foo-bar}}');
+    this.assertComponentElement(this.firstChild, {
+      content: 'hello'
+    });
+    runTask(() => this.rerender());
+    this.assertComponentElement(this.firstChild, {
+      content: 'hello'
+    });
   }
 
 });

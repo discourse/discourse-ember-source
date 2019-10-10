@@ -1,5 +1,5 @@
 import { get } from '@ember/-internals/metal';
-import { AbstractTestCase } from 'internal-test-helpers';
+import { AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 import { runArrayTests, newFixture, newObjectsFixture } from '../helpers/array';
 import { A as emberA } from '../../lib/mixins/array';
 
@@ -10,14 +10,16 @@ class RemoveObjectsTests extends AbstractTestCase {
     this.assert.equal(obj.removeObjects(before[1]), obj, 'should return receiver');
   }
 
-  '@test [A,B,C].removeObjects([B]) => [A,C] + notify'() {
+  async '@test [A,B,C].removeObjects([B]) => [A,C] + notify'() {
     let before = emberA(newFixture(3));
     let after = [before[0], before[2]];
     let obj = before;
     let observer = this.newObserver(obj, '[]', 'length', 'firstObject', 'lastObject');
     obj.getProperties('firstObject', 'lastObject'); // Prime the cache
 
-    obj.removeObjects([before[1]]);
+    obj.removeObjects([before[1]]); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
 
@@ -29,14 +31,16 @@ class RemoveObjectsTests extends AbstractTestCase {
     }
   }
 
-  '@test [{A},{B},{C}].removeObjects([{B}]) => [{A},{C}] + notify'() {
+  async '@test [{A},{B},{C}].removeObjects([{B}]) => [{A},{C}] + notify'() {
     let before = emberA(newObjectsFixture(3));
     let after = [before[0], before[2]];
     let obj = before;
     let observer = this.newObserver(obj, '[]', 'length', 'firstObject', 'lastObject');
     obj.getProperties('firstObject', 'lastObject'); // Prime the cache
 
-    obj.removeObjects([before[1]]);
+    obj.removeObjects([before[1]]); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
 
@@ -48,14 +52,16 @@ class RemoveObjectsTests extends AbstractTestCase {
     }
   }
 
-  '@test [A,B,C].removeObjects([A,B]) => [C] + notify'() {
+  async '@test [A,B,C].removeObjects([A,B]) => [C] + notify'() {
     let before = emberA(newFixture(3));
     let after = [before[2]];
     let obj = before;
     let observer = this.newObserver(obj, '[]', 'length', 'firstObject', 'lastObject');
     obj.getProperties('firstObject', 'lastObject'); // Prime the cache
 
-    obj.removeObjects([before[0], before[1]]);
+    obj.removeObjects([before[0], before[1]]); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
 
@@ -67,14 +73,16 @@ class RemoveObjectsTests extends AbstractTestCase {
     }
   }
 
-  '@test [{A},{B},{C}].removeObjects([{A},{B}]) => [{C}] + notify'() {
+  async '@test [{A},{B},{C}].removeObjects([{A},{B}]) => [{C}] + notify'() {
     let before = emberA(newObjectsFixture(3));
     let after = [before[2]];
     let obj = before;
     let observer = this.newObserver(obj, '[]', 'length', 'firstObject', 'lastObject');
     obj.getProperties('firstObject', 'lastObject'); // Prime the cache
 
-    obj.removeObjects([before[0], before[1]]);
+    obj.removeObjects([before[0], before[1]]); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
 
@@ -86,14 +94,16 @@ class RemoveObjectsTests extends AbstractTestCase {
     }
   }
 
-  '@test [A,B,C].removeObjects([A,B,C]) => [] + notify'() {
+  async '@test [A,B,C].removeObjects([A,B,C]) => [] + notify'() {
     let before = emberA(newFixture(3));
     let after = [];
     let obj = before;
     let observer = this.newObserver(obj, '[]', 'length', 'firstObject', 'lastObject');
     obj.getProperties('firstObject', 'lastObject'); // Prime the cache
 
-    obj.removeObjects([before[0], before[1], before[2]]);
+    obj.removeObjects([before[0], before[1], before[2]]); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
 
@@ -105,14 +115,16 @@ class RemoveObjectsTests extends AbstractTestCase {
     }
   }
 
-  '@test [{A},{B},{C}].removeObjects([{A},{B},{C}]) => [] + notify'() {
+  async '@test [{A},{B},{C}].removeObjects([{A},{B},{C}]) => [] + notify'() {
     let before = emberA(newObjectsFixture(3));
     let after = [];
     let obj = before;
     let observer = this.newObserver(obj, '[]', 'length', 'firstObject', 'lastObject');
     obj.getProperties('firstObject', 'lastObject'); // Prime the cache
 
-    obj.removeObjects(before);
+    obj.removeObjects(before); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
 
@@ -124,7 +136,7 @@ class RemoveObjectsTests extends AbstractTestCase {
     }
   }
 
-  '@test [A,B,C].removeObjects([D]) => [A,B,C]'() {
+  async '@test [A,B,C].removeObjects([D]) => [A,B,C]'() {
     let before = emberA(newFixture(3));
     let after = before;
     let item = newFixture(1)[0];
@@ -133,7 +145,9 @@ class RemoveObjectsTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject'); // Prime the cache
 
     obj.removeObjects([item]); // Note: item not in set
+    // flush observers
 
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
 

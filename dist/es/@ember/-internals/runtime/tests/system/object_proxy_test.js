@@ -1,8 +1,9 @@
 import { DEBUG } from '@glimmer/env';
 import { addObserver, observer, computed, get, set, isWatching, removeObserver } from '@ember/-internals/metal';
 import { HAS_NATIVE_PROXY } from '@ember/-internals/utils';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import ObjectProxy from '../../lib/system/object_proxy';
-import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 moduleFor('ObjectProxy', class extends AbstractTestCase {
   ['@test should not proxy properties passed to create'](assert) {
     let Proxy = ObjectProxy.extend({
@@ -148,7 +149,7 @@ moduleFor('ObjectProxy', class extends AbstractTestCase {
     }
   }
 
-  ['@test should work with watched properties'](assert) {
+  async ['@test should work with watched properties'](assert) {
     let content1 = {
       firstName: 'Tom',
       lastName: 'Dale'
@@ -172,42 +173,57 @@ moduleFor('ObjectProxy', class extends AbstractTestCase {
       })
     });
     let proxy = Proxy.create();
-    addObserver(proxy, 'fullName', function () {
+    addObserver(proxy, 'fullName', () => {
       last = get(proxy, 'fullName');
+    }); // We need separate observers for each property for async observers
+
+    addObserver(proxy, 'firstName', function () {
+      count++;
+    });
+    addObserver(proxy, 'lastName', function () {
       count++;
     }); // proxy without content returns undefined
 
     assert.equal(get(proxy, 'fullName'), undefined); // setting content causes all watched properties to change
 
-    set(proxy, 'content', content1); // both dependent keys changed
+    set(proxy, 'content', content1);
+    await runLoopSettled(); // both dependent keys changed
 
     assert.equal(count, 2);
     assert.equal(last, 'Tom Dale'); // setting property in content causes proxy property to change
 
     set(content1, 'lastName', 'Huda');
+    await runLoopSettled();
     assert.equal(count, 3);
     assert.equal(last, 'Tom Huda'); // replacing content causes all watched properties to change
 
-    set(proxy, 'content', content2); // both dependent keys changed
+    set(proxy, 'content', content2);
+    await runLoopSettled(); // both dependent keys changed
 
     assert.equal(count, 5);
-    assert.equal(last, 'Yehuda Katz'); // content1 is no longer watched
+    assert.equal(last, 'Yehuda Katz');
 
-    assert.ok(!isWatching(content1, 'firstName'), 'not watching firstName');
-    assert.ok(!isWatching(content1, 'lastName'), 'not watching lastName'); // setting property in new content
+    if (!EMBER_METAL_TRACKED_PROPERTIES) {
+      // content1 is no longer watched
+      assert.ok(!isWatching(content1, 'firstName'), 'not watching firstName');
+      assert.ok(!isWatching(content1, 'lastName'), 'not watching lastName');
+    } // setting property in new content
+
 
     set(content2, 'firstName', 'Tomhuda');
+    await runLoopSettled();
     assert.equal(last, 'Tomhuda Katz');
     assert.equal(count, 6); // setting property in proxy syncs with new content
 
     set(proxy, 'lastName', 'Katzdale');
+    await runLoopSettled();
     assert.equal(count, 7);
     assert.equal(last, 'Tomhuda Katzdale');
     assert.equal(get(content2, 'firstName'), 'Tomhuda');
     assert.equal(get(content2, 'lastName'), 'Katzdale');
   }
 
-  ['@test set and get should work with paths'](assert) {
+  async ['@test set and get should work with paths'](assert) {
     let content = {
       foo: {
         bar: 'baz'
@@ -224,12 +240,13 @@ moduleFor('ObjectProxy', class extends AbstractTestCase {
       count++;
     });
     proxy.set('foo.bar', 'bye');
+    await runLoopSettled();
     assert.equal(count, 1);
     assert.equal(proxy.get('foo.bar'), 'bye');
     assert.equal(proxy.get('content.foo.bar'), 'bye');
   }
 
-  ['@test should transition between watched and unwatched strategies'](assert) {
+  async ['@test should transition between watched and unwatched strategies'](assert) {
     let content = {
       foo: 'foo'
     };
@@ -252,9 +269,11 @@ moduleFor('ObjectProxy', class extends AbstractTestCase {
     assert.equal(count, 0);
     assert.equal(get(proxy, 'foo'), 'foo');
     set(content, 'foo', 'bar');
+    await runLoopSettled();
     assert.equal(count, 1);
     assert.equal(get(proxy, 'foo'), 'bar');
     set(proxy, 'foo', 'foo');
+    await runLoopSettled();
     assert.equal(count, 2);
     assert.equal(get(content, 'foo'), 'foo');
     assert.equal(get(proxy, 'foo'), 'foo');

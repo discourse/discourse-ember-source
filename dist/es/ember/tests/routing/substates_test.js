@@ -1,6 +1,6 @@
 import { RSVP } from '@ember/-internals/runtime';
 import { Route } from '@ember/-internals/routing';
-import { moduleFor, ApplicationTestCase, runLoopSettled, runTask } from 'internal-test-helpers';
+import { moduleFor, ApplicationTestCase, runTask } from 'internal-test-helpers';
 let counter;
 
 function step(assert, expectedValue, description) {
@@ -14,6 +14,10 @@ moduleFor('Loading/Error Substates', class extends ApplicationTestCase {
     counter = 1;
     this.addTemplate('application', `<div id="app">{{outlet}}</div>`);
     this.addTemplate('index', 'INDEX');
+  }
+
+  visit(...args) {
+    return runTask(() => super.visit(...args));
   }
 
   getController(name) {
@@ -414,7 +418,6 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
         path: '/memere/:seg'
       }, function () {});
     });
-    this.visit('/');
   }
 
   getController(name) {
@@ -429,7 +432,8 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
     return currentPath;
   }
 
-  ['@test ApplicationRoute#currentPath reflects loading state path'](assert) {
+  async ['@test ApplicationRoute#currentPath reflects loading state path'](assert) {
+    await this.visit('/');
     let momDeferred = RSVP.defer();
     this.addTemplate('grandma.loading', 'GRANDMALOADING');
     this.add('route:mom', Route.extend({
@@ -438,7 +442,7 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
       }
 
     }));
-    let promise = this.visit('/grandma/mom').then(() => {
+    let promise = runTask(() => this.visit('/grandma/mom')).then(() => {
       text = this.$('#app').text();
       assert.equal(text, 'GRANDMA MOM', `Grandma.mom loaded text is displayed`);
       assert.equal(this.currentPath, 'grandma.mom.index', `currentPath reflects final state`);
@@ -450,7 +454,8 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
     return promise;
   }
 
-  [`@test Loading actions bubble to root but don't enter substates above pivot `](assert) {
+  async [`@test Loading actions bubble to root but don't enter substates above pivot `](assert) {
+    await this.visit('/');
     let sallyDeferred = RSVP.defer();
     let puppiesDeferred = RSVP.defer();
     this.add('route:application', Route.extend({
@@ -488,7 +493,8 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
     return promise;
   }
 
-  ['@test Default error event moves into nested route'](assert) {
+  async ['@test Default error event moves into nested route'](assert) {
+    await this.visit('/');
     this.addTemplate('grandma.error', 'ERROR: {{model.msg}}');
     this.add('route:mom.sally', Route.extend({
       model() {
@@ -514,7 +520,8 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
     });
   }
 
-  [`@test Non-bubbled errors that re-throw aren't swallowed`](assert) {
+  async [`@test Non-bubbled errors that re-throw aren't swallowed`](assert) {
+    await this.visit('/');
     this.add('route:mom.sally', Route.extend({
       model() {
         return RSVP.reject({
@@ -530,15 +537,13 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
 
       }
     }));
-    assert.throws(() => {
-      this.visit('/grandma/mom/sally');
-    }, function (err) {
+    await assert.rejects(this.visit('/grandma/mom/sally'), function (err) {
       return err.msg === 'did it broke?';
     }, 'it broke');
-    return runLoopSettled();
   }
 
-  [`@test Handled errors that re-throw aren't swallowed`](assert) {
+  async [`@test Handled errors that re-throw aren't swallowed`](assert) {
+    await this.visit('/');
     let handledError;
     this.add('route:mom.sally', Route.extend({
       model() {
@@ -565,15 +570,13 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
       }
 
     }));
-    assert.throws(() => {
-      this.visit('/grandma/mom/sally');
-    }, function (err) {
+    await assert.rejects(this.visit('/grandma/mom/sally'), function (err) {
       return err.msg === 'did it broke?';
     }, `it broke`);
-    return runLoopSettled();
   }
 
-  ['@test errors that are bubbled are thrown at a higher level if not handled'](assert) {
+  async ['@test errors that are bubbled are thrown at a higher level if not handled'](assert) {
+    await this.visit('/');
     this.add('route:mom.sally', Route.extend({
       model() {
         step(assert, 1, 'MomSallyRoute#model');
@@ -590,15 +593,13 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
 
       }
     }));
-    assert.throws(() => {
-      this.visit('/grandma/mom/sally');
-    }, function (err) {
+    await assert.rejects(this.visit('/grandma/mom/sally'), function (err) {
       return err.msg == 'did it broke?';
     }, 'Correct error was thrown');
-    return runLoopSettled();
   }
 
-  [`@test Handled errors that are thrown through rejection aren't swallowed`](assert) {
+  async [`@test Handled errors that are thrown through rejection aren't swallowed`](assert) {
+    await this.visit('/');
     let handledError;
     this.add('route:mom.sally', Route.extend({
       model() {
@@ -625,15 +626,13 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
       }
 
     }));
-    assert.throws(() => {
-      this.visit('/grandma/mom/sally');
-    }, function (err) {
+    await assert.rejects(this.visit('/grandma/mom/sally'), function (err) {
       return err.msg === 'did it broke?';
     }, 'it broke');
-    return runLoopSettled();
   }
 
-  ['@test Default error events move into nested route, prioritizing more specifically named error routes - NEW'](assert) {
+  async ['@test Default error events move into nested route, prioritizing more specifically named error routes - NEW'](assert) {
+    await this.visit('/');
     this.addTemplate('grandma.error', 'ERROR: {{model.msg}}');
     this.addTemplate('mom_error', 'MOM ERROR: {{model.msg}}');
     this.add('route:mom.sally', Route.extend({
@@ -652,14 +651,14 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
 
       }
     }));
-    return this.visit('/grandma/mom/sally').then(() => {
-      step(assert, 3, 'Application finished booting');
-      assert.equal(this.$('#app').text(), 'GRANDMA MOM ERROR: did it broke?', 'the more specifically named mome error substate was entered over the other error route');
-      assert.equal(this.currentPath, 'grandma.mom_error', 'Initial route fully loaded');
-    });
+    await this.visit('/grandma/mom/sally');
+    step(assert, 3, 'Application finished booting');
+    assert.equal(this.$('#app').text(), 'GRANDMA MOM ERROR: did it broke?', 'the more specifically named mome error substate was entered over the other error route');
+    assert.equal(this.currentPath, 'grandma.mom_error', 'Initial route fully loaded');
   }
 
-  ['@test Slow promises waterfall on startup'](assert) {
+  async ['@test Slow promises waterfall on startup'](assert) {
+    await this.visit('/');
     let grandmaDeferred = RSVP.defer();
     let sallyDeferred = RSVP.defer();
     this.addTemplate('loading', 'LOADING');
@@ -691,7 +690,7 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
       }
 
     }));
-    let promise = this.visit('/grandma/mom/sally').then(() => {
+    let promise = runTask(() => this.visit('/grandma/mom/sally')).then(() => {
       text = this.$('#app').text();
       assert.equal(text, 'GRANDMA MOM SALLY', `Sally template displayed`);
     });
@@ -704,7 +703,8 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
     return promise;
   }
 
-  ['@test Enter child loading state of pivot route'](assert) {
+  async ['@test Enter child loading state of pivot route'](assert) {
+    await this.visit('/');
     let deferred = RSVP.defer();
     this.addTemplate('grandma.loading', 'GMONEYLOADING');
     this.add('route:mom.sally', Route.extend({
@@ -719,18 +719,18 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
       }
 
     }));
-    return this.visit('/grandma/mom/sally').then(() => {
-      assert.equal(this.currentPath, 'grandma.mom.sally', 'Initial route fully loaded');
-      let promise = this.visit('/grandma/puppies').then(() => {
-        assert.equal(this.currentPath, 'grandma.puppies', 'Finished transition');
-      });
-      assert.equal(this.currentPath, 'grandma.loading', `in pivot route's child loading state`);
-      deferred.resolve();
-      return promise;
+    await this.visit('/grandma/mom/sally');
+    assert.equal(this.currentPath, 'grandma.mom.sally', 'Initial route fully loaded');
+    let promise = runTask(() => this.visit('/grandma/puppies')).then(() => {
+      assert.equal(this.currentPath, 'grandma.puppies', 'Finished transition');
     });
+    assert.equal(this.currentPath, 'grandma.loading', `in pivot route's child loading state`);
+    deferred.resolve();
+    return promise;
   }
 
-  [`@test Error events that aren't bubbled don't throw application assertions`](assert) {
+  async [`@test Error events that aren't bubbled don't throw application assertions`](assert) {
+    await this.visit('/');
     this.add('route:mom.sally', Route.extend({
       model() {
         step(assert, 1, 'MomSallyRoute#model');
@@ -782,7 +782,8 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
     return this.visit('/grandma/mom/sally');
   }
 
-  ['@test Setting a query param during a slow transition should work'](assert) {
+  async ['@test Setting a query param during a slow transition should work'](assert) {
+    await this.visit('/');
     let deferred = RSVP.defer();
     this.addTemplate('memere.loading', 'MMONEYLOADING');
     this.add('route:grandma', Route.extend({
@@ -803,7 +804,7 @@ moduleFor('Loading/Error Substates - nested routes', class extends ApplicationTe
       }
 
     }));
-    let promise = this.visit('/grandma').then(() => {
+    let promise = runTask(() => this.visit('/grandma')).then(() => {
       assert.equal(this.currentPath, 'memere.index', 'Transition should be complete');
     });
     let memereController = this.getController('memere');

@@ -1,5 +1,5 @@
 import { get } from '@ember/-internals/metal';
-import { AbstractTestCase } from 'internal-test-helpers';
+import { AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 import { runArrayTests, newFixture } from '../helpers/array';
 
 class PushObjectTests extends AbstractTestCase {
@@ -9,7 +9,7 @@ class PushObjectTests extends AbstractTestCase {
     this.assert.equal(obj.pushObject(exp), exp, 'should return pushed object');
   }
 
-  '@test [].pushObject(X) => [X] + notify'() {
+  async '@test [].pushObject(X) => [X] + notify'() {
     let before = [];
     let after = newFixture(1);
     let obj = this.newObject(before);
@@ -17,7 +17,9 @@ class PushObjectTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    obj.pushObject(after[0]);
+    obj.pushObject(after[0]); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
     this.assert.equal(observer.timesCalled('[]'), 1, 'should have notified [] once');
@@ -27,7 +29,7 @@ class PushObjectTests extends AbstractTestCase {
     this.assert.equal(observer.timesCalled('lastObject'), 1, 'should have notified lastObject once');
   }
 
-  '@test [A,B,C].pushObject(X) => [A,B,C,X] + notify'() {
+  async '@test [A,B,C].pushObject(X) => [A,B,C,X] + notify'() {
     let before = newFixture(3);
     let item = newFixture(1)[0];
     let after = [before[0], before[1], before[2], item];
@@ -36,7 +38,9 @@ class PushObjectTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    obj.pushObject(item);
+    obj.pushObject(item); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
     this.assert.equal(observer.timesCalled('[]'), 1, 'should have notified [] once');
@@ -46,7 +50,7 @@ class PushObjectTests extends AbstractTestCase {
     this.assert.equal(observer.validate('firstObject'), false, 'should NOT have notified firstObject');
   }
 
-  '@test [A,B,C,C].pushObject(A) => [A,B,C,C] + notify'() {
+  async '@test [A,B,C,C].pushObject(A) => [A,B,C,C] + notify'() {
     let before = newFixture(3);
     let item = before[2]; // note same object as current tail. should end up twice
 
@@ -56,7 +60,9 @@ class PushObjectTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    obj.pushObject(item);
+    obj.pushObject(item); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
     this.assert.equal(observer.timesCalled('[]'), 1, 'should have notified [] once');

@@ -7,7 +7,7 @@ import Controller from '@ember/controller';
 import { Object as EmberObject, A as emberA } from '@ember/-internals/runtime';
 import { moduleFor, ApplicationTestCase, runDestroy, runTask } from 'internal-test-helpers';
 import { run } from '@ember/runloop';
-import { Mixin, computed, set, addObserver, observer } from '@ember/-internals/metal';
+import { Mixin, computed, set, addObserver } from '@ember/-internals/metal';
 import { getTextOf } from 'internal-test-helpers';
 import { Component } from '@ember/-internals/glimmer';
 import Engine from '@ember/engine';
@@ -77,12 +77,9 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     });
   }
 
-  ['@test warn on URLs not included in the route set']() {
-    return this.visit('/').then(() => {
-      expectAssertion(() => {
-        this.visit('/what-is-this-i-dont-even');
-      }, /'\/what-is-this-i-dont-even' did not match any routes/);
-    });
+  async ['@test warn on URLs not included in the route set'](assert) {
+    await this.visit('/');
+    await assert.rejects(this.visit('/what-is-this-i-dont-even'), /\/what-is-this-i-dont-even/);
   }
 
   ['@test The Homepage'](assert) {
@@ -520,7 +517,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     this.add('model:menu_item', MenuItem);
     this.addTemplate('special', '<p>{{model.id}}</p>');
     this.addTemplate('loading', '<p>LOADING!</p>');
-    let visited = this.visit('/specials/1');
+    let visited = runTask(() => this.visit('/specials/1'));
     this.assertText('LOADING!', 'The app is in the loading state');
     resolve(menuItem);
     return visited.then(() => {
@@ -596,8 +593,8 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
       }
     }));
-    this.handleURLRejectsWith(this, assert, 'specials/1', 'Setup error');
-    run(() => resolve(menuItem));
+    runTask(() => this.handleURLRejectsWith(this, assert, 'specials/1', 'Setup error'));
+    resolve(menuItem);
   }
 
   ["@test ApplicationRoute's default error handler can be overridden"](assert) {
@@ -637,8 +634,9 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       }
 
     }));
-    this.handleURLRejectsWith(this, assert, '/specials/1', 'Setup error');
-    run(() => resolve(menuItem));
+    let promise = runTask(() => this.handleURLRejectsWith(this, assert, '/specials/1', 'Setup error'));
+    resolve(menuItem);
+    return promise;
   }
 
   ['@test Moving from one page to another triggers the correct callbacks'](assert) {
@@ -762,7 +760,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     });
   }
 
-  ['@test Events are triggered on the controller if a matching action name is implemented'](assert) {
+  async ['@test Events are triggered on the controller if a matching action name is implemented'](assert) {
     let done = assert.async();
     this.router.map(function () {
       this.route('home', {
@@ -798,12 +796,11 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
       }
     }));
-    this.visit('/').then(() => {
-      document.getElementById('qunit-fixture').querySelector('a').click();
-    });
+    await this.visit('/');
+    document.getElementById('qunit-fixture').querySelector('a').click();
   }
 
-  ['@test Events are triggered on the current state when defined in `actions` object'](assert) {
+  async ['@test Events are triggered on the current state when defined in `actions` object'](assert) {
     let done = assert.async();
     this.router.map(function () {
       this.route('home', {
@@ -831,12 +828,11 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     });
     this.add('route:home', HomeRoute);
     this.addTemplate('home', '<a {{action "showStuff" model}}>{{model.name}}</a>');
-    this.visit('/').then(() => {
-      document.getElementById('qunit-fixture').querySelector('a').click();
-    });
+    await this.visit('/');
+    document.getElementById('qunit-fixture').querySelector('a').click();
   }
 
-  ['@test Events defined in `actions` object are triggered on the current state when routes are nested'](assert) {
+  async ['@test Events defined in `actions` object are triggered on the current state when routes are nested'](assert) {
     let done = assert.async();
     this.router.map(function () {
       this.route('root', {
@@ -870,9 +866,8 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
     }));
     this.addTemplate('root.index', '<a {{action "showStuff" model}}>{{model.name}}</a>');
-    this.visit('/').then(() => {
-      document.getElementById('qunit-fixture').querySelector('a').click();
-    });
+    await this.visit('/');
+    document.getElementById('qunit-fixture').querySelector('a').click();
   }
 
   ['@test Events can be handled by inherited event handlers'](assert) {
@@ -920,7 +915,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     });
   }
 
-  ['@test Actions are not triggered on the controller if a matching action name is implemented as a method'](assert) {
+  async ['@test Actions are not triggered on the controller if a matching action name is implemented as a method'](assert) {
     let done = assert.async();
     this.router.map(function () {
       this.route('home', {
@@ -955,12 +950,11 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       }
 
     }));
-    this.visit('/').then(() => {
-      document.getElementById('qunit-fixture').querySelector('a').click();
-    });
+    await this.visit('/');
+    document.getElementById('qunit-fixture').querySelector('a').click();
   }
 
-  ['@test actions can be triggered with multiple arguments'](assert) {
+  async ['@test actions can be triggered with multiple arguments'](assert) {
     let done = assert.async();
     this.router.map(function () {
       this.route('root', {
@@ -998,9 +992,8 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       model2: model2
     }));
     this.addTemplate('root.index', '<a {{action "showStuff" model1 model2}}>{{model1.name}}</a>');
-    this.visit('/').then(() => {
-      document.getElementById('qunit-fixture').querySelector('a').click();
-    });
+    await this.visit('/');
+    document.getElementById('qunit-fixture').querySelector('a').click();
   }
 
   ['@test transitioning multiple times in a single run loop only sets the URL once'](assert) {
@@ -1977,7 +1970,6 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
   ['@test ApplicationRoute with model does not proxy the currentPath'](assert) {
     let model = {};
-    let currentPath;
     this.router.map(function () {
       this.route('index', {
         path: '/'
@@ -1989,15 +1981,9 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       }
 
     }));
-    this.add('controller:application', Controller.extend({
-      currentPathDidChange: observer('currentPath', function () {
-        expectDeprecation(() => {
-          currentPath = this.currentPath;
-        }, 'Accessing `currentPath` on `controller:application` is deprecated, use the `currentPath` property on `service:router` instead.');
-      })
-    }));
     return this.visit('/').then(() => {
-      assert.equal(currentPath, 'index', 'currentPath is index');
+      let routerService = this.applicationInstance.lookup('service:router');
+      assert.equal(routerService.currentRouteName, 'index', 'currentPath is index');
       assert.equal('currentPath' in model, false, 'should have defined currentPath on controller');
     });
   }
@@ -2256,7 +2242,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
     }));
     let deprecation = /You attempted to override the "willTransition" method which is deprecated\./;
-    return expectDeprecation(() => {
+    return expectDeprecationAsync(() => {
       return this.visit('/').then(() => {
         this.handleURLAborts(assert, '/nork', deprecation);
         this.handleURLAborts(assert, '/about', deprecation);
@@ -2334,25 +2320,22 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     });
   }
 
-  ['@test `didTransition` event fires on the router'](assert) {
+  async ['@test `didTransition` event fires on the router'](assert) {
     assert.expect(3);
     this.router.map(function () {
       this.route('nork');
     });
-    return this.visit('/').then(() => {
-      let router = this.applicationInstance.lookup('router:main');
-      router.one('didTransition', function () {
-        assert.ok(true, 'didTransition fired on initial routing');
-      });
-      this.visit('/');
-    }).then(() => {
-      let router = this.applicationInstance.lookup('router:main');
-      router.one('didTransition', function () {
-        assert.ok(true, 'didTransition fired on the router');
-        assert.equal(router.get('url'), '/nork', 'The url property is updated by the time didTransition fires');
-      });
-      return this.visit('/nork');
+    await this.visit('/');
+    let router = this.applicationInstance.lookup('router:main');
+    router.one('didTransition', function () {
+      assert.ok(true, 'didTransition fired on initial routing');
     });
+    await this.visit('/');
+    router.one('didTransition', function () {
+      assert.ok(true, 'didTransition fired on the router');
+      assert.equal(router.get('url'), '/nork', 'The url property is updated by the time didTransition fires');
+    });
+    await this.visit('/nork');
   }
 
   ['@test `activate` event fires on the route'](assert) {
@@ -2657,7 +2640,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     });
   }
 
-  ['@test rejecting the model hooks promise with a non-error prints the `message` property'](assert) {
+  async ['@test rejecting the model hooks promise with a non-error prints the `message` property'](assert) {
     assert.expect(5);
     let rejectedMessage = 'OMG!! SOOOOOO BAD!!!!';
     let rejectedStack = 'Yeah, buddy: stack gets printed too.';
@@ -2682,15 +2665,13 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       }
 
     }));
-    return assert.throws(() => {
-      return this.visit('/');
-    }, function (err) {
+    await assert.rejects(this.visit('/'), function (err) {
       assert.equal(err.message, rejectedMessage);
       return true;
     }, 'expected an exception');
   }
 
-  ['@test rejecting the model hooks promise with an error with `errorThrown` property prints `errorThrown.message` property'](assert) {
+  async ['@test rejecting the model hooks promise with an error with `errorThrown` property prints `errorThrown.message` property'](assert) {
     assert.expect(5);
     let rejectedMessage = 'OMG!! SOOOOOO BAD!!!!';
     let rejectedStack = 'Yeah, buddy: stack gets printed too.';
@@ -2717,13 +2698,15 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       }
 
     }));
-    assert.throws(() => this.visit('/'), function (err) {
+    await assert.rejects(this.visit('/'), function ({
+      errorThrown: err
+    }) {
       assert.equal(err.message, rejectedMessage);
       return true;
     }, 'expected an exception');
   }
 
-  ['@test rejecting the model hooks promise with no reason still logs error'](assert) {
+  async ['@test rejecting the model hooks promise with no reason still logs error'](assert) {
     assert.expect(2);
     this.router.map(function () {
       this.route('wowzers', {
@@ -2741,10 +2724,10 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       }
 
     }));
-    return assert.throws(() => this.visit('/'));
+    await assert.rejects(this.visit('/'));
   }
 
-  ['@test rejecting the model hooks promise with a string shows a good error'](assert) {
+  async ['@test rejecting the model hooks promise with a string shows a good error'](assert) {
     assert.expect(3);
     let rejectedMessage = 'Supercalifragilisticexpialidocious';
     this.router.map(function () {
@@ -2764,7 +2747,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       }
 
     }));
-    assert.throws(() => this.visit('/'), new RegExp(rejectedMessage), 'expected an exception');
+    await assert.rejects(this.visit('/'), new RegExp(rejectedMessage), 'expected an exception');
   }
 
   ["@test willLeave, willChangeContext, willChangeModel actions don't fire unless feature flag enabled"](assert) {
@@ -2793,7 +2776,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     return this.visit('/about');
   }
 
-  ['@test Errors in transitionTo within redirect hook are logged'](assert) {
+  async ['@test Errors in transitionTo within redirect hook are logged'](assert) {
     assert.expect(4);
     let actual = [];
     this.router.map(function () {
@@ -2816,7 +2799,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       actual.push(arguments);
     };
 
-    assert.throws(() => this.visit('/'), /More context objects were passed/);
+    await assert.rejects(this.visit('/'), /More context objects were passed/);
     assert.equal(actual.length, 1, 'the error is only logged once');
     assert.equal(actual[0][0], 'Error while processing route: yondo', 'source route is printed');
     assert.ok(actual[0][1].match(/More context objects were passed than there are dynamic segments for the route: stink-bomb/), 'the error is printed');
@@ -2899,7 +2882,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     });
   }
 
-  ['@test Exception during initialization of non-initial route is not swallowed'](assert) {
+  async ['@test Exception during initialization of non-initial route is not swallowed'](assert) {
     this.router.map(function () {
       this.route('boom');
     });
@@ -2909,10 +2892,10 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       }
 
     }));
-    return assert.throws(() => this.visit('/boom'), /\bboom\b/);
+    await assert.rejects(this.visit('/boom'), /\bboom\b/);
   }
 
-  ['@test Exception during initialization of initial route is not swallowed'](assert) {
+  async ['@test Exception during initialization of initial route is not swallowed'](assert) {
     this.router.map(function () {
       this.route('boom', {
         path: '/'
@@ -2924,7 +2907,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
       }
 
     }));
-    return assert.throws(() => this.visit('/'), /\bboom\b/);
+    await assert.rejects(this.visit('/'), /\bboom\b/);
   }
 
   ['@test {{outlet}} works when created after initial render'](assert) {
@@ -3263,7 +3246,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     });
   }
 
-  ['@test Doesnt swallow exception thrown from willTransition'](assert) {
+  async ['@test Doesnt swallow exception thrown from willTransition'](assert) {
     assert.expect(1);
     this.addTemplate('application', '{{outlet}}');
     this.addTemplate('index', 'index');
@@ -3282,11 +3265,8 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
       }
     }));
-    return this.visit('/').then(() => {
-      return assert.throws(() => {
-        return this.visit('/other');
-      }, /boom/, 'expected an exception but none was thrown');
-    });
+    await this.visit('/');
+    await assert.rejects(this.visit('/other'), /boom/, 'expected an exception but none was thrown');
   }
 
   ['@test Exception if outlet name is undefined in render and disconnectOutlet']() {
@@ -3351,7 +3331,7 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     });
   }
 
-  ['@test Defining a Route#serialize method in an Engine throws an error'](assert) {
+  async ['@test Defining a Route#serialize method in an Engine throws an error'](assert) {
     assert.expect(1); // Register engine
 
     let BlogEngine = Engine.extend();
@@ -3365,15 +3345,20 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
     this.router.map(function () {
       this.mount('blog');
     });
-    return this.visit('/').then(() => {
-      let router = this.applicationInstance.lookup('router:main');
-      let PostRoute = Route.extend({
-        serialize() {}
+    await this.visit('/');
+    let router = this.applicationInstance.lookup('router:main');
+    let PostRoute = Route.extend({
+      serialize() {}
 
-      });
-      this.applicationInstance.lookup('engine:blog').register('route:post', PostRoute);
-      assert.throws(() => router.transitionTo('blog.post'), /Defining a custom serialize method on an Engine route is not supported/);
     });
+    this.applicationInstance.lookup('engine:blog').register('route:post', PostRoute);
+
+    try {
+      // TODO: for some reason this doesn't work with assert.reject
+      await router.transitionTo('blog.post');
+    } catch (e) {
+      assert.ok(e.message.match(/Defining a custom serialize method on an Engine route is not supported/));
+    }
   }
 
   ['@test App.destroy does not leave undestroyed views after clearing engines'](assert) {

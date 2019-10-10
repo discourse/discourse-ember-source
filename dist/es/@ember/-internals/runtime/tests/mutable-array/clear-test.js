@@ -1,13 +1,15 @@
 import { get } from '@ember/-internals/metal';
-import { AbstractTestCase } from 'internal-test-helpers';
+import { AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 import { runArrayTests, newFixture } from '../helpers/array';
 
 class ClearTests extends AbstractTestCase {
-  '@test [].clear() => [] + notify'() {
+  async '@test [].clear() => [] + notify'() {
     let before = [];
     let after = [];
     let obj = this.newObject(before);
-    let observer = this.newObserver(obj, '[]', '@each', 'length', 'firstObject', 'lastObject');
+    let observer = this.newObserver(obj, '[]', '@each', 'length', 'firstObject', 'lastObject'); // flush observers
+
+    await runLoopSettled();
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
@@ -21,7 +23,7 @@ class ClearTests extends AbstractTestCase {
     this.assert.equal(observer.validate('lastObject'), false, 'should NOT have notified lastObject once');
   }
 
-  '@test [X].clear() => [] + notify'() {
+  async '@test [X].clear() => [] + notify'() {
     var obj, before, after, observer;
     before = newFixture(1);
     after = [];
@@ -30,7 +32,9 @@ class ClearTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    this.assert.equal(obj.clear(), obj, 'return self');
+    this.assert.equal(obj.clear(), obj, 'return self'); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
     this.assert.equal(observer.timesCalled('[]'), 1, 'should have notified [] once');

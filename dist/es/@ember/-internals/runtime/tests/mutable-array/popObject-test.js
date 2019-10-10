@@ -1,15 +1,17 @@
 import { get } from '@ember/-internals/metal';
-import { AbstractTestCase } from 'internal-test-helpers';
+import { AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 import { runArrayTests, newFixture } from '../helpers/array';
 
 class PopObjectTests extends AbstractTestCase {
-  '@test [].popObject() => [] + returns undefined + NO notify'() {
+  async '@test [].popObject() => [] + returns undefined + NO notify'() {
     let obj = this.newObject([]);
     let observer = this.newObserver(obj, '[]', '@each', 'length', 'firstObject', 'lastObject');
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    this.assert.equal(obj.popObject(), undefined, 'popObject results');
+    this.assert.equal(obj.popObject(), undefined, 'popObject results'); // flush observers
+
+    await runLoopSettled();
     this.assert.deepEqual(this.toArray(obj), [], 'post item results');
     this.assert.equal(observer.validate('[]'), false, 'should NOT have notified []');
     this.assert.equal(observer.validate('@each'), false, 'should NOT have notified @each');
@@ -18,7 +20,7 @@ class PopObjectTests extends AbstractTestCase {
     this.assert.equal(observer.validate('lastObject'), false, 'should NOT have notified lastObject');
   }
 
-  '@test [X].popObject() => [] + notify'() {
+  async '@test [X].popObject() => [] + notify'() {
     let before = newFixture(1);
     let after = [];
     let obj = this.newObject(before);
@@ -26,7 +28,9 @@ class PopObjectTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    let ret = obj.popObject();
+    let ret = obj.popObject(); // flush observers
+
+    await runLoopSettled();
     this.assert.equal(ret, before[0], 'return object');
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');
@@ -37,7 +41,7 @@ class PopObjectTests extends AbstractTestCase {
     this.assert.equal(observer.timesCalled('lastObject'), 1, 'should have notified lastObject once');
   }
 
-  '@test [A,B,C].popObject() => [A,B] + notify'() {
+  async '@test [A,B,C].popObject() => [A,B] + notify'() {
     let before = newFixture(3);
     let after = [before[0], before[1]];
     let obj = this.newObject(before);
@@ -45,7 +49,9 @@ class PopObjectTests extends AbstractTestCase {
     obj.getProperties('firstObject', 'lastObject');
     /* Prime the cache */
 
-    let ret = obj.popObject();
+    let ret = obj.popObject(); // flush observers
+
+    await runLoopSettled();
     this.assert.equal(ret, before[2], 'return object');
     this.assert.deepEqual(this.toArray(obj), after, 'post item results');
     this.assert.equal(get(obj, 'length'), after.length, 'length');

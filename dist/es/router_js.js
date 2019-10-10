@@ -515,7 +515,7 @@ function toReadOnlyRouteInfo(routeInfos, queryParams = {}, includeAttributes = f
                 return paramNames;
             },
             get metadata() {
-                return buildRouteInfoMetadata(route);
+                return buildRouteInfoMetadata(info.route);
             },
             get parent() {
                 let parent = routeInfos[i - 1];
@@ -1086,6 +1086,7 @@ class NamedTransitionIntent extends TransitionIntent {
         let params = {};
         // Soak up all the provided string/numbers
         let numNames = names.length;
+        let missingParams = [];
         while (numNames--) {
             // Only use old params if the names match with the new handler
             let oldParams = (oldHandlerInfo && name === oldHandlerInfo.name && oldHandlerInfo.params) || {};
@@ -1102,10 +1103,13 @@ class NamedTransitionIntent extends TransitionIntent {
                     params[paramName] = oldParams[paramName];
                 }
                 else {
-                    throw new Error("You didn't provide enough string/numeric parameters to satisfy all of the dynamic segments for route " +
-                        name);
+                    missingParams.push(paramName);
                 }
             }
+        }
+        if (missingParams.length > 0) {
+            throw new Error(`You didn't provide enough string/numeric parameters to satisfy all of the dynamic segments for route ${name}.` +
+                ` Missing params: ${missingParams}`);
         }
         return new UnresolvedRouteInfoByParam(this.router, name, names, params);
     }

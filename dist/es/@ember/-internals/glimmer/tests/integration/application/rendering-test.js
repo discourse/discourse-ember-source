@@ -1,4 +1,4 @@
-import { moduleFor, ApplicationTestCase, strip } from 'internal-test-helpers';
+import { moduleFor, ApplicationTestCase, strip, runTask, runLoopSettled } from 'internal-test-helpers';
 import { ENV } from '@ember/-internals/environment';
 import Controller from '@ember/controller';
 import { Route } from '@ember/-internals/routing';
@@ -366,7 +366,7 @@ moduleFor('Application test: rendering', class extends ApplicationTestCase {
     });
   }
 
-  ['@test it emits a useful backtracking re-render assertion message']() {
+  async ['@test it emits a useful backtracking re-render assertion message'](assert) {
     this.router.map(function () {
       this.route('routeWithError');
     });
@@ -391,11 +391,9 @@ moduleFor('Application test: rendering', class extends ApplicationTestCase {
       template: 'Hi {{person.name}} from component'
     });
     let expectedBacktrackingMessage = /modified "model\.name" twice on \[object Object\] in a single render\. It was rendered in "template:my-app\/templates\/routeWithError.hbs" and modified in "component:x-foo"/;
-    return this.visit('/').then(() => {
-      expectAssertion(() => {
-        this.visit('/routeWithError');
-      }, expectedBacktrackingMessage);
-    });
+    await this.visit('/');
+    assert.throwsAssertion(() => runTask(() => this.visit('/routeWithError')), expectedBacktrackingMessage);
+    await runLoopSettled();
   }
 
   ['@test route templates with {{{undefined}}} [GH#14924] [GH#16172]']() {

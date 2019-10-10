@@ -79,11 +79,11 @@ function statementCompiler() {
         componentAttr(sexp, true, builder);
     });
     STATEMENTS.add(Ops$2.OpenElement, (sexp, builder) => {
-        builder.openPrimitiveElement(sexp[1]);
-    });
-    STATEMENTS.add(Ops$2.OpenSplattedElement, (sexp, builder) => {
-        builder.putComponentOperations();
-        builder.openPrimitiveElement(sexp[1]);
+        let [, tag, simple] = sexp;
+        if (!simple) {
+            builder.putComponentOperations();
+        }
+        builder.openPrimitiveElement(tag);
     });
     STATEMENTS.add(Ops$2.DynamicComponent, (sexp, builder) => {
         let [, definition, attrs, args, template] = sexp;

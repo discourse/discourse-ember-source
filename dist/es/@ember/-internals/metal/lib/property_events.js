@@ -1,5 +1,6 @@
 import { peekMeta } from '@ember/-internals/meta';
 import { symbol } from '@ember/-internals/utils';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { DEBUG } from '@glimmer/env';
 import changeEvent from './change_event';
 import { descriptorForProperty } from './descriptor_map';
@@ -36,23 +37,22 @@ function notifyPropertyChange(obj, keyName, _meta) {
     if (meta !== null && (meta.isInitializing() || meta.isPrototypeMeta(obj))) {
         return;
     }
-    let possibleDesc = descriptorForProperty(obj, keyName, meta);
-    if (possibleDesc !== undefined && typeof possibleDesc.didChange === 'function') {
-        possibleDesc.didChange(obj, keyName);
+    if (!EMBER_METAL_TRACKED_PROPERTIES) {
+        let possibleDesc = descriptorForProperty(obj, keyName, meta);
+        if (possibleDesc !== undefined && typeof possibleDesc.didChange === 'function') {
+            possibleDesc.didChange(obj, keyName);
+        }
+        if (meta !== null && meta.peekWatching(keyName) > 0) {
+            dependentKeysDidChange(obj, keyName, meta);
+            chainsDidChange(obj, keyName, meta);
+            notifyObservers(obj, keyName, meta);
+        }
     }
-    if (meta !== null && meta.peekWatching(keyName) > 0) {
-        dependentKeysDidChange(obj, keyName, meta);
-        chainsDidChange(obj, keyName, meta);
-        notifyObservers(obj, keyName, meta);
+    if (meta !== null) {
+        markObjectAsDirty(obj, keyName, meta);
     }
     if (PROPERTY_DID_CHANGE in obj) {
         obj[PROPERTY_DID_CHANGE](keyName);
-    }
-    if (meta !== null) {
-        if (meta.isSourceDestroying()) {
-            return;
-        }
-        markObjectAsDirty(obj, keyName, meta);
     }
     if (DEBUG) {
         assertNotRendered(obj, keyName);

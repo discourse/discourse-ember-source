@@ -9,7 +9,7 @@ import { defineProperty, setProperties, get, set, addObserver, computed, observe
 import { Object as EmberObject, ObjectProxy, isArray, A as emberA, removeAt } from '@ember/-internals/runtime';
 import { sum, min, max, map, sort, setDiff, mapBy, filter, filterBy, uniq, uniqBy, union, intersect, collect } from '@ember/object/computed';
 import { EMBER_METAL_TRACKED_PROPERTIES, EMBER_NATIVE_DECORATOR_SUPPORT } from '@ember/canary-features';
-import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 let obj;
 moduleFor('map', class extends AbstractTestCase {
   beforeEach() {
@@ -227,13 +227,14 @@ moduleFor('mapBy', class extends AbstractTestCase {
     assert.deepEqual(obj.get('mapped'), [1, 3, 2, 5]);
   }
 
-  ['@test it is observable'](assert) {
+  async ['@test it is observable'](assert) {
     let calls = 0;
     assert.deepEqual(obj.get('mapped'), [1, 3, 2, 1]);
     addObserver(obj, 'mapped.@each', () => calls++);
     obj.get('array').pushObject({
       v: 5
     });
+    await runLoopSettled();
     assert.equal(calls, 1, 'mapBy is observable');
   }
 
@@ -1745,13 +1746,14 @@ moduleFor('Chaining array and reduced CPs', class extends AbstractTestCase {
     run(obj, 'destroy');
   }
 
-  ['@test it computes interdependent array computed properties'](assert) {
+  async ['@test it computes interdependent array computed properties'](assert) {
     assert.equal(obj.get('max'), 3, 'sanity - it properly computes the maximum value');
     let calls = 0;
     addObserver(obj, 'max', () => calls++);
     obj.get('array').pushObject({
       v: 5
     });
+    await runLoopSettled();
     assert.equal(obj.get('max'), 5, 'maximum value is updated correctly');
     assert.equal(userFnCalls, 1, 'object defined observers fire');
     assert.equal(calls, 1, 'runtime created observers fire');

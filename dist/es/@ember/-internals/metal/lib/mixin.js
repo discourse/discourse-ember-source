@@ -3,6 +3,7 @@
 */
 import { meta as metaFor, peekMeta } from '@ember/-internals/meta';
 import { getListeners, getObservers, getOwnPropertyDescriptors, guidFor, makeArray, NAME_KEY, ROOT, setObservers, wrap, } from '@ember/-internals/utils';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { assert, deprecate } from '@ember/debug';
 import { ALIAS_METHOD } from '@ember/deprecated-features';
 import { assign } from '@ember/polyfills';
@@ -13,7 +14,7 @@ import { descriptorForDecorator, descriptorForProperty, isClassicDecorator, } fr
 import { addListener, removeListener } from './events';
 import expandProperties from './expand_properties';
 import { classToString, setUnprocessedMixins } from './namespace_search';
-import { addObserver, removeObserver } from './observer';
+import { addObserver, removeObserver, revalidateObservers } from './observer';
 import { defineProperty } from './properties';
 const a_concat = Array.prototype.concat;
 const { isArray } = Array;
@@ -320,6 +321,11 @@ export function applyMixin(obj, mixins) {
             replaceObserversAndListeners(obj, key, obj[key], value);
         }
         defineProperty(obj, key, desc, value, meta);
+    }
+    if (EMBER_METAL_TRACKED_PROPERTIES) {
+        if (!meta.isPrototypeMeta(obj)) {
+            revalidateObservers(obj);
+        }
     }
     return obj;
 }

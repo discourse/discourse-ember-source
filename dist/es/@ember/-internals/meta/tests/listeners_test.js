@@ -152,24 +152,24 @@ moduleFor('Ember.meta listeners', class extends AbstractTestCase {
     assert.equal(counters.reopensAfterFlatten, 3, 'one reopen call after mutating parents and flattening out of order');
   }
 
-  ['@test REMOVE_ALL does not interfere with future adds'](assert) {
-    expectDeprecation(() => {
-      let t = {};
-      let m = meta({});
-      m.addToListeners('hello', t, 'm', 0);
-      let matching = m.matchingListeners('hello');
-      assert.equal(matching.length, 3);
-      assert.equal(matching[0], t); // Remove all listeners
+  '@test removed listeners are removed from the underlying structure GH#1112213'(assert) {
+    // this is using private API to confirm the underlying data structure is properly maintained
+    // and should be changed to match the data structure as needed
+    class Class1 {}
 
-      m.removeAllListeners('hello');
-      matching = m.matchingListeners('hello');
-      assert.equal(matching, undefined);
-      m.addToListeners('hello', t, 'm', 0);
-      matching = m.matchingListeners('hello'); // listener was added back successfully
+    let class1Meta = meta(Class1.prototype);
+    class1Meta.addToListeners('hello', null, 'm', 0);
+    let instance1 = new Class1();
+    let m1 = meta(instance1);
 
-      assert.equal(matching.length, 3);
-      assert.equal(matching[0], t);
-    });
+    function listenerFunc() {}
+
+    m1.removeFromListeners('hello', null, 'm', 0);
+    m1.addToListeners('stringListener', null, 'm', 0);
+    m1.addToListeners('functionListener', null, listenerFunc, 0);
+    m1.removeFromListeners('functionListener', null, listenerFunc, 0);
+    m1.removeFromListeners('stringListener', null, 'm', 0);
+    assert.equal(m1.flattenedListeners().length, 1, 'instance listeners correctly removed, inherited listeners remain');
   }
 
 });

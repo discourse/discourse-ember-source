@@ -6,9 +6,9 @@ import { peekMeta } from '@ember/-internals/meta';
 import { get, computed } from '@ember/-internals/metal';
 import { Route } from '@ember/-internals/routing';
 import { PARAMS_SYMBOL } from 'router_js';
-import { QueryParamTestCase, moduleFor, getTextOf } from 'internal-test-helpers';
+import { QueryParamTestCase, moduleFor, getTextOf, runLoopSettled } from 'internal-test-helpers';
 moduleFor('Query Params - main', class extends QueryParamTestCase {
-  refreshModelWhileLoadingTest(loadingReturn) {
+  async refreshModelWhileLoadingTest(loadingReturn) {
     let assert = this.assert;
     assert.expect(9);
     let appModelCount = 0;
@@ -63,21 +63,20 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       }
 
     }));
-    return this.visit('/').then(() => {
-      assert.equal(appModelCount, 1, 'appModelCount is 1');
-      assert.equal(indexModelCount, 1);
-      let indexController = this.getController('index');
-      this.setAndFlush(indexController, 'omg', 'lex');
-      assert.equal(appModelCount, 1, 'appModelCount is 1');
-      assert.equal(indexModelCount, 2);
-      this.setAndFlush(indexController, 'omg', 'hello');
-      assert.equal(appModelCount, 1, 'appModelCount is 1');
-      assert.equal(indexModelCount, 3);
-      run(function () {
-        promiseResolve();
-      });
-      assert.equal(get(indexController, 'omg'), 'hello', 'At the end last value prevails');
+    await this.visit('/');
+    assert.equal(appModelCount, 1, 'appModelCount is 1');
+    assert.equal(indexModelCount, 1);
+    let indexController = this.getController('index');
+    await this.setAndFlush(indexController, 'omg', 'lex');
+    assert.equal(appModelCount, 1, 'appModelCount is 1');
+    assert.equal(indexModelCount, 2);
+    await this.setAndFlush(indexController, 'omg', 'hello');
+    assert.equal(appModelCount, 1, 'appModelCount is 1');
+    assert.equal(indexModelCount, 3);
+    run(function () {
+      promiseResolve();
     });
+    assert.equal(get(indexController, 'omg'), 'hello', 'At the end last value prevails');
   }
 
   ["@test No replaceURL occurs on startup because default values don't show up in URL"](assert) {
@@ -107,7 +106,7 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     });
   }
 
-  ['@test Single query params can be set on the controller and reflected in the url'](assert) {
+  async ['@test Single query params can be set on the controller and reflected in the url'](assert) {
     assert.expect(3);
     this.router.map(function () {
       this.route('home', {
@@ -115,16 +114,15 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       });
     });
     this.setSingleQPController('home');
-    return this.visitAndAssert('/').then(() => {
-      let controller = this.getController('home');
-      this.setAndFlush(controller, 'foo', '456');
-      this.assertCurrentPath('/?foo=456');
-      this.setAndFlush(controller, 'foo', '987');
-      this.assertCurrentPath('/?foo=987');
-    });
+    await this.visitAndAssert('/');
+    let controller = this.getController('home');
+    await this.setAndFlush(controller, 'foo', '456');
+    this.assertCurrentPath('/?foo=456');
+    await this.setAndFlush(controller, 'foo', '987');
+    this.assertCurrentPath('/?foo=987');
   }
 
-  ['@test Query params can map to different url keys configured on the controller'](assert) {
+  async ['@test Query params can map to different url keys configured on the controller'](assert) {
     assert.expect(6);
     this.add('controller:index', Controller.extend({
       queryParams: [{
@@ -136,35 +134,33 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       foo: 'FOO',
       bar: 'BAR'
     }));
-    return this.visitAndAssert('/').then(() => {
-      let controller = this.getController('index');
-      this.setAndFlush(controller, 'foo', 'LEX');
-      this.assertCurrentPath('/?other_foo=LEX', "QP mapped correctly without 'as'");
-      this.setAndFlush(controller, 'foo', 'WOO');
-      this.assertCurrentPath('/?other_foo=WOO', "QP updated correctly without 'as'");
-      this.transitionTo('/?other_foo=NAW');
-      assert.equal(controller.get('foo'), 'NAW', 'QP managed correctly on URL transition');
-      this.setAndFlush(controller, 'bar', 'NERK');
-      this.assertCurrentPath('/?other_bar=NERK&other_foo=NAW', "QP mapped correctly with 'as'");
-      this.setAndFlush(controller, 'bar', 'NUKE');
-      this.assertCurrentPath('/?other_bar=NUKE&other_foo=NAW', "QP updated correctly with 'as'");
-    });
+    await this.visitAndAssert('/');
+    let controller = this.getController('index');
+    await this.setAndFlush(controller, 'foo', 'LEX');
+    this.assertCurrentPath('/?other_foo=LEX', "QP mapped correctly without 'as'");
+    await this.setAndFlush(controller, 'foo', 'WOO');
+    this.assertCurrentPath('/?other_foo=WOO', "QP updated correctly without 'as'");
+    this.transitionTo('/?other_foo=NAW');
+    assert.equal(controller.get('foo'), 'NAW', 'QP managed correctly on URL transition');
+    await this.setAndFlush(controller, 'bar', 'NERK');
+    this.assertCurrentPath('/?other_bar=NERK&other_foo=NAW', "QP mapped correctly with 'as'");
+    await this.setAndFlush(controller, 'bar', 'NUKE');
+    this.assertCurrentPath('/?other_bar=NUKE&other_foo=NAW', "QP updated correctly with 'as'");
   }
 
-  ['@test Routes have a private overridable serializeQueryParamKey hook'](assert) {
+  async ['@test Routes have a private overridable serializeQueryParamKey hook'](assert) {
     assert.expect(2);
     this.add('route:index', Route.extend({
       serializeQueryParamKey: dasherize
     }));
     this.setSingleQPController('index', 'funTimes', '');
-    return this.visitAndAssert('/').then(() => {
-      let controller = this.getController('index');
-      this.setAndFlush(controller, 'funTimes', 'woot');
-      this.assertCurrentPath('/?fun-times=woot');
-    });
+    await this.visitAndAssert('/');
+    let controller = this.getController('index');
+    await this.setAndFlush(controller, 'funTimes', 'woot');
+    this.assertCurrentPath('/?fun-times=woot');
   }
 
-  ['@test Can override inherited QP behavior by specifying queryParams as a computed property'](assert) {
+  async ['@test Can override inherited QP behavior by specifying queryParams as a computed property'](assert) {
     assert.expect(3);
     this.setSingleQPController('index', 'a', 0, {
       queryParams: computed(function () {
@@ -172,28 +168,26 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       }),
       c: true
     });
-    return this.visitAndAssert('/').then(() => {
-      let indexController = this.getController('index');
-      this.setAndFlush(indexController, 'a', 1);
-      this.assertCurrentPath('/', 'QP did not update due to being overriden');
-      this.setAndFlush(indexController, 'c', false);
-      this.assertCurrentPath('/?c=false', 'QP updated with overridden param');
-    });
+    await this.visitAndAssert('/');
+    let indexController = this.getController('index');
+    await this.setAndFlush(indexController, 'a', 1);
+    this.assertCurrentPath('/', 'QP did not update due to being overriden');
+    await this.setAndFlush(indexController, 'c', false);
+    this.assertCurrentPath('/?c=false', 'QP updated with overridden param');
   }
 
-  ['@test Can concatenate inherited QP behavior by specifying queryParams as an array'](assert) {
+  async ['@test Can concatenate inherited QP behavior by specifying queryParams as an array'](assert) {
     assert.expect(3);
     this.setSingleQPController('index', 'a', 0, {
       queryParams: ['c'],
       c: true
     });
-    return this.visitAndAssert('/').then(() => {
-      let indexController = this.getController('index');
-      this.setAndFlush(indexController, 'a', 1);
-      this.assertCurrentPath('/?a=1', 'Inherited QP did update');
-      this.setAndFlush(indexController, 'c', false);
-      this.assertCurrentPath('/?a=1&c=false', 'New QP did update');
-    });
+    await this.visitAndAssert('/');
+    let indexController = this.getController('index');
+    await this.setAndFlush(indexController, 'a', 1);
+    this.assertCurrentPath('/?a=1', 'Inherited QP did update');
+    await this.setAndFlush(indexController, 'c', false);
+    this.assertCurrentPath('/?a=1&c=false', 'New QP did update');
   }
 
   ['@test model hooks receives query params'](assert) {
@@ -250,17 +244,14 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     return this.visitAndAssert('/boo?foo=baz');
   }
 
-  ['@test error is thrown if dynamic segment and query param have same name'](assert) {
-    assert.expect(1);
+  async ['@test error is thrown if dynamic segment and query param have same name'](assert) {
     this.router.map(function () {
       this.route('index', {
         path: '/:foo'
       });
     });
     this.setSingleQPController('index');
-    expectAssertion(() => {
-      this.visitAndAssert('/boo?foo=baz');
-    }, `The route 'index' has both a dynamic segment and query param with name 'foo'. Please rename one to avoid collisions.`);
+    await assert.rejectsAssertion(this.visitAndAssert('/boo?foo=baz'), `The route 'index' has both a dynamic segment and query param with name 'foo'. Please rename one to avoid collisions.`);
   }
 
   ['@test query params have been set by the time setupController is called'](assert) {
@@ -429,7 +420,7 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     return this.visitAndAssert('/?appomg=appyes&omg=yes');
   }
 
-  ['@test can opt into full transition by setting refreshModel in route queryParams'](assert) {
+  async ['@test can opt into full transition by setting refreshModel in route queryParams'](assert) {
     assert.expect(7);
     this.setSingleQPController('application', 'appomg', 'applol');
     this.setSingleQPController('index', 'omg', 'lol');
@@ -465,17 +456,16 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       }
 
     }));
-    return this.visitAndAssert('/').then(() => {
-      assert.equal(appModelCount, 1, 'app model hook ran');
-      assert.equal(indexModelCount, 1, 'index model hook ran');
-      let indexController = this.getController('index');
-      this.setAndFlush(indexController, 'omg', 'lex');
-      assert.equal(appModelCount, 1, 'app model hook did not run again');
-      assert.equal(indexModelCount, 2, 'index model hook ran again due to refreshModel');
-    });
+    await this.visitAndAssert('/');
+    assert.equal(appModelCount, 1, 'app model hook ran');
+    assert.equal(indexModelCount, 1, 'index model hook ran');
+    let indexController = this.getController('index');
+    await this.setAndFlush(indexController, 'omg', 'lex');
+    assert.equal(appModelCount, 1, 'app model hook did not run again');
+    assert.equal(indexModelCount, 2, 'index model hook ran again due to refreshModel');
   }
 
-  ['@test refreshModel and replace work together'](assert) {
+  async ['@test refreshModel and replace work together'](assert) {
     assert.expect(8);
     this.setSingleQPController('application', 'appomg', 'applol');
     this.setSingleQPController('index', 'omg', 'lol');
@@ -512,18 +502,17 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       }
 
     }));
-    return this.visitAndAssert('/').then(() => {
-      assert.equal(appModelCount, 1, 'app model hook ran');
-      assert.equal(indexModelCount, 1, 'index model hook ran');
-      let indexController = this.getController('index');
-      this.expectedReplaceURL = '/?omg=lex';
-      this.setAndFlush(indexController, 'omg', 'lex');
-      assert.equal(appModelCount, 1, 'app model hook did not run again');
-      assert.equal(indexModelCount, 2, 'index model hook ran again due to refreshModel');
-    });
+    await this.visitAndAssert('/');
+    assert.equal(appModelCount, 1, 'app model hook ran');
+    assert.equal(indexModelCount, 1, 'index model hook ran');
+    let indexController = this.getController('index');
+    this.expectedReplaceURL = '/?omg=lex';
+    await this.setAndFlush(indexController, 'omg', 'lex');
+    assert.equal(appModelCount, 1, 'app model hook did not run again');
+    assert.equal(indexModelCount, 2, 'index model hook ran again due to refreshModel');
   }
 
-  ['@test multiple QP value changes only cause a single model refresh'](assert) {
+  async ['@test multiple QP value changes only cause a single model refresh'](assert) {
     assert.expect(2);
     this.setSingleQPController('index', 'alex', 'lol');
     this.setSingleQPController('index', 'steely', 'lel');
@@ -543,14 +532,13 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       }
 
     }));
-    return this.visitAndAssert('/').then(() => {
-      let indexController = this.getController('index');
-      run(indexController, 'setProperties', {
-        alex: 'fran',
-        steely: 'david'
-      });
-      assert.equal(refreshCount, 1, 'index refresh hook only run once');
+    await this.visitAndAssert('/');
+    let indexController = this.getController('index');
+    await this.setAndFlush(indexController, {
+      alex: 'fran',
+      steely: 'david'
     });
+    assert.equal(refreshCount, 1, 'index refresh hook only run once');
   }
 
   ['@test refreshModel does not cause a second transition during app boot '](assert) {
@@ -572,7 +560,7 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     return this.visitAndAssert('/?appomg=hello&omg=world');
   }
 
-  ['@test queryParams are updated when a controller property is set and the route is refreshed. Issue #13263  '](assert) {
+  async ['@test queryParams are updated when a controller property is set and the route is refreshed. Issue #13263  '](assert) {
     this.addTemplate('application', '<button id="test-button" {{action \'increment\'}}>Increment</button><span id="test-value">{{foo}}</span>{{outlet}}');
     this.setSingleQPController('application', 'foo', 1, {
       actions: {
@@ -591,18 +579,19 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
 
       }
     }));
-    return this.visitAndAssert('/').then(() => {
-      assert.equal(getTextOf(document.getElementById('test-value')), '1');
-      run(document.getElementById('test-button'), 'click');
-      assert.equal(getTextOf(document.getElementById('test-value')), '2');
-      this.assertCurrentPath('/?foo=2');
-      run(document.getElementById('test-button'), 'click');
-      assert.equal(getTextOf(document.getElementById('test-value')), '3');
-      this.assertCurrentPath('/?foo=3');
-    });
+    await this.visitAndAssert('/');
+    assert.equal(getTextOf(document.getElementById('test-value')), '1');
+    document.getElementById('test-button').click();
+    await runLoopSettled();
+    assert.equal(getTextOf(document.getElementById('test-value')), '2');
+    this.assertCurrentPath('/?foo=2');
+    document.getElementById('test-button').click();
+    await runLoopSettled();
+    assert.equal(getTextOf(document.getElementById('test-value')), '3');
+    this.assertCurrentPath('/?foo=3');
   }
 
-  ["@test Use Ember.get to retrieve query params 'refreshModel' configuration"](assert) {
+  async ["@test Use Ember.get to retrieve query params 'refreshModel' configuration"](assert) {
     assert.expect(7);
     this.setSingleQPController('application', 'appomg', 'applol');
     this.setSingleQPController('index', 'omg', 'lol');
@@ -641,17 +630,16 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       }
 
     }));
-    return this.visitAndAssert('/').then(() => {
-      assert.equal(appModelCount, 1);
-      assert.equal(indexModelCount, 1);
-      let indexController = this.getController('index');
-      this.setAndFlush(indexController, 'omg', 'lex');
-      assert.equal(appModelCount, 1);
-      assert.equal(indexModelCount, 2);
-    });
+    await this.visitAndAssert('/');
+    assert.equal(appModelCount, 1);
+    assert.equal(indexModelCount, 1);
+    let indexController = this.getController('index');
+    await this.setAndFlush(indexController, 'omg', 'lex');
+    assert.equal(appModelCount, 1);
+    assert.equal(indexModelCount, 2);
   }
 
-  ['@test can use refreshModel even with URL changes that remove QPs from address bar'](assert) {
+  async ['@test can use refreshModel even with URL changes that remove QPs from address bar'](assert) {
     assert.expect(4);
     this.setSingleQPController('index', 'omg', 'lol');
     let indexModelCount = 0;
@@ -678,14 +666,13 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       }
 
     }));
-    return this.visitAndAssert('/?omg=foo').then(() => {
-      this.transitionTo('/');
-      let indexController = this.getController('index');
-      assert.equal(indexController.get('omg'), 'lol');
-    });
+    await this.visitAndAssert('/?omg=foo');
+    await this.transitionTo('/');
+    let indexController = this.getController('index');
+    assert.equal(indexController.get('omg'), 'lol');
   }
 
-  ['@test can opt into a replace query by specifying replace:true in the Route config hash'](assert) {
+  async ['@test can opt into a replace query by specifying replace:true in the Route config hash'](assert) {
     assert.expect(2);
     this.setSingleQPController('application', 'alex', 'matchneer');
     this.add('route:application', Route.extend({
@@ -695,14 +682,13 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
         }
       }
     }));
-    return this.visitAndAssert('/').then(() => {
-      let appController = this.getController('application');
-      this.expectedReplaceURL = '/?alex=wallace';
-      this.setAndFlush(appController, 'alex', 'wallace');
-    });
+    await this.visitAndAssert('/');
+    let appController = this.getController('application');
+    this.expectedReplaceURL = '/?alex=wallace';
+    await this.setAndFlush(appController, 'alex', 'wallace');
   }
 
-  ['@test Route query params config can be configured using property name instead of URL key'](assert) {
+  async ['@test Route query params config can be configured using property name instead of URL key'](assert) {
     assert.expect(2);
     this.add('controller:application', Controller.extend({
       queryParams: [{
@@ -716,14 +702,13 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
         }
       }
     }));
-    return this.visitAndAssert('/').then(() => {
-      let appController = this.getController('application');
-      this.expectedReplaceURL = '/?commit_by=igor_seb';
-      this.setAndFlush(appController, 'commitBy', 'igor_seb');
-    });
+    await this.visitAndAssert('/');
+    let appController = this.getController('application');
+    this.expectedReplaceURL = '/?commit_by=igor_seb';
+    await this.setAndFlush(appController, 'commitBy', 'igor_seb');
   }
 
-  ['@test An explicit replace:false on a changed QP always wins and causes a pushState'](assert) {
+  async ['@test An explicit replace:false on a changed QP always wins and causes a pushState'](assert) {
     assert.expect(3);
     this.add('controller:application', Controller.extend({
       queryParams: ['alex', 'steely'],
@@ -740,22 +725,19 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
         }
       }
     }));
-    return this.visit('/').then(() => {
-      let appController = this.getController('application');
-      this.expectedPushURL = '/?alex=wallace&steely=jan';
-      run(appController, 'setProperties', {
-        alex: 'wallace',
-        steely: 'jan'
-      });
-      this.expectedPushURL = '/?alex=wallace&steely=fran';
-      run(appController, 'setProperties', {
-        steely: 'fran'
-      });
-      this.expectedReplaceURL = '/?alex=sriracha&steely=fran';
-      run(appController, 'setProperties', {
-        alex: 'sriracha'
-      });
+    await this.visit('/');
+    let appController = this.getController('application');
+    this.expectedPushURL = '/?alex=wallace&steely=jan';
+    await this.setAndFlush(appController, {
+      alex: 'wallace',
+      steely: 'jan'
     });
+    this.expectedPushURL = '/?alex=wallace&steely=fran';
+    await this.setAndFlush(appController, {
+      steely: 'fran'
+    });
+    this.expectedReplaceURL = '/?alex=sriracha&steely=fran';
+    await this.setAndFlush(appController, 'alex', 'sriracha');
   }
 
   ['@test can opt into full transition by setting refreshModel in route queryParams when transitioning from child to parent'](assert) {
@@ -786,7 +768,7 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     });
   }
 
-  ["@test Use Ember.get to retrieve query params 'replace' configuration"](assert) {
+  async ["@test Use Ember.get to retrieve query params 'replace' configuration"](assert) {
     assert.expect(2);
     this.setSingleQPController('application', 'alex', 'matchneer');
     this.add('route:application', Route.extend({
@@ -802,14 +784,13 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
 
       })
     }));
-    return this.visitAndAssert('/').then(() => {
-      let appController = this.getController('application');
-      this.expectedReplaceURL = '/?alex=wallace';
-      this.setAndFlush(appController, 'alex', 'wallace');
-    });
+    await this.visitAndAssert('/');
+    let appController = this.getController('application');
+    this.expectedReplaceURL = '/?alex=wallace';
+    await this.setAndFlush(appController, 'alex', 'wallace');
   }
 
-  ['@test can override incoming QP values in setupController'](assert) {
+  async ['@test can override incoming QP values in setupController'](assert) {
     assert.expect(3);
     this.router.map(function () {
       this.route('about');
@@ -828,13 +809,12 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
 
       }
     }));
-    return this.visitAndAssert('/about').then(() => {
-      this.transitionTo('index');
-      this.assertCurrentPath('/?omg=OVERRIDE');
-    });
+    await this.visitAndAssert('/about');
+    await this.transitionTo('index');
+    this.assertCurrentPath('/?omg=OVERRIDE');
   }
 
-  ['@test can override incoming QP array values in setupController'](assert) {
+  async ['@test can override incoming QP array values in setupController'](assert) {
     assert.expect(3);
     this.router.map(function () {
       this.route('about');
@@ -853,10 +833,9 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
 
       }
     }));
-    return this.visitAndAssert('/about').then(() => {
-      this.transitionTo('index');
-      this.assertCurrentPath('/?omg=' + encodeURIComponent(JSON.stringify(['OVERRIDE'])));
-    });
+    await this.visitAndAssert('/about');
+    await this.transitionTo('index');
+    this.assertCurrentPath('/?omg=' + encodeURIComponent(JSON.stringify(['OVERRIDE'])));
   }
 
   ['@test URL transitions that remove QPs still register as QP changes'](assert) {
@@ -892,81 +871,78 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     });
   }
 
-  ['@test transitionTo supports query params']() {
+  async ['@test transitionTo supports query params']() {
     this.setSingleQPController('index', 'foo', 'lol');
-    return this.visitAndAssert('/').then(() => {
-      this.transitionTo({
-        queryParams: {
-          foo: 'borf'
-        }
-      });
-      this.assertCurrentPath('/?foo=borf', 'shorthand supported');
-      this.transitionTo({
-        queryParams: {
-          'index:foo': 'blaf'
-        }
-      });
-      this.assertCurrentPath('/?foo=blaf', 'longform supported');
-      this.transitionTo({
-        queryParams: {
-          'index:foo': false
-        }
-      });
-      this.assertCurrentPath('/?foo=false', 'longform supported (bool)');
-      this.transitionTo({
-        queryParams: {
-          foo: false
-        }
-      });
-      this.assertCurrentPath('/?foo=false', 'shorhand supported (bool)');
+    await this.visitAndAssert('/');
+    await this.transitionTo({
+      queryParams: {
+        foo: 'borf'
+      }
     });
+    this.assertCurrentPath('/?foo=borf', 'shorthand supported');
+    await this.transitionTo({
+      queryParams: {
+        'index:foo': 'blaf'
+      }
+    });
+    this.assertCurrentPath('/?foo=blaf', 'longform supported');
+    await this.transitionTo({
+      queryParams: {
+        'index:foo': false
+      }
+    });
+    this.assertCurrentPath('/?foo=false', 'longform supported (bool)');
+    await this.transitionTo({
+      queryParams: {
+        foo: false
+      }
+    });
+    this.assertCurrentPath('/?foo=false', 'shorhand supported (bool)');
   }
 
-  ['@test transitionTo supports query params (multiple)']() {
+  async ['@test transitionTo supports query params (multiple)']() {
     this.add('controller:index', Controller.extend({
       queryParams: ['foo', 'bar'],
       foo: 'lol',
       bar: 'wat'
     }));
-    return this.visitAndAssert('/').then(() => {
-      this.transitionTo({
-        queryParams: {
-          foo: 'borf'
-        }
-      });
-      this.assertCurrentPath('/?foo=borf', 'shorthand supported');
-      this.transitionTo({
-        queryParams: {
-          'index:foo': 'blaf'
-        }
-      });
-      this.assertCurrentPath('/?foo=blaf', 'longform supported');
-      this.transitionTo({
-        queryParams: {
-          'index:foo': false
-        }
-      });
-      this.assertCurrentPath('/?foo=false', 'longform supported (bool)');
-      this.transitionTo({
-        queryParams: {
-          foo: false
-        }
-      });
-      this.assertCurrentPath('/?foo=false', 'shorhand supported (bool)');
+    await this.visitAndAssert('/');
+    await this.transitionTo({
+      queryParams: {
+        foo: 'borf'
+      }
     });
+    this.assertCurrentPath('/?foo=borf', 'shorthand supported');
+    await this.transitionTo({
+      queryParams: {
+        'index:foo': 'blaf'
+      }
+    });
+    this.assertCurrentPath('/?foo=blaf', 'longform supported');
+    await this.transitionTo({
+      queryParams: {
+        'index:foo': false
+      }
+    });
+    this.assertCurrentPath('/?foo=false', 'longform supported (bool)');
+    await this.transitionTo({
+      queryParams: {
+        foo: false
+      }
+    });
+    this.assertCurrentPath('/?foo=false', 'shorhand supported (bool)');
   }
 
-  ["@test setting controller QP to empty string doesn't generate null in URL"](assert) {
+  async ["@test setting controller QP to empty string doesn't generate null in URL"](assert) {
     assert.expect(1);
     this.setSingleQPController('index', 'foo', '123');
-    return this.visit('/').then(() => {
-      let controller = this.getController('index');
-      this.expectedPushURL = '/?foo=';
-      this.setAndFlush(controller, 'foo', '');
-    });
+    await this.visit('/');
+    let controller = this.getController('index');
+    this.expectedPushURL = '/?foo=';
+    await this.setAndFlush(controller, 'foo', '');
   }
 
-  ["@test setting QP to empty string doesn't generate null in URL"](assert) {
+  async ["@test setting QP to empty string doesn't generate null in URL"](assert) {
     assert.expect(1);
     this.add('route:index', Route.extend({
       queryParams: {
@@ -975,11 +951,10 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
         }
       }
     }));
-    return this.visit('/').then(() => {
-      let controller = this.getController('index');
-      this.expectedPushURL = '/?foo=';
-      this.setAndFlush(controller, 'foo', '');
-    });
+    await this.visit('/');
+    let controller = this.getController('index');
+    this.expectedPushURL = '/?foo=';
+    await this.setAndFlush(controller, 'foo', '');
   }
 
   ['@test A default boolean value deserializes QPs as booleans rather than strings'](assert) {
@@ -1011,7 +986,7 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     });
   }
 
-  ['@test Array query params can be set'](assert) {
+  async ['@test Array query params can be set'](assert) {
     assert.expect(2);
     this.router.map(function () {
       this.route('home', {
@@ -1019,38 +994,36 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       });
     });
     this.setSingleQPController('home', 'foo', []);
-    return this.visit('/').then(() => {
-      let controller = this.getController('home');
-      this.setAndFlush(controller, 'foo', [1, 2]);
-      this.assertCurrentPath('/?foo=%5B1%2C2%5D');
-      this.setAndFlush(controller, 'foo', [3, 4]);
-      this.assertCurrentPath('/?foo=%5B3%2C4%5D');
-    });
+    await this.visit('/');
+    let controller = this.getController('home');
+    await this.setAndFlush(controller, 'foo', [1, 2]);
+    this.assertCurrentPath('/?foo=%5B1%2C2%5D');
+    await this.setAndFlush(controller, 'foo', [3, 4]);
+    this.assertCurrentPath('/?foo=%5B3%2C4%5D');
   }
 
-  ['@test (de)serialization: arrays'](assert) {
+  async ['@test (de)serialization: arrays'](assert) {
     assert.expect(4);
     this.setSingleQPController('index', 'foo', [1]);
-    return this.visitAndAssert('/').then(() => {
-      this.transitionTo({
-        queryParams: {
-          foo: [2, 3]
-        }
-      });
-      this.assertCurrentPath('/?foo=%5B2%2C3%5D', 'shorthand supported');
-      this.transitionTo({
-        queryParams: {
-          'index:foo': [4, 5]
-        }
-      });
-      this.assertCurrentPath('/?foo=%5B4%2C5%5D', 'longform supported');
-      this.transitionTo({
-        queryParams: {
-          foo: []
-        }
-      });
-      this.assertCurrentPath('/?foo=%5B%5D', 'longform supported');
+    await this.visitAndAssert('/');
+    await this.transitionTo({
+      queryParams: {
+        foo: [2, 3]
+      }
     });
+    this.assertCurrentPath('/?foo=%5B2%2C3%5D', 'shorthand supported');
+    await this.transitionTo({
+      queryParams: {
+        'index:foo': [4, 5]
+      }
+    });
+    this.assertCurrentPath('/?foo=%5B4%2C5%5D', 'longform supported');
+    await this.transitionTo({
+      queryParams: {
+        foo: []
+      }
+    });
+    this.assertCurrentPath('/?foo=%5B%5D', 'longform supported');
   }
 
   ['@test Url with array query param sets controller property to array'](assert) {
@@ -1062,7 +1035,7 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     });
   }
 
-  ['@test Array query params can be pushed/popped'](assert) {
+  async ['@test Array query params can be pushed/popped'](assert) {
     assert.expect(17);
     this.router.map(function () {
       this.route('home', {
@@ -1070,36 +1043,43 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
       });
     });
     this.setSingleQPController('home', 'foo', emberA());
-    return this.visitAndAssert('/').then(() => {
-      let controller = this.getController('home');
-      run(controller.foo, 'pushObject', 1);
-      this.assertCurrentPath('/?foo=%5B1%5D');
-      assert.deepEqual(controller.foo, [1]);
-      run(controller.foo, 'popObject');
-      this.assertCurrentPath('/');
-      assert.deepEqual(controller.foo, []);
-      run(controller.foo, 'pushObject', 1);
-      this.assertCurrentPath('/?foo=%5B1%5D');
-      assert.deepEqual(controller.foo, [1]);
-      run(controller.foo, 'popObject');
-      this.assertCurrentPath('/');
-      assert.deepEqual(controller.foo, []);
-      run(controller.foo, 'pushObject', 1);
-      this.assertCurrentPath('/?foo=%5B1%5D');
-      assert.deepEqual(controller.foo, [1]);
-      run(controller.foo, 'pushObject', 2);
-      this.assertCurrentPath('/?foo=%5B1%2C2%5D');
-      assert.deepEqual(controller.foo, [1, 2]);
-      run(controller.foo, 'popObject');
-      this.assertCurrentPath('/?foo=%5B1%5D');
-      assert.deepEqual(controller.foo, [1]);
-      run(controller.foo, 'unshiftObject', 'lol');
-      this.assertCurrentPath('/?foo=%5B%22lol%22%2C1%5D');
-      assert.deepEqual(controller.foo, ['lol', 1]);
-    });
+    await this.visitAndAssert('/');
+    let controller = this.getController('home');
+    controller.foo.pushObject(1);
+    await runLoopSettled();
+    this.assertCurrentPath('/?foo=%5B1%5D');
+    assert.deepEqual(controller.foo, [1]);
+    controller.foo.popObject();
+    await runLoopSettled();
+    this.assertCurrentPath('/');
+    assert.deepEqual(controller.foo, []);
+    controller.foo.pushObject(1);
+    await runLoopSettled();
+    this.assertCurrentPath('/?foo=%5B1%5D');
+    assert.deepEqual(controller.foo, [1]);
+    controller.foo.popObject();
+    await runLoopSettled();
+    this.assertCurrentPath('/');
+    assert.deepEqual(controller.foo, []);
+    controller.foo.pushObject(1);
+    await runLoopSettled();
+    this.assertCurrentPath('/?foo=%5B1%5D');
+    assert.deepEqual(controller.foo, [1]);
+    controller.foo.pushObject(2);
+    await runLoopSettled();
+    this.assertCurrentPath('/?foo=%5B1%2C2%5D');
+    assert.deepEqual(controller.foo, [1, 2]);
+    controller.foo.popObject();
+    await runLoopSettled();
+    this.assertCurrentPath('/?foo=%5B1%5D');
+    assert.deepEqual(controller.foo, [1]);
+    controller.foo.unshiftObject('lol');
+    await runLoopSettled();
+    this.assertCurrentPath('/?foo=%5B%22lol%22%2C1%5D');
+    assert.deepEqual(controller.foo, ['lol', 1]);
   }
 
-  ["@test Overwriting with array with same content shouldn't refire update"](assert) {
+  async ["@test Overwriting with array with same content shouldn't refire update"](assert) {
     assert.expect(4);
     this.router.map(function () {
       this.route('home', {
@@ -1114,13 +1094,12 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
 
     }));
     this.setSingleQPController('home', 'foo', emberA([1]));
-    return this.visitAndAssert('/').then(() => {
-      assert.equal(modelCount, 1);
-      let controller = this.getController('home');
-      this.setAndFlush(controller, 'model', emberA([1]));
-      assert.equal(modelCount, 1);
-      this.assertCurrentPath('/');
-    });
+    await this.visitAndAssert('/');
+    assert.equal(modelCount, 1);
+    let controller = this.getController('home');
+    await this.setAndFlush(controller, 'model', emberA([1]));
+    assert.equal(modelCount, 1);
+    this.assertCurrentPath('/');
   }
 
   ['@test Defaulting to params hash as the model should not result in that params object being watched'](assert) {
@@ -1145,29 +1124,27 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     });
   }
 
-  ['@test Setting bound query param property to null or undefined does not serialize to url'](assert) {
+  async ['@test Setting bound query param property to null or undefined does not serialize to url'](assert) {
     assert.expect(9);
     this.router.map(function () {
       this.route('home');
     });
     this.setSingleQPController('home', 'foo', [1, 2]);
-    return this.visitAndAssert('/home').then(() => {
-      var controller = this.getController('home');
-      assert.deepEqual(controller.get('foo'), [1, 2]);
-      this.assertCurrentPath('/home');
-      this.setAndFlush(controller, 'foo', emberA([1, 3]));
-      this.assertCurrentPath('/home?foo=%5B1%2C3%5D');
-      return this.transitionTo('/home').then(() => {
-        assert.deepEqual(controller.get('foo'), [1, 2]);
-        this.assertCurrentPath('/home');
-        this.setAndFlush(controller, 'foo', null);
-        this.assertCurrentPath('/home', 'Setting property to null');
-        this.setAndFlush(controller, 'foo', emberA([1, 3]));
-        this.assertCurrentPath('/home?foo=%5B1%2C3%5D');
-        this.setAndFlush(controller, 'foo', undefined);
-        this.assertCurrentPath('/home', 'Setting property to undefined');
-      });
-    });
+    await this.visitAndAssert('/home');
+    var controller = this.getController('home');
+    assert.deepEqual(controller.get('foo'), [1, 2]);
+    this.assertCurrentPath('/home');
+    await this.setAndFlush(controller, 'foo', emberA([1, 3]));
+    this.assertCurrentPath('/home?foo=%5B1%2C3%5D');
+    await this.transitionTo('/home');
+    assert.deepEqual(controller.get('foo'), [1, 2]);
+    this.assertCurrentPath('/home');
+    await this.setAndFlush(controller, 'foo', null);
+    this.assertCurrentPath('/home', 'Setting property to null');
+    await this.setAndFlush(controller, 'foo', emberA([1, 3]));
+    this.assertCurrentPath('/home?foo=%5B1%2C3%5D');
+    await this.setAndFlush(controller, 'foo', undefined);
+    this.assertCurrentPath('/home', 'Setting property to undefined');
   }
 
   ['@test {{link-to}} with null or undefined QPs does not get serialized into url'](assert) {
@@ -1212,7 +1189,7 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     return this.visitAndAssert('/');
   }
 
-  ['@test opting into replace does not affect transitions between routes'](assert) {
+  async ['@test opting into replace does not affect transitions between routes'](assert) {
     assert.expect(5);
     this.addTemplate('application', "{{link-to 'Foo' 'foo' id='foo-link'}}{{link-to 'Bar' 'bar' id='bar-no-qp-link'}}{{link-to 'Bar' 'bar' (query-params raytiley='isthebest') id='bar-link'}}{{outlet}}");
     this.router.map(function () {
@@ -1227,19 +1204,18 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
         }
       }
     }));
-    return this.visit('/').then(() => {
-      let controller = this.getController('bar');
-      this.expectedPushURL = '/foo';
-      run(document.getElementById('foo-link'), 'click');
-      this.expectedPushURL = '/bar';
-      run(document.getElementById('bar-no-qp-link'), 'click');
-      this.expectedReplaceURL = '/bar?raytiley=woot';
-      this.setAndFlush(controller, 'raytiley', 'woot');
-      this.expectedPushURL = '/foo';
-      run(document.getElementById('foo-link'), 'click');
-      this.expectedPushURL = '/bar?raytiley=isthebest';
-      run(document.getElementById('bar-link'), 'click');
-    });
+    await this.visit('/');
+    let controller = this.getController('bar');
+    this.expectedPushURL = '/foo';
+    run(document.getElementById('foo-link'), 'click');
+    this.expectedPushURL = '/bar';
+    run(document.getElementById('bar-no-qp-link'), 'click');
+    this.expectedReplaceURL = '/bar?raytiley=woot';
+    await this.setAndFlush(controller, 'raytiley', 'woot');
+    this.expectedPushURL = '/foo';
+    run(document.getElementById('foo-link'), 'click');
+    this.expectedPushURL = '/bar?raytiley=isthebest';
+    run(document.getElementById('bar-link'), 'click');
   }
 
   ["@test undefined isn't serialized or deserialized into a string"](assert) {
@@ -1283,7 +1259,7 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
     return this.refreshModelWhileLoadingTest(true);
   }
 
-  ["@test warn user that Route's queryParams configuration must be an Object, not an Array"](assert) {
+  async ["@test warn user that Route's queryParams configuration must be an Object, not an Array"](assert) {
     assert.expect(1);
     this.add('route:application', Route.extend({
       queryParams: [{
@@ -1292,12 +1268,10 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
         }
       }]
     }));
-    expectAssertion(() => {
-      this.visit('/');
-    }, 'You passed in `[{"commitBy":{"replace":true}}]` as the value for `queryParams` but `queryParams` cannot be an Array');
+    await assert.rejectsAssertion(this.visit('/'), 'You passed in `[{"commitBy":{"replace":true}}]` as the value for `queryParams` but `queryParams` cannot be an Array');
   }
 
-  ['@test handle route names that clash with Object.prototype properties'](assert) {
+  async ['@test handle route names that clash with Object.prototype properties'](assert) {
     assert.expect(1);
     this.router.map(function () {
       this.route('constructor');
@@ -1309,15 +1283,14 @@ moduleFor('Query Params - main', class extends QueryParamTestCase {
         }
       }
     }));
-    return this.visit('/').then(() => {
-      this.transitionTo('constructor', {
-        queryParams: {
-          foo: '999'
-        }
-      });
-      let controller = this.getController('constructor');
-      assert.equal(get(controller, 'foo'), '999');
+    await this.visit('/');
+    await this.transitionTo('constructor', {
+      queryParams: {
+        foo: '999'
+      }
     });
+    let controller = this.getController('constructor');
+    assert.equal(get(controller, 'foo'), '999');
   }
 
 });

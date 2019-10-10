@@ -20,7 +20,7 @@ export function generateControllerFactory(owner, controllerName) {
     });
     let fullName = `controller:${controllerName}`;
     owner.register(fullName, Factory);
-    return Factory;
+    return owner.factoryFor(fullName);
 }
 /**
   Generates and instantiates a controller extending from `controller:basic`

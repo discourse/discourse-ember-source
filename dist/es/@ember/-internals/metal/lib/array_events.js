@@ -1,4 +1,5 @@
 import { peekMeta } from '@ember/-internals/meta';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { peekCacheFor } from './computed_cache';
 import { eachProxyArrayDidChange, eachProxyArrayWillChange } from './each_proxy_events';
 import { sendEvent } from './events';
@@ -17,7 +18,9 @@ export function arrayContentWillChange(array, startIdx, removeAmt, addAmt) {
             addAmt = -1;
         }
     }
-    eachProxyArrayWillChange(array, startIdx, removeAmt, addAmt);
+    if (!EMBER_METAL_TRACKED_PROPERTIES) {
+        eachProxyArrayWillChange(array, startIdx, removeAmt, addAmt);
+    }
     sendEvent(array, '@array:before', [array, startIdx, removeAmt, addAmt]);
     return array;
 }
@@ -40,7 +43,9 @@ export function arrayContentDidChange(array, startIdx, removeAmt, addAmt) {
         notifyPropertyChange(array, 'length', meta);
     }
     notifyPropertyChange(array, '[]', meta);
-    eachProxyArrayDidChange(array, startIdx, removeAmt, addAmt);
+    if (!EMBER_METAL_TRACKED_PROPERTIES) {
+        eachProxyArrayDidChange(array, startIdx, removeAmt, addAmt);
+    }
     sendEvent(array, '@array:change', [array, startIdx, removeAmt, addAmt]);
     let cache = peekCacheFor(array);
     if (cache !== undefined) {

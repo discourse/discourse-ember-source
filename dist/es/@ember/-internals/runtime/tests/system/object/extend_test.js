@@ -1,6 +1,6 @@
 import { computed, get, observer } from '@ember/-internals/metal';
 import EmberObject from '../../../lib/system/object';
-import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
 moduleFor('EmberObject.extend', class extends AbstractTestCase {
   ['@test Basic extend'](assert) {
     let SomeClass = EmberObject.extend({
@@ -119,7 +119,7 @@ moduleFor('EmberObject.extend', class extends AbstractTestCase {
     assert.deepEqual(get(yetAnother.constructor, 'things'), ['foo', 'baz'], "subclass should have base class' and its own");
   }
 
-  ['@test Overriding a computed property with an observer'](assert) {
+  async ['@test Overriding a computed property with an observer'](assert) {
     let Parent = EmberObject.extend({
       foo: computed(function () {
         return 'FOO';
@@ -136,8 +136,10 @@ moduleFor('EmberObject.extend', class extends AbstractTestCase {
     });
     assert.deepEqual(seen, []);
     child.set('bar', 1);
+    await runLoopSettled();
     assert.deepEqual(seen, [1]);
     child.set('bar', 2);
+    await runLoopSettled();
     assert.deepEqual(seen, [1, 2]);
   }
 

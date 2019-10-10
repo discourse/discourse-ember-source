@@ -6,7 +6,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   3.10.2
+ * @version   3.11.1
  */
 
 /*globals process */
@@ -139,7 +139,7 @@ enifed("@ember/-internals/browser-environment", ["exports"], function (_exports)
   var isFirefox = hasDom ? typeof InstallTrigger !== 'undefined' : false;
   _exports.isFirefox = isFirefox;
 });
-enifed("@ember/-internals/environment", ["exports"], function (_exports) {
+enifed("@ember/-internals/environment", ["exports", "@ember/deprecated-features"], function (_exports, _deprecatedFeatures) {
   "use strict";
 
   _exports.getLookup = getLookup;
@@ -323,12 +323,20 @@ enifed("@ember/-internals/environment", ["exports"], function (_exports) {
     if (EXTEND_PROTOTYPES !== undefined) {
       if (typeof EXTEND_PROTOTYPES === 'object' && EXTEND_PROTOTYPES !== null) {
         ENV.EXTEND_PROTOTYPES.String = EXTEND_PROTOTYPES.String !== false;
-        ENV.EXTEND_PROTOTYPES.Function = EXTEND_PROTOTYPES.Function !== false;
+
+        if (_deprecatedFeatures.FUNCTION_PROTOTYPE_EXTENSIONS) {
+          ENV.EXTEND_PROTOTYPES.Function = EXTEND_PROTOTYPES.Function !== false;
+        }
+
         ENV.EXTEND_PROTOTYPES.Array = EXTEND_PROTOTYPES.Array !== false;
       } else {
         var isEnabled = EXTEND_PROTOTYPES !== false;
         ENV.EXTEND_PROTOTYPES.String = isEnabled;
-        ENV.EXTEND_PROTOTYPES.Function = isEnabled;
+
+        if (_deprecatedFeatures.FUNCTION_PROTOTYPE_EXTENSIONS) {
+          ENV.EXTEND_PROTOTYPES.Function = isEnabled;
+        }
+
         ENV.EXTEND_PROTOTYPES.Array = isEnabled;
       }
     } // TODO this does not seem to be used by anything,
@@ -364,7 +372,7 @@ enifed("@ember/-internals/environment", ["exports"], function (_exports) {
     return ENV;
   }
 });
-enifed("@ember/-internals/utils", ["exports", "@ember/polyfills"], function (_exports, _polyfills) {
+enifed("@ember/-internals/utils", ["exports", "@ember/polyfills", "@ember/debug"], function (_exports, _polyfills, _debug) {
   "use strict";
 
   _exports.symbol = symbol;
@@ -389,7 +397,8 @@ enifed("@ember/-internals/utils", ["exports", "@ember/polyfills"], function (_ex
   _exports.toString = toString;
   _exports.isProxy = isProxy;
   _exports.setProxy = setProxy;
-  _exports.Cache = _exports.HAS_NATIVE_PROXY = _exports.HAS_NATIVE_SYMBOL = _exports.ROOT = _exports.checkHasSuper = _exports.GUID_KEY = _exports.getOwnPropertyDescriptors = _exports.NAME_KEY = void 0;
+  _exports.isEmberArray = isEmberArray;
+  _exports.setWithMandatorySetter = _exports.teardownMandatorySetter = _exports.setupMandatorySetter = _exports.EMBER_ARRAY = _exports.Cache = _exports.HAS_NATIVE_PROXY = _exports.HAS_NATIVE_SYMBOL = _exports.ROOT = _exports.checkHasSuper = _exports.GUID_KEY = _exports.getOwnPropertyDescriptors = _exports.NAME_KEY = void 0;
 
   /**
     Strongly hint runtimes to intern the provided string.
@@ -1082,6 +1091,122 @@ enifed("@ember/-internals/utils", ["exports", "@ember/polyfills"], function (_ex
 
     return Cache;
   }();
+
+  _exports.Cache = Cache;
+  var EMBER_ARRAY = symbol('EMBER_ARRAY');
+  _exports.EMBER_ARRAY = EMBER_ARRAY;
+
+  function isEmberArray(obj) {
+    return obj && obj[EMBER_ARRAY];
+  }
+
+  var setupMandatorySetter;
+  _exports.setupMandatorySetter = setupMandatorySetter;
+  var teardownMandatorySetter;
+  _exports.teardownMandatorySetter = teardownMandatorySetter;
+  var setWithMandatorySetter;
+  _exports.setWithMandatorySetter = setWithMandatorySetter;
+
+  if (true
+  /* DEBUG */
+  && false
+  /* EMBER_METAL_TRACKED_PROPERTIES */
+  ) {
+      var MANDATORY_SETTERS = new WeakMap();
+
+      var getPropertyDescriptor = function (obj, keyName) {
+        var current = obj;
+
+        while (current !== null) {
+          var desc = Object.getOwnPropertyDescriptor(current, keyName);
+
+          if (desc !== undefined) {
+            return desc;
+          }
+
+          current = Object.getPrototypeOf(current);
+        }
+
+        return;
+      };
+
+      var _propertyIsEnumerable = function (obj, key) {
+        return Object.prototype.propertyIsEnumerable.call(obj, key);
+      };
+
+      _exports.setupMandatorySetter = setupMandatorySetter = function (obj, keyName) {
+        var desc = getPropertyDescriptor(obj, keyName) || {};
+
+        if (desc.get || desc.set) {
+          // if it has a getter or setter, we can't install the mandatory setter.
+          // native setters are allowed, we have to assume that they will resolve
+          // to tracked properties.
+          return;
+        }
+
+        if (desc && (!desc.configurable || !desc.writable)) {
+          // if it isn't writable anyways, so we shouldn't provide the setter.
+          // if it isn't configurable, we can't overwrite it anyways.
+          return;
+        }
+
+        var setters = MANDATORY_SETTERS.get(obj);
+
+        if (setters === undefined) {
+          setters = {};
+          MANDATORY_SETTERS.set(obj, setters);
+        }
+
+        desc.hadOwnProperty = Object.hasOwnProperty.call(obj, keyName);
+        setters[keyName] = desc;
+        Object.defineProperty(obj, keyName, {
+          configurable: true,
+          enumerable: _propertyIsEnumerable(obj, keyName),
+          get: function () {
+            if (desc.get) {
+              return desc.get.call(this);
+            } else {
+              return desc.value;
+            }
+          },
+          set: function (value) {
+            true && !false && (0, _debug.assert)("You attempted to update " + this + "." + String(keyName) + " to \"" + String(value) + "\", but it is being tracked by a tracking context, such as a template, computed property, or observer. In order to make sure the context updates properly, you must invalidate the property when updating it. You can mark the property as `@tracked`, or use `@ember/object#set` to do this.");
+          }
+        });
+      };
+
+      _exports.teardownMandatorySetter = teardownMandatorySetter = function (obj, keyName) {
+        var setters = MANDATORY_SETTERS.get(obj);
+
+        if (setters !== undefined && setters[keyName] !== undefined) {
+          Object.defineProperty(obj, keyName, setters[keyName]);
+          setters[keyName] = undefined;
+        }
+      };
+
+      _exports.setWithMandatorySetter = setWithMandatorySetter = function (obj, keyName, value) {
+        var setters = MANDATORY_SETTERS.get(obj);
+
+        if (setters !== undefined && setters[keyName] !== undefined) {
+          var setter = setters[keyName];
+
+          if (setter.set) {
+            setter.set.call(obj, value);
+          } else {
+            setter.value = value; // If the object didn't have own property before, it would have changed
+            // the enumerability after setting the value the first time.
+
+            if (!setter.hadOwnProperty) {
+              var desc = getPropertyDescriptor(obj, keyName);
+              desc.enumerable = true;
+              Object.defineProperty(obj, keyName, desc);
+            }
+          }
+        } else {
+          obj[keyName] = value;
+        }
+      };
+    }
   /*
    This package will be eagerly parsed and should have no dependencies on external
    packages.
@@ -1094,7 +1219,6 @@ enifed("@ember/-internals/utils", ["exports", "@ember/polyfills"], function (_ex
   */
 
 
-  _exports.Cache = Cache;
   var NAME_KEY = symbol('NAME_KEY');
   _exports.NAME_KEY = NAME_KEY;
 });
@@ -1102,7 +1226,7 @@ enifed("@ember/canary-features/index", ["exports", "@ember/-internals/environmen
   "use strict";
 
   _exports.isEnabled = isEnabled;
-  _exports.EMBER_NATIVE_DECORATOR_SUPPORT = _exports.EMBER_ROUTING_BUILD_ROUTEINFO_METADATA = _exports.EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS = _exports.EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP = _exports.EMBER_METAL_TRACKED_PROPERTIES = _exports.EMBER_MODULE_UNIFICATION = _exports.EMBER_IMPROVED_INSTRUMENTATION = _exports.EMBER_LIBRARIES_ISREGISTERED = _exports.FEATURES = _exports.DEFAULT_FEATURES = void 0;
+  _exports.EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT = _exports.EMBER_GLIMMER_ON_MODIFIER = _exports.EMBER_CUSTOM_COMPONENT_ARG_PROXY = _exports.EMBER_GLIMMER_FN_HELPER = _exports.EMBER_NATIVE_DECORATOR_SUPPORT = _exports.EMBER_ROUTING_BUILD_ROUTEINFO_METADATA = _exports.EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS = _exports.EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES = _exports.EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP = _exports.EMBER_METAL_TRACKED_PROPERTIES = _exports.EMBER_MODULE_UNIFICATION = _exports.EMBER_IMPROVED_INSTRUMENTATION = _exports.EMBER_LIBRARIES_ISREGISTERED = _exports.FEATURES = _exports.DEFAULT_FEATURES = void 0;
 
   /**
     Set `EmberENV.FEATURES` in your application's `config/environment.js` file
@@ -1119,10 +1243,15 @@ enifed("@ember/canary-features/index", ["exports", "@ember/-internals/environmen
     EMBER_IMPROVED_INSTRUMENTATION: false,
     EMBER_MODULE_UNIFICATION: false,
     EMBER_METAL_TRACKED_PROPERTIES: false,
+    EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES: true,
     EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS: true,
     EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP: true,
     EMBER_ROUTING_BUILD_ROUTEINFO_METADATA: true,
-    EMBER_NATIVE_DECORATOR_SUPPORT: true
+    EMBER_NATIVE_DECORATOR_SUPPORT: true,
+    EMBER_GLIMMER_FN_HELPER: true,
+    EMBER_CUSTOM_COMPONENT_ARG_PROXY: false,
+    EMBER_GLIMMER_ON_MODIFIER: true,
+    EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT: true
   };
   /**
     The hash of enabled Canary features. Add to this, any canary features
@@ -1184,12 +1313,22 @@ enifed("@ember/canary-features/index", ["exports", "@ember/-internals/environmen
   _exports.EMBER_METAL_TRACKED_PROPERTIES = EMBER_METAL_TRACKED_PROPERTIES;
   var EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP = featureValue(FEATURES.EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP);
   _exports.EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP = EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP;
+  var EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES = featureValue(FEATURES.EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES);
+  _exports.EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES = EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES;
   var EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS = featureValue(FEATURES.EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS);
   _exports.EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS = EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS;
   var EMBER_ROUTING_BUILD_ROUTEINFO_METADATA = featureValue(FEATURES.EMBER_ROUTING_BUILD_ROUTEINFO_METADATA);
   _exports.EMBER_ROUTING_BUILD_ROUTEINFO_METADATA = EMBER_ROUTING_BUILD_ROUTEINFO_METADATA;
   var EMBER_NATIVE_DECORATOR_SUPPORT = featureValue(FEATURES.EMBER_NATIVE_DECORATOR_SUPPORT);
   _exports.EMBER_NATIVE_DECORATOR_SUPPORT = EMBER_NATIVE_DECORATOR_SUPPORT;
+  var EMBER_GLIMMER_FN_HELPER = featureValue(FEATURES.EMBER_GLIMMER_FN_HELPER);
+  _exports.EMBER_GLIMMER_FN_HELPER = EMBER_GLIMMER_FN_HELPER;
+  var EMBER_CUSTOM_COMPONENT_ARG_PROXY = featureValue(FEATURES.EMBER_CUSTOM_COMPONENT_ARG_PROXY);
+  _exports.EMBER_CUSTOM_COMPONENT_ARG_PROXY = EMBER_CUSTOM_COMPONENT_ARG_PROXY;
+  var EMBER_GLIMMER_ON_MODIFIER = featureValue(FEATURES.EMBER_GLIMMER_ON_MODIFIER);
+  _exports.EMBER_GLIMMER_ON_MODIFIER = EMBER_GLIMMER_ON_MODIFIER;
+  var EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT = featureValue(FEATURES.EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT);
+  _exports.EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT = EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT;
 });
 enifed("@ember/debug/index", ["exports", "@ember/-internals/browser-environment", "@ember/error", "@ember/debug/lib/deprecate", "@ember/debug/lib/testing", "@ember/debug/lib/warn"], function (_exports, _browserEnvironment, _error, _deprecate2, _testing, _warn2) {
   "use strict";
@@ -1857,7 +1996,7 @@ enifed("@ember/debug/lib/warn", ["exports", "@ember/debug/index", "@ember/debug/
 enifed("@ember/deprecated-features/index", ["exports"], function (_exports) {
   "use strict";
 
-  _exports.APP_CTRL_ROUTER_PROPS = _exports.ALIAS_METHOD = _exports.JQUERY_INTEGRATION = _exports.COMPONENT_MANAGER_STRING_LOOKUP = _exports.ROUTER_EVENTS = _exports.MERGE = _exports.LOGGER = _exports.RUN_SYNC = _exports.EMBER_EXTEND_PROTOTYPES = _exports.SEND_ACTION = void 0;
+  _exports.FUNCTION_PROTOTYPE_EXTENSIONS = _exports.APP_CTRL_ROUTER_PROPS = _exports.ALIAS_METHOD = _exports.JQUERY_INTEGRATION = _exports.COMPONENT_MANAGER_STRING_LOOKUP = _exports.ROUTER_EVENTS = _exports.MERGE = _exports.LOGGER = _exports.EMBER_EXTEND_PROTOTYPES = _exports.SEND_ACTION = void 0;
 
   /* eslint-disable no-implicit-coercion */
   // These versions should be the version that the deprecation was _introduced_,
@@ -1866,8 +2005,6 @@ enifed("@ember/deprecated-features/index", ["exports"], function (_exports) {
   _exports.SEND_ACTION = SEND_ACTION;
   var EMBER_EXTEND_PROTOTYPES = !!'3.2.0-beta.5';
   _exports.EMBER_EXTEND_PROTOTYPES = EMBER_EXTEND_PROTOTYPES;
-  var RUN_SYNC = !!'3.0.0-beta.4';
-  _exports.RUN_SYNC = RUN_SYNC;
   var LOGGER = !!'3.2.0-beta.1';
   _exports.LOGGER = LOGGER;
   var MERGE = !!'3.6.0-beta.1';
@@ -1880,8 +2017,10 @@ enifed("@ember/deprecated-features/index", ["exports"], function (_exports) {
   _exports.JQUERY_INTEGRATION = JQUERY_INTEGRATION;
   var ALIAS_METHOD = !!'3.9.0';
   _exports.ALIAS_METHOD = ALIAS_METHOD;
-  var APP_CTRL_ROUTER_PROPS = !!'3.10.0';
+  var APP_CTRL_ROUTER_PROPS = !!'3.10.0-beta.1';
   _exports.APP_CTRL_ROUTER_PROPS = APP_CTRL_ROUTER_PROPS;
+  var FUNCTION_PROTOTYPE_EXTENSIONS = !!'3.11.0-beta.1';
+  _exports.FUNCTION_PROTOTYPE_EXTENSIONS = FUNCTION_PROTOTYPE_EXTENSIONS;
 });
 enifed("@ember/error/index", ["exports"], function (_exports) {
   "use strict";
@@ -2714,23 +2853,15 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.blocks.push(component);
     };
 
-    _proto10.openSplattedElement = function openSplattedElement(element) {
+    _proto10.openElement = function openElement(_ref2) {
+      var element = _ref2[0],
+          simple = _ref2[1];
       var tag = element.tag;
 
       if (element.blockParams.length > 0) {
         throw new Error("Compile Error: <" + element.tag + "> is not a component and doesn't support block parameters");
       } else {
-        this.push([_wireFormat.Ops.OpenSplattedElement, tag]);
-      }
-    };
-
-    _proto10.openElement = function openElement(element) {
-      var tag = element.tag;
-
-      if (element.blockParams.length > 0) {
-        throw new Error("Compile Error: <" + element.tag + "> is not a component and doesn't support block parameters");
-      } else {
-        this.push([_wireFormat.Ops.OpenElement, tag]);
+        this.push([_wireFormat.Ops.OpenElement, tag, simple]);
       }
     };
 
@@ -2739,10 +2870,6 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
     };
 
     _proto10.closeComponent = function closeComponent(_element) {
-      if (_element.modifiers.length > 0) {
-        throw new Error('Compile Error: Element modifiers are not allowed in components');
-      }
-
       var _this$endComponent = this.endComponent(),
           tag = _this$endComponent[0],
           attrs = _this$endComponent[1],
@@ -2765,37 +2892,37 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.push([_wireFormat.Ops.CloseElement]);
     };
 
-    _proto10.staticAttr = function staticAttr(_ref2) {
-      var name = _ref2[0],
-          namespace = _ref2[1];
+    _proto10.staticAttr = function staticAttr(_ref3) {
+      var name = _ref3[0],
+          namespace = _ref3[1];
       var value = this.popValue();
       this.push([_wireFormat.Ops.StaticAttr, name, value, namespace]);
     };
 
-    _proto10.dynamicAttr = function dynamicAttr(_ref3) {
-      var name = _ref3[0],
-          namespace = _ref3[1];
+    _proto10.dynamicAttr = function dynamicAttr(_ref4) {
+      var name = _ref4[0],
+          namespace = _ref4[1];
       var value = this.popValue();
       this.push([_wireFormat.Ops.DynamicAttr, name, value, namespace]);
     };
 
-    _proto10.componentAttr = function componentAttr(_ref4) {
-      var name = _ref4[0],
-          namespace = _ref4[1];
+    _proto10.componentAttr = function componentAttr(_ref5) {
+      var name = _ref5[0],
+          namespace = _ref5[1];
       var value = this.popValue();
       this.push([_wireFormat.Ops.ComponentAttr, name, value, namespace]);
     };
 
-    _proto10.trustingAttr = function trustingAttr(_ref5) {
-      var name = _ref5[0],
-          namespace = _ref5[1];
+    _proto10.trustingAttr = function trustingAttr(_ref6) {
+      var name = _ref6[0],
+          namespace = _ref6[1];
       var value = this.popValue();
       this.push([_wireFormat.Ops.TrustingAttr, name, value, namespace]);
     };
 
-    _proto10.trustingComponentAttr = function trustingComponentAttr(_ref6) {
-      var name = _ref6[0],
-          namespace = _ref6[1];
+    _proto10.trustingComponentAttr = function trustingComponentAttr(_ref7) {
+      var name = _ref7[0],
+          namespace = _ref7[1];
       var value = this.popValue();
       this.push([_wireFormat.Ops.TrustingComponentAttr, name, value, namespace]);
     };
@@ -2854,9 +2981,9 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.pushValue([_wireFormat.Ops.Unknown, name]);
     };
 
-    _proto10.get = function get(_ref7) {
-      var head = _ref7[0],
-          path = _ref7[1];
+    _proto10.get = function get(_ref8) {
+      var head = _ref8[0],
+          path = _ref8[1];
       this.pushValue([_wireFormat.Ops.Get, head, path]);
     };
 
@@ -3115,8 +3242,6 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
 
     _proto11.openElement = function openElement(_op) {};
 
-    _proto11.openSplattedElement = function openSplattedElement(_op) {};
-
     _proto11.staticArg = function staticArg(_op) {};
 
     _proto11.dynamicArg = function dynamicArg(_op) {};
@@ -3192,9 +3317,9 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
     _proto12.process = function process(actions) {
       var _this9 = this;
 
-      actions.forEach(function (_ref8) {
-        var name = _ref8[0],
-            args = _ref8.slice(1);
+      actions.forEach(function (_ref9) {
+        var name = _ref9[0],
+            args = _ref9.slice(1);
 
         if (!_this9[name]) {
           throw new Error("Unimplemented " + name + " on TemplateCompiler");
@@ -3205,8 +3330,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       return this.opcodes;
     };
 
-    _proto12.startProgram = function startProgram(_ref9) {
-      var program = _ref9[0];
+    _proto12.startProgram = function startProgram(_ref10) {
+      var program = _ref10[0];
       this.opcode(['startProgram', program], program);
     };
 
@@ -3214,8 +3339,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.opcode(['endProgram', null], null);
     };
 
-    _proto12.startBlock = function startBlock(_ref10) {
-      var program = _ref10[0];
+    _proto12.startBlock = function startBlock(_ref11) {
+      var program = _ref11[0];
       this.templateId++;
       this.opcode(['startBlock', program], program);
     };
@@ -3225,28 +3350,32 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.opcode(['endBlock', null], null);
     };
 
-    _proto12.text = function text(_ref11) {
-      var action = _ref11[0];
+    _proto12.text = function text(_ref12) {
+      var action = _ref12[0];
       this.opcode(['text', action.chars], action);
     };
 
-    _proto12.comment = function comment(_ref12) {
-      var action = _ref12[0];
+    _proto12.comment = function comment(_ref13) {
+      var action = _ref13[0];
       this.opcode(['comment', action.value], action);
     };
 
-    _proto12.openElement = function openElement(_ref13) {
-      var action = _ref13[0];
+    _proto12.openElement = function openElement(_ref14) {
+      var action = _ref14[0];
       var attributes = action.attributes;
-      var hasSplat = false;
+      var simple = true;
 
       for (var i = 0; i < attributes.length; i++) {
         var attr = attributes[i];
 
         if (attr.name === '...attributes') {
-          hasSplat = true;
+          simple = false;
           break;
         }
+      }
+
+      if (action.modifiers.length > 0) {
+        simple = false;
       }
 
       var actionIsComponent = false;
@@ -3269,10 +3398,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       } else if (isComponent(action)) {
         this.opcode(['openComponent', action], action);
         actionIsComponent = true;
-      } else if (hasSplat) {
-        this.opcode(['openSplattedElement', action], action);
       } else {
-        this.opcode(['openElement', action], action);
+        this.opcode(['openElement', [action, simple]], action);
       }
 
       var typeAttr = null;
@@ -3284,36 +3411,34 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
           continue;
         }
 
-        this.attribute([attrs[_i2]], hasSplat || actionIsComponent);
+        this.attribute([attrs[_i2]], !simple || actionIsComponent);
       }
 
       if (typeAttr) {
-        this.attribute([typeAttr], hasSplat || actionIsComponent);
+        this.attribute([typeAttr], !simple || actionIsComponent);
+      }
+
+      for (var _i3 = 0; _i3 < action.modifiers.length; _i3++) {
+        this.modifier([action.modifiers[_i3]]);
       }
 
       this.opcode(['flushElement', action], null);
     };
 
-    _proto12.closeElement = function closeElement(_ref14) {
-      var action = _ref14[0];
+    _proto12.closeElement = function closeElement(_ref15) {
+      var action = _ref15[0];
 
       if (isDynamicComponent(action)) {
         this.opcode(['closeDynamicComponent', action], action);
       } else if (isComponent(action)) {
         this.opcode(['closeComponent', action], action);
-      } else if (action.modifiers.length > 0) {
-        for (var i = 0; i < action.modifiers.length; i++) {
-          this.modifier([action.modifiers[i]]);
-        }
-
-        this.opcode(['closeElement', action], action);
       } else {
         this.opcode(['closeElement', action], action);
       }
     };
 
-    _proto12.attribute = function attribute(_ref15, isComponent) {
-      var action = _ref15[0];
+    _proto12.attribute = function attribute(_ref16, isComponent) {
+      var action = _ref16[0];
       var name = action.name,
           value = action.value;
       var namespace = getAttrNamespace(name);
@@ -3345,16 +3470,16 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       }
     };
 
-    _proto12.modifier = function modifier(_ref16) {
-      var action = _ref16[0];
+    _proto12.modifier = function modifier(_ref17) {
+      var action = _ref17[0];
       assertIsSimplePath(action.path, action.loc, 'modifier');
       var parts = action.path.parts;
       this.prepareHelper(action);
       this.opcode(['modifier', parts[0]], action);
     };
 
-    _proto12.mustache = function mustache(_ref17) {
-      var action = _ref17[0];
+    _proto12.mustache = function mustache(_ref18) {
+      var action = _ref18[0];
       var path = action.path;
 
       if ((0, _syntax.isLiteral)(path)) {
@@ -3375,10 +3500,10 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       }
     };
 
-    _proto12.block = function block(_ref18) {
+    _proto12.block = function block(_ref19) {
       var action
       /*, index, count*/
-      = _ref18[0];
+      = _ref19[0];
       this.prepareHelper(action);
       var templateId = this.templateIds.pop();
       var inverseId = action.inverse === null ? null : this.templateIds.pop();
@@ -3386,8 +3511,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
     } /// Internal actions, not found in the original processed actions
     ;
 
-    _proto12.arg = function arg(_ref19) {
-      var path = _ref19[0];
+    _proto12.arg = function arg(_ref20) {
+      var path = _ref20[0];
 
       var _path$parts = path.parts,
           head = _path$parts[0],
@@ -3593,8 +3718,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
       this.opcode(['prepareArray', parts.length], null);
     };
 
-    _proto12.attributeMustache = function attributeMustache(_ref20) {
-      var action = _ref20[0];
+    _proto12.attributeMustache = function attributeMustache(_ref21) {
+      var action = _ref21[0];
       this.mustacheExpression(action);
     };
 
@@ -3620,8 +3745,8 @@ enifed("@glimmer/compiler", ["exports", "node-module", "ember-babel", "@glimmer/
     return mustache.params && mustache.params.length > 0 || mustache.hash && mustache.hash.pairs.length > 0;
   }
 
-  function isSimplePath(_ref21) {
-    var parts = _ref21.parts;
+  function isSimplePath(_ref22) {
+    var parts = _ref22.parts;
     return parts.length === 1;
   }
 
@@ -5941,7 +6066,7 @@ enifed("@glimmer/wire-format", ["exports"], function (_exports) {
   _exports.is = is;
   _exports.isAttribute = isAttribute;
   _exports.isArgument = isArgument;
-  _exports.Ops = _exports.isMaybeLocal = _exports.isGet = _exports.isFlushElement = void 0;
+  _exports.isMaybeLocal = _exports.isGet = _exports.isFlushElement = _exports.Ops = void 0;
   var Opcodes;
   _exports.Ops = Opcodes;
 
@@ -5955,31 +6080,30 @@ enifed("@glimmer/wire-format", ["exports"], function (_exports) {
     Opcodes[Opcodes["Component"] = 5] = "Component";
     Opcodes[Opcodes["DynamicComponent"] = 6] = "DynamicComponent";
     Opcodes[Opcodes["OpenElement"] = 7] = "OpenElement";
-    Opcodes[Opcodes["OpenSplattedElement"] = 8] = "OpenSplattedElement";
-    Opcodes[Opcodes["FlushElement"] = 9] = "FlushElement";
-    Opcodes[Opcodes["CloseElement"] = 10] = "CloseElement";
-    Opcodes[Opcodes["StaticAttr"] = 11] = "StaticAttr";
-    Opcodes[Opcodes["DynamicAttr"] = 12] = "DynamicAttr";
-    Opcodes[Opcodes["ComponentAttr"] = 13] = "ComponentAttr";
-    Opcodes[Opcodes["AttrSplat"] = 14] = "AttrSplat";
-    Opcodes[Opcodes["Yield"] = 15] = "Yield";
-    Opcodes[Opcodes["Partial"] = 16] = "Partial";
-    Opcodes[Opcodes["DynamicArg"] = 17] = "DynamicArg";
-    Opcodes[Opcodes["StaticArg"] = 18] = "StaticArg";
-    Opcodes[Opcodes["TrustingAttr"] = 19] = "TrustingAttr";
-    Opcodes[Opcodes["TrustingComponentAttr"] = 20] = "TrustingComponentAttr";
-    Opcodes[Opcodes["Debugger"] = 21] = "Debugger";
-    Opcodes[Opcodes["ClientSideStatement"] = 22] = "ClientSideStatement"; // Expressions
+    Opcodes[Opcodes["FlushElement"] = 8] = "FlushElement";
+    Opcodes[Opcodes["CloseElement"] = 9] = "CloseElement";
+    Opcodes[Opcodes["StaticAttr"] = 10] = "StaticAttr";
+    Opcodes[Opcodes["DynamicAttr"] = 11] = "DynamicAttr";
+    Opcodes[Opcodes["ComponentAttr"] = 12] = "ComponentAttr";
+    Opcodes[Opcodes["AttrSplat"] = 13] = "AttrSplat";
+    Opcodes[Opcodes["Yield"] = 14] = "Yield";
+    Opcodes[Opcodes["Partial"] = 15] = "Partial";
+    Opcodes[Opcodes["DynamicArg"] = 16] = "DynamicArg";
+    Opcodes[Opcodes["StaticArg"] = 17] = "StaticArg";
+    Opcodes[Opcodes["TrustingAttr"] = 18] = "TrustingAttr";
+    Opcodes[Opcodes["TrustingComponentAttr"] = 19] = "TrustingComponentAttr";
+    Opcodes[Opcodes["Debugger"] = 20] = "Debugger";
+    Opcodes[Opcodes["ClientSideStatement"] = 21] = "ClientSideStatement"; // Expressions
 
-    Opcodes[Opcodes["Unknown"] = 23] = "Unknown";
-    Opcodes[Opcodes["Get"] = 24] = "Get";
-    Opcodes[Opcodes["MaybeLocal"] = 25] = "MaybeLocal";
-    Opcodes[Opcodes["HasBlock"] = 26] = "HasBlock";
-    Opcodes[Opcodes["HasBlockParams"] = 27] = "HasBlockParams";
-    Opcodes[Opcodes["Undefined"] = 28] = "Undefined";
-    Opcodes[Opcodes["Helper"] = 29] = "Helper";
-    Opcodes[Opcodes["Concat"] = 30] = "Concat";
-    Opcodes[Opcodes["ClientSideExpression"] = 31] = "ClientSideExpression";
+    Opcodes[Opcodes["Unknown"] = 22] = "Unknown";
+    Opcodes[Opcodes["Get"] = 23] = "Get";
+    Opcodes[Opcodes["MaybeLocal"] = 24] = "MaybeLocal";
+    Opcodes[Opcodes["HasBlock"] = 25] = "HasBlock";
+    Opcodes[Opcodes["HasBlockParams"] = 26] = "HasBlockParams";
+    Opcodes[Opcodes["Undefined"] = 27] = "Undefined";
+    Opcodes[Opcodes["Helper"] = 28] = "Helper";
+    Opcodes[Opcodes["Concat"] = 29] = "Concat";
+    Opcodes[Opcodes["ClientSideExpression"] = 30] = "ClientSideExpression";
   })(Opcodes || (_exports.Ops = Opcodes = {}));
 
   function is(variant) {
@@ -5993,7 +6117,7 @@ enifed("@glimmer/wire-format", ["exports"], function (_exports) {
   _exports.isFlushElement = isFlushElement;
 
   function isAttribute(val) {
-    return val[0] === Opcodes.StaticAttr || val[0] === Opcodes.DynamicAttr || val[0] === Opcodes.ComponentAttr || val[0] === Opcodes.TrustingAttr || val[0] === Opcodes.TrustingComponentAttr || val[0] === Opcodes.AttrSplat;
+    return val[0] === Opcodes.StaticAttr || val[0] === Opcodes.DynamicAttr || val[0] === Opcodes.ComponentAttr || val[0] === Opcodes.TrustingAttr || val[0] === Opcodes.TrustingComponentAttr || val[0] === Opcodes.AttrSplat || val[0] === Opcodes.Modifier;
   }
 
   function isArgument(val) {
@@ -6377,6 +6501,55 @@ enifed("ember-template-compiler/lib/plugins/assert-local-variable-shadowing-help
     return node.params.length > 0 || node.hash.pairs.length > 0;
   }
 });
+enifed("ember-template-compiler/lib/plugins/assert-modifiers-not-in-components", ["exports", "@ember/debug", "ember-template-compiler/lib/system/calculate-location-display"], function (_exports, _debug, _calculateLocationDisplay) {
+  "use strict";
+
+  _exports.default = assertModifiersNotInComponents;
+
+  function assertModifiersNotInComponents(env) {
+    var moduleName = env.meta.moduleName;
+    var scopes = [];
+
+    function isComponentInvocation(node) {
+      return node.tag[0] === '@' || node.tag[0].toUpperCase() === node.tag[0] || node.tag.indexOf('.') > -1 || scopes.some(function (params) {
+        return params.some(function (p) {
+          return p === node.tag;
+        });
+      });
+    }
+
+    return {
+      name: 'assert-modifiers-not-in-components',
+      visitor: {
+        Program: {
+          enter: function (node) {
+            scopes.push(node.blockParams);
+          },
+          exit: function () {
+            scopes.pop();
+          }
+        },
+        ElementNode: {
+          keys: {
+            children: {
+              enter: function (node) {
+                scopes.push(node.blockParams);
+              },
+              exit: function () {
+                scopes.pop();
+              }
+            }
+          },
+          enter: function (node) {
+            if (node.modifiers.length > 0 && isComponentInvocation(node)) {
+              true && !false && (0, _debug.assert)("Passing modifiers to components require the \"ember-glimmer-forward-modifiers-with-splattributes\" canary feature, which has not been stabilized yet. See RFC #435 for details. " + (0, _calculateLocationDisplay.default)(moduleName, node.loc));
+            }
+          }
+        }
+      }
+    };
+  }
+});
 enifed("ember-template-compiler/lib/plugins/assert-reserved-named-arguments", ["exports", "@ember/debug", "ember-template-compiler/lib/system/calculate-location-display"], function (_exports, _debug, _calculateLocationDisplay) {
   "use strict";
 
@@ -6534,7 +6707,7 @@ enifed("ember-template-compiler/lib/plugins/deprecate-send-action", ["exports", 
     return;
   }
 });
-enifed("ember-template-compiler/lib/plugins/index", ["exports", "ember-template-compiler/lib/plugins/assert-if-helper-without-arguments", "ember-template-compiler/lib/plugins/assert-input-helper-without-block", "ember-template-compiler/lib/plugins/assert-local-variable-shadowing-helper-invocation", "ember-template-compiler/lib/plugins/assert-reserved-named-arguments", "ember-template-compiler/lib/plugins/assert-splattribute-expression", "ember-template-compiler/lib/plugins/deprecate-send-action", "ember-template-compiler/lib/plugins/transform-action-syntax", "ember-template-compiler/lib/plugins/transform-attrs-into-args", "ember-template-compiler/lib/plugins/transform-component-invocation", "ember-template-compiler/lib/plugins/transform-each-in-into-each", "ember-template-compiler/lib/plugins/transform-has-block-syntax", "ember-template-compiler/lib/plugins/transform-in-element", "ember-template-compiler/lib/plugins/transform-input-type-syntax", "ember-template-compiler/lib/plugins/transform-link-to", "ember-template-compiler/lib/plugins/transform-old-class-binding-syntax", "ember-template-compiler/lib/plugins/transform-quoted-bindings-into-just-bindings", "@ember/deprecated-features"], function (_exports, _assertIfHelperWithoutArguments, _assertInputHelperWithoutBlock, _assertLocalVariableShadowingHelperInvocation, _assertReservedNamedArguments, _assertSplattributeExpression, _deprecateSendAction, _transformActionSyntax, _transformAttrsIntoArgs, _transformComponentInvocation, _transformEachInIntoEach, _transformHasBlockSyntax, _transformInElement, _transformInputTypeSyntax, _transformLinkTo, _transformOldClassBindingSyntax, _transformQuotedBindingsIntoJustBindings, _deprecatedFeatures) {
+enifed("ember-template-compiler/lib/plugins/index", ["exports", "ember-template-compiler/lib/plugins/assert-if-helper-without-arguments", "ember-template-compiler/lib/plugins/assert-input-helper-without-block", "ember-template-compiler/lib/plugins/assert-local-variable-shadowing-helper-invocation", "ember-template-compiler/lib/plugins/assert-modifiers-not-in-components", "ember-template-compiler/lib/plugins/assert-reserved-named-arguments", "ember-template-compiler/lib/plugins/assert-splattribute-expression", "ember-template-compiler/lib/plugins/deprecate-send-action", "ember-template-compiler/lib/plugins/transform-action-syntax", "ember-template-compiler/lib/plugins/transform-attrs-into-args", "ember-template-compiler/lib/plugins/transform-component-invocation", "ember-template-compiler/lib/plugins/transform-each-in-into-each", "ember-template-compiler/lib/plugins/transform-has-block-syntax", "ember-template-compiler/lib/plugins/transform-in-element", "ember-template-compiler/lib/plugins/transform-input-type-syntax", "ember-template-compiler/lib/plugins/transform-link-to", "ember-template-compiler/lib/plugins/transform-old-class-binding-syntax", "ember-template-compiler/lib/plugins/transform-quoted-bindings-into-just-bindings", "@ember/deprecated-features"], function (_exports, _assertIfHelperWithoutArguments, _assertInputHelperWithoutBlock, _assertLocalVariableShadowingHelperInvocation, _assertModifiersNotInComponents, _assertReservedNamedArguments, _assertSplattributeExpression, _deprecateSendAction, _transformActionSyntax, _transformAttrsIntoArgs, _transformComponentInvocation, _transformEachInIntoEach, _transformHasBlockSyntax, _transformInElement, _transformInputTypeSyntax, _transformLinkTo, _transformOldClassBindingSyntax, _transformQuotedBindingsIntoJustBindings, _deprecatedFeatures) {
   "use strict";
 
   _exports.default = void 0;
@@ -6544,6 +6717,12 @@ enifed("ember-template-compiler/lib/plugins/index", ["exports", "ember-template-
   /* EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS */
   ) {
       transforms.push(_transformInputTypeSyntax.default);
+    }
+
+  if (!true
+  /* EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES */
+  ) {
+      transforms.push(_assertModifiersNotInComponents.default);
     }
 
   if (_deprecatedFeatures.SEND_ACTION) {
@@ -8171,6 +8350,60 @@ enifed("ember-template-compiler/tests/plugins/assert-local-variable-shadowing-he
     return _class;
   }(_internalTestHelpers.AbstractTestCase));
 });
+enifed("ember-template-compiler/tests/plugins/assert-modifiers-not-in-components-test", ["ember-babel", "ember-template-compiler/index", "internal-test-helpers"], function (_emberBabel, _index, _internalTestHelpers) {
+  "use strict";
+
+  if (!true
+  /* EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES */
+  ) {
+      (0, _internalTestHelpers.moduleFor)('ember-template-compiler: assert-modifiers-not-in-components',
+      /*#__PURE__*/
+      function (_AbstractTestCase) {
+        (0, _emberBabel.inheritsLoose)(_class, _AbstractTestCase);
+
+        function _class() {
+          return _AbstractTestCase.apply(this, arguments) || this;
+        }
+
+        var _proto = _class.prototype;
+
+        _proto["@test modifiers are not allowed in components"] = function () {
+          expectAssertion(function () {
+            (0, _index.compile)("<TheFoo {{bar \"something\" foo=\"else\"}}/>", {
+              moduleName: 'the-foo'
+            });
+          }, "Passing modifiers to components require the \"ember-glimmer-forward-modifiers-with-splattributes\" canary feature, which has not been stabilized yet. See RFC #435 for details. ('the-foo' @ L1:C0) ");
+          expectAssertion(function () {
+            (0, _index.compile)("<this.foo {{bar \"something\" foo=\"else\"}}></this.foo>", {
+              moduleName: 'the-foo'
+            });
+          }, "Passing modifiers to components require the \"ember-glimmer-forward-modifiers-with-splattributes\" canary feature, which has not been stabilized yet. See RFC #435 for details. ('the-foo' @ L1:C0) ");
+          expectAssertion(function () {
+            (0, _index.compile)("<api.foo {{bar \"something\" foo=\"else\"}}></api.foo>", {
+              moduleName: 'the-foo'
+            });
+          }, "Passing modifiers to components require the \"ember-glimmer-forward-modifiers-with-splattributes\" canary feature, which has not been stabilized yet. See RFC #435 for details. ('the-foo' @ L1:C0) ");
+          expectAssertion(function () {
+            (0, _index.compile)("<@foo {{bar \"something\" foo=\"else\"}}></@foo>", {
+              moduleName: 'the-foo'
+            });
+          }, "Passing modifiers to components require the \"ember-glimmer-forward-modifiers-with-splattributes\" canary feature, which has not been stabilized yet. See RFC #435 for details. ('the-foo' @ L1:C0) ");
+          expectAssertion(function () {
+            (0, _index.compile)("{{#let this.foo as |local|}}<local {{bar \"something\" foo=\"else\"}}></local>{{/let}}", {
+              moduleName: 'the-foo'
+            });
+          }, "Passing modifiers to components require the \"ember-glimmer-forward-modifiers-with-splattributes\" canary feature, which has not been stabilized yet. See RFC #435 for details. ('the-foo' @ L1:C28) ");
+          expectAssertion(function () {
+            (0, _index.compile)("<Parent as |local|><local {{bar \"something\" foo=\"else\"}}></local></Parent>", {
+              moduleName: 'the-foo'
+            });
+          }, "Passing modifiers to components require the \"ember-glimmer-forward-modifiers-with-splattributes\" canary feature, which has not been stabilized yet. See RFC #435 for details. ('the-foo' @ L1:C19) ");
+        };
+
+        return _class;
+      }(_internalTestHelpers.AbstractTestCase));
+    }
+});
 enifed("ember-template-compiler/tests/plugins/assert-reserved-named-arguments-test", ["ember-babel", "ember-template-compiler/index", "internal-test-helpers"], function (_emberBabel, _index, _internalTestHelpers) {
   "use strict";
 
@@ -9442,7 +9675,7 @@ enifed("ember/version", ["exports"], function (_exports) {
   "use strict";
 
   _exports.default = void 0;
-  var _default = "3.10.2";
+  var _default = "3.11.1";
   _exports.default = _default;
 });
 enifed("handlebars", ["exports"], function (_exports) {

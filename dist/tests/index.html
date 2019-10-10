@@ -9,7 +9,7 @@
         display: none;
       }
     </style>
-    <script src="../polyfill.js" nomodule></script>
+    <script src="../polyfill.js"></script>
     <script src="../qunit/qunit.js"></script>
     <script src="/testem.js"></script>
 
@@ -151,9 +151,10 @@
           QUnit.config.reorder = false;
         }
 
-        var testsTotal, testsPassed, testsFailed;
+        var testsTotal, testsPassed, testsFailed, testsRunning;
 
         QUnit.begin(function() {
+          testsRunning = true;
           testsTotal = testsPassed = testsFailed = 0;
 
           if (QUnit.urlParams.hideskipped) {
@@ -172,7 +173,19 @@
         });
 
         QUnit.done(function(result) {
-            console.log('\n' + 'Took ' + result.runtime + 'ms to run ' + testsTotal + ' tests. ' + testsPassed + ' passed, ' + testsFailed + ' failed.');
+          console.log('\n' + 'Took ' + result.runtime + 'ms to run ' + testsTotal + ' tests. ' + testsPassed + ' passed, ' + testsFailed + ' failed.');
+          testsRunning = false;
+        });
+
+        window.addEventListener('beforeunload', function (e) {
+          if (testsRunning) {
+            debugger
+
+            // Cancel the event
+            e.preventDefault();
+            // Chrome requires returnValue to be set
+            e.returnValue = '';
+          }
         });
       })();
     </script>

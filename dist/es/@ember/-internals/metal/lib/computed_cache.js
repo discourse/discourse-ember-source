@@ -22,9 +22,6 @@ export function getCacheFor(obj) {
     let cache = COMPUTED_PROPERTY_CACHED_VALUES.get(obj);
     if (cache === undefined) {
         cache = new Map();
-        if (EMBER_METAL_TRACKED_PROPERTIES) {
-            COMPUTED_PROPERTY_LAST_REVISION.set(obj, new Map());
-        }
         COMPUTED_PROPERTY_CACHED_VALUES.set(obj, cache);
     }
     return cache;
@@ -39,8 +36,12 @@ export let setLastRevisionFor;
 export let getLastRevisionFor;
 if (EMBER_METAL_TRACKED_PROPERTIES) {
     setLastRevisionFor = (obj, key, revision) => {
-        let lastRevision = COMPUTED_PROPERTY_LAST_REVISION.get(obj);
-        lastRevision.set(key, revision);
+        let cache = COMPUTED_PROPERTY_LAST_REVISION.get(obj);
+        if (cache === undefined) {
+            cache = new Map();
+            COMPUTED_PROPERTY_LAST_REVISION.set(obj, cache);
+        }
+        cache.set(key, revision);
     };
     getLastRevisionFor = (obj, key) => {
         let cache = COMPUTED_PROPERTY_LAST_REVISION.get(obj);

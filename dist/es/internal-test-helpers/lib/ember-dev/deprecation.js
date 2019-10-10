@@ -65,16 +65,34 @@ class DeprecationAssert extends DebugAssert {
                 tracker.expectCall(message, ['id', 'until']);
             });
         };
+        let expectDeprecationAsync = async (func, message) => {
+            let actualFunc;
+            if (typeof func !== 'function') {
+                message = func;
+                actualFunc = undefined;
+            }
+            else {
+                actualFunc = func;
+            }
+            await this.runExpectation(actualFunc, tracker => {
+                if (tracker.isExpectingNoCalls()) {
+                    throw new Error('expectDeprecation was called after expectNoDeprecation was called!');
+                }
+                tracker.expectCall(message, ['id', 'until']);
+            }, true);
+        };
         let ignoreDeprecation = func => {
             callWithStub(this.env, 'deprecate', func);
         };
         window.expectNoDeprecation = expectNoDeprecation;
         window.expectDeprecation = expectDeprecation;
+        window.expectDeprecationAsync = expectDeprecationAsync;
         window.ignoreDeprecation = ignoreDeprecation;
     }
     restore() {
         super.restore();
         window.expectDeprecation = null;
+        window.expectDeprecationAsync = null;
         window.expectNoDeprecation = null;
         window.ignoreDeprecation = null;
     }

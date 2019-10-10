@@ -2,7 +2,7 @@ import { run } from '@ember/runloop';
 import { get, set, addObserver, removeObserver } from '@ember/-internals/metal';
 import { Object as EmberObject, A as emberA } from '@ember/-internals/runtime';
 import EmberDataAdapter from '../lib/data_adapter';
-import { moduleFor, ApplicationTestCase } from 'internal-test-helpers';
+import { moduleFor, ApplicationTestCase, runLoopSettled } from 'internal-test-helpers';
 let adapter;
 const Model = EmberObject.extend();
 const PostClass = Model.extend();
@@ -258,6 +258,7 @@ moduleFor('Data Adapter', class extends ApplicationTestCase {
 
     }));
     this.add('model:post', PostClass);
+    let release;
     return this.visit('/').then(() => {
       adapter = this.applicationInstance.lookup('data-adapter:main');
 
@@ -270,7 +271,9 @@ moduleFor('Data Adapter', class extends ApplicationTestCase {
         assert.equal(records[0].columnValues.title, 'Post Modified');
       }
 
-      let release = adapter.watchRecords('post', recordsAdded, recordsUpdated);
+      release = adapter.watchRecords('post', recordsAdded, recordsUpdated);
+      return runLoopSettled();
+    }).then(() => {
       release();
       set(post, 'title', 'New Title');
       assert.equal(updatesCalled, 1, 'Release function removes observers');

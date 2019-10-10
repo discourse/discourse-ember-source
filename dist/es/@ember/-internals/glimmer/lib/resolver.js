@@ -2,7 +2,7 @@ import { privatize as P } from '@ember/-internals/container';
 import { ENV } from '@ember/-internals/environment';
 import { setOwner } from '@ember/-internals/owner';
 import { lookupComponent, lookupPartial } from '@ember/-internals/views';
-import { EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS, EMBER_MODULE_UNIFICATION, } from '@ember/canary-features';
+import { EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS, EMBER_GLIMMER_FN_HELPER, EMBER_GLIMMER_ON_MODIFIER, EMBER_MODULE_UNIFICATION, } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { _instrumentStart } from '@ember/instrumentation';
 import { LazyCompiler, Macros, PartialDefinition } from '@glimmer/opcode-compiler';
@@ -21,6 +21,7 @@ import { default as action } from './helpers/action';
 import { default as array } from './helpers/array';
 import { default as concat } from './helpers/concat';
 import { default as eachIn } from './helpers/each-in';
+import { default as fn } from './helpers/fn';
 import { default as get } from './helpers/get';
 import { default as hash } from './helpers/hash';
 import { inlineIf, inlineUnless } from './helpers/if-unless';
@@ -31,6 +32,7 @@ import { default as readonly } from './helpers/readonly';
 import { default as unbound } from './helpers/unbound';
 import ActionModifierManager from './modifiers/action';
 import { CustomModifierDefinition } from './modifiers/custom';
+import OnModifierManager from './modifiers/on';
 import { populateMacros } from './syntax';
 import { mountHelper } from './syntax/mount';
 import { outletHelper } from './syntax/outlet';
@@ -67,10 +69,11 @@ const BUILTINS_HELPERS = {
     '-mount': mountHelper,
     '-outlet': outletHelper,
     '-assert-implicit-component-helper-argument': componentAssertionHelper,
+    fn: undefined,
 };
-const BUILTIN_MODIFIERS = {
-    action: { manager: new ActionModifierManager(), state: null },
-};
+if (EMBER_GLIMMER_FN_HELPER) {
+    BUILTINS_HELPERS.fn = fn;
+}
 export default class RuntimeResolver {
     constructor(isInteractive) {
         this.handles = [
@@ -78,7 +81,6 @@ export default class RuntimeResolver {
         ];
         this.objToHandle = new WeakMap();
         this.builtInHelpers = BUILTINS_HELPERS;
-        this.builtInModifiers = BUILTIN_MODIFIERS;
         // supports directly imported late bound layouts on component.prototype.layout
         this.templateCache = new Map();
         this.componentDefinitionCache = new Map();
@@ -91,6 +93,12 @@ export default class RuntimeResolver {
         populateMacros(macros);
         this.compiler = new LazyCompiler(new CompileTimeLookup(this), this, macros);
         this.isInteractive = isInteractive;
+        this.builtInModifiers = {
+            action: { manager: new ActionModifierManager(), state: null },
+        };
+        if (EMBER_GLIMMER_ON_MODIFIER) {
+            this.builtInModifiers.on = { manager: new OnModifierManager(isInteractive), state: null };
+        }
     }
     /***  IRuntimeResolver ***/
     /**

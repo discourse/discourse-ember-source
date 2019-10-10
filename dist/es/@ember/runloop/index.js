@@ -1,8 +1,8 @@
-import { assert, deprecate } from '@ember/debug';
+import { assert } from '@ember/debug';
 import { onErrorTarget } from '@ember/-internals/error-handling';
-import { beginPropertyChanges, endPropertyChanges } from '@ember/-internals/metal';
+import { flushInvalidActiveObservers } from '@ember/-internals/metal';
 import Backburner from 'backburner';
-import { RUN_SYNC } from '@ember/deprecated-features';
+import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 let currentRunLoop = null;
 export function getCurrentRunLoop() {
   return currentRunLoop;
@@ -14,6 +14,22 @@ function onBegin(current) {
 
 function onEnd(current, next) {
   currentRunLoop = next;
+
+  if (EMBER_METAL_TRACKED_PROPERTIES) {
+    flushInvalidActiveObservers();
+  }
+}
+
+let flush;
+
+if (EMBER_METAL_TRACKED_PROPERTIES) {
+  flush = function (queueName, next) {
+    if (queueName === 'render' || queueName === _rsvpErrorQueue) {
+      flushInvalidActiveObservers();
+    }
+
+    next();
+  };
 }
 
 export const _rsvpErrorQueue = `${Math.random()}${Date.now()}`.replace('.', '');
@@ -34,23 +50,14 @@ export const queues = ['actions', // used in router transitions to prevent unnec
 'routerTransitions', 'render', 'afterRender', 'destroy', // used to re-throw unhandled RSVP rejection errors specifically in this
 // position to avoid breaking anything rendered in the other sections
 _rsvpErrorQueue];
-let backburnerOptions = {
+export const backburner = new Backburner(queues, {
   defaultQueue: 'actions',
   onBegin,
   onEnd,
   onErrorTarget,
-  onErrorMethod: 'onerror'
-};
-
-if (RUN_SYNC) {
-  queues.unshift('sync');
-  backburnerOptions.sync = {
-    before: beginPropertyChanges,
-    after: endPropertyChanges
-  };
-}
-
-export const backburner = new Backburner(queues, backburnerOptions);
+  onErrorMethod: 'onerror',
+  flush
+});
 /**
  @module @ember/runloop
 */
@@ -311,13 +318,9 @@ export function end() {
   @public
 */
 
-export function schedule(queue
-/*, target, method */
-) {
-  deprecate(`Scheduling into the '${queue}' run loop queue is deprecated.`, queue !== 'sync', {
-    id: 'ember-metal.run.sync',
-    until: '3.5.0'
-  });
+export function schedule()
+/* queue, target, method */
+{
   return backburner.schedule(...arguments);
 } // Used by global test teardown
 
@@ -457,13 +460,9 @@ export function once(...args) {
   @public
 */
 
-export function scheduleOnce(queue
-/*, target, method*/
-) {
-  deprecate(`Scheduling into the '${queue}' run loop queue is deprecated.`, queue !== 'sync', {
-    id: 'ember-metal.run.sync',
-    until: '3.5.0'
-  });
+export function scheduleOnce()
+/* queue, target, method*/
+{
   return backburner.scheduleOnce(...arguments);
 }
 /**

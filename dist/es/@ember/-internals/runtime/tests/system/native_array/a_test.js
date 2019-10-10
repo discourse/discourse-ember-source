@@ -11,7 +11,7 @@ moduleFor('Ember.A', class extends AbstractTestCase {
   }
 
   ['@test new Ember.A'](assert) {
-    expectDeprecation(() => {
+    expectAssertion(() => {
       assert.deepEqual(new A([1, 2]), [1, 2], 'array values were not be modified');
       assert.deepEqual(new A(), [], 'returned an array with no arguments');
       assert.deepEqual(new A(null), [], 'returned an array with a null argument');

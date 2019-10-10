@@ -42,6 +42,7 @@ moduleFor('Engine', class extends TestCase {
     }, `optionsForType 'view'`);
     verifyRegistration(assert, engine, 'controller:basic');
     verifyInjection(assert, engine, 'view', '_viewRegistry', '-view-registry:main');
+    verifyInjection(assert, engine, 'renderer', '_viewRegistry', '-view-registry:main');
     verifyInjection(assert, engine, 'route', '_topLevelViewTemplate', 'template:-outlet');
     verifyInjection(assert, engine, 'view:-outlet', 'namespace', 'application:main');
     verifyInjection(assert, engine, 'controller', 'target', 'router:main');

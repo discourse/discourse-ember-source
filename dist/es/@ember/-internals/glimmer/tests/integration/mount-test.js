@@ -1,4 +1,4 @@
-import { moduleFor, ApplicationTestCase, RenderingTestCase, runTask } from 'internal-test-helpers';
+import { moduleFor, ApplicationTestCase, RenderingTestCase, runTask, runLoopSettled } from 'internal-test-helpers';
 import { getOwner } from '@ember/-internals/owner';
 import { compile, Component } from '../utils/helpers';
 import Controller from '@ember/controller';
@@ -74,7 +74,7 @@ moduleFor('{{mount}} test', class extends ApplicationTestCase {
     });
   }
 
-  ['@test it emits a useful backtracking re-render assertion message']() {
+  async ['@test it emits a useful backtracking re-render assertion message'](assert) {
     this.router.map(function () {
       this.route('route-with-mount');
     });
@@ -100,11 +100,9 @@ moduleFor('{{mount}} test', class extends ApplicationTestCase {
 
     });
     let expectedBacktrackingMessage = /modified "person\.name" twice on \[object Object\] in a single render\. It was rendered in "template:my-app\/templates\/route-with-mount.hbs" \(in "engine:chat"\) and modified in "component:component-with-backtracking-set" \(in "engine:chat"\)/;
-    return this.visit('/').then(() => {
-      expectAssertion(() => {
-        this.visit('/route-with-mount');
-      }, expectedBacktrackingMessage);
-    });
+    await this.visit('/');
+    assert.throwsAssertion(() => runTask(() => this.visit('/route-with-mount')), expectedBacktrackingMessage);
+    await runLoopSettled();
   }
 
   ['@test it renders with a bound engine name']() {

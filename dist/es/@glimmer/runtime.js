@@ -640,27 +640,34 @@ APPEND_OPCODES.add(42 /* PopRemoteElement */, vm => {
 });
 APPEND_OPCODES.add(38 /* FlushElement */, vm => {
     let operations = vm.fetchValue(Register.t0);
+    let modifiers = null;
     if (operations) {
-        operations.flush(vm);
+        modifiers = operations.flush(vm);
         vm.loadValue(Register.t0, null);
     }
-    vm.elements().flushElement();
+    vm.elements().flushElement(modifiers);
 });
 APPEND_OPCODES.add(39 /* CloseElement */, vm => {
-    vm.elements().closeElement();
+    let modifiers = vm.elements().closeElement();
+    if (modifiers) {
+        modifiers.forEach(([manager, modifier]) => {
+            vm.env.scheduleInstallModifier(modifier, manager);
+            let destructor = manager.getDestructor(modifier);
+            if (destructor) {
+                vm.newDestroyable(destructor);
+            }
+        });
+    }
 });
 APPEND_OPCODES.add(40 /* Modifier */, (vm, { op1: handle }) => {
     let { manager, state } = vm.constants.resolveHandle(handle);
     let stack = vm.stack;
     let args = stack.pop();
-    let { element, updateOperations } = vm.elements();
+    let { constructing, updateOperations } = vm.elements();
     let dynamicScope = vm.dynamicScope();
-    let modifier = manager.create(element, state, args, dynamicScope, updateOperations);
-    vm.env.scheduleInstallModifier(modifier, manager);
-    let destructor = manager.getDestructor(modifier);
-    if (destructor) {
-        vm.newDestroyable(destructor);
-    }
+    let modifier = manager.create(constructing, state, args, dynamicScope, updateOperations);
+    let operations = vm.fetchValue(Register.t0);
+    operations.addModifier(manager, modifier);
     let tag = manager.getTag(modifier);
     if (!isConstTag(tag)) {
         vm.updateWith(new UpdateModifierOpcode(tag, manager, modifier));
@@ -982,6 +989,7 @@ class ComponentElementOperations {
     constructor() {
         this.attributes = dict();
         this.classes = [];
+        this.modifiers = [];
     }
     setAttribute(name, value, trusting, namespace) {
         let deferred = { value, namespace, trusting };
@@ -989,6 +997,9 @@ class ComponentElementOperations {
             this.classes.push(value);
         }
         this.attributes[name] = deferred;
+    }
+    addModifier(manager, modifier) {
+        this.modifiers.push([manager, modifier]);
     }
     flush(vm) {
         for (let name in this.attributes) {
@@ -1013,6 +1024,7 @@ class ComponentElementOperations {
                 vm.updateWith(new UpdateDynamicAttributeOpcode(reference, attribute));
             }
         }
+        return this.modifiers;
     }
 }
 APPEND_OPCODES.add(93 /* DidCreateElement */, (vm, { op1: _state }) => {
@@ -1981,12 +1993,12 @@ class Transaction {
         this.updatedManagers.push(manager);
     }
     scheduleInstallModifier(modifier, manager) {
-        this.scheduledInstallManagers.push(manager);
         this.scheduledInstallModifiers.push(modifier);
+        this.scheduledInstallManagers.push(manager);
     }
     scheduleUpdateModifier(modifier, manager) {
-        this.scheduledUpdateModifierManagers.push(manager);
         this.scheduledUpdateModifiers.push(modifier);
+        this.scheduledUpdateModifierManagers.push(manager);
     }
     didDestroy(d) {
         this.destructors.push(d);
@@ -2010,14 +2022,14 @@ class Transaction {
         }
         let { scheduledInstallManagers, scheduledInstallModifiers } = this;
         for (let i = 0; i < scheduledInstallManagers.length; i++) {
-            let manager = scheduledInstallManagers[i];
             let modifier = scheduledInstallModifiers[i];
+            let manager = scheduledInstallManagers[i];
             manager.install(modifier);
         }
         let { scheduledUpdateModifierManagers, scheduledUpdateModifiers } = this;
         for (let i = 0; i < scheduledUpdateModifierManagers.length; i++) {
-            let manager = scheduledUpdateModifierManagers[i];
             let modifier = scheduledUpdateModifiers[i];
+            let manager = scheduledUpdateModifierManagers[i];
             manager.update(modifier);
         }
     }
@@ -2202,6 +2214,7 @@ class NewElementBuilder {
         this.constructing = null;
         this.operations = null;
         this.cursorStack = new Stack();
+        this.modifierStack = new Stack();
         this.blockStack = new Stack();
         this.pushElement(parentNode, nextSibling);
         this.env = env;
@@ -2273,12 +2286,13 @@ class NewElementBuilder {
     __openElement(tag) {
         return this.dom.createElement(tag, this.element);
     }
-    flushElement() {
+    flushElement(modifiers) {
         let parent = this.element;
         let element = this.constructing;
         this.__flushElement(parent, element);
         this.constructing = null;
         this.operations = null;
+        this.pushModifiers(modifiers);
         this.pushElement(element, null);
         this.didOpenElement(element);
     }
@@ -2288,6 +2302,7 @@ class NewElementBuilder {
     closeElement() {
         this.willCloseElement();
         this.popElement();
+        return this.popModifiers();
     }
     pushRemoteElement(element, guid, nextSibling = null) {
         this.__pushRemoteElement(element, guid, nextSibling);
@@ -2303,6 +2318,12 @@ class NewElementBuilder {
     }
     pushElement(element, nextSibling) {
         this.cursorStack.push(new Cursor(element, nextSibling));
+    }
+    pushModifiers(modifiers) {
+        this.modifierStack.push(modifiers);
+    }
+    popModifiers() {
+        return this.modifierStack.pop();
     }
     didAddDestroyable(d) {
         this.block().newDestroyable(d);

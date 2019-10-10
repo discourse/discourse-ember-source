@@ -73,7 +73,7 @@ class SerializeBuilder extends NewElementBuilder {
             this.element['needsExtraClose'] = false;
             super.closeElement();
         }
-        super.closeElement();
+        return super.closeElement();
     }
     openElement(tag) {
         if (tag === 'tr') {
@@ -84,7 +84,7 @@ class SerializeBuilder extends NewElementBuilder {
                 // account for the insertion since it is injected here and not
                 // really in the template.
                 this.constructing['needsExtraClose'] = true;
-                this.flushElement();
+                this.flushElement(null);
             }
         }
         return super.openElement(tag);

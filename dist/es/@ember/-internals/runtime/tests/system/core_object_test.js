@@ -1,26 +1,26 @@
 import { getOwner, setOwner } from '@ember/-internals/owner';
 import { get, set, observer } from '@ember/-internals/metal';
 import CoreObject from '../../lib/system/core_object';
-import { moduleFor, AbstractTestCase, buildOwner } from 'internal-test-helpers';
+import { moduleFor, AbstractTestCase, buildOwner, runLoopSettled } from 'internal-test-helpers';
 moduleFor('Ember.CoreObject', class extends AbstractTestCase {
-  ['@test throws deprecation with new (one arg)']() {
-    expectDeprecation(() => {
+  ['@test throws an error with new (one arg)']() {
+    expectAssertion(() => {
       new CoreObject({
         firstName: 'Stef',
         lastName: 'Penner'
       });
-    }, /using `new` with EmberObject has been deprecated/);
+    }, /You may have either used `new` instead of `.create\(\)`/);
   }
 
-  ['@test throws deprecation with new (> 1 arg)']() {
-    expectDeprecation(() => {
+  ['@test throws an error with new (> 1 arg)']() {
+    expectAssertion(() => {
       new CoreObject({
         firstName: 'Stef',
         lastName: 'Penner'
       }, {
         other: 'name'
       });
-    }, /using `new` with EmberObject has been deprecated/);
+    }, /You may have either used `new` instead of `.create\(\)`/);
   }
 
   ['@test toString should be not be added as a property when calling toString()'](assert) {
@@ -93,7 +93,7 @@ moduleFor('Ember.CoreObject', class extends AbstractTestCase {
     }).create(options);
   }
 
-  ['@test observed properties are enumerable when set GH#14594'](assert) {
+  async ['@test observed properties are enumerable when set GH#14594'](assert) {
     let callCount = 0;
     let Test = CoreObject.extend({
       myProp: null,
@@ -110,6 +110,7 @@ moduleFor('Ember.CoreObject', class extends AbstractTestCase {
     assert.deepEqual(Object.keys(test).sort(), ['id', 'myProp']);
     set(test, 'anotherProp', 'nice');
     assert.deepEqual(Object.keys(test).sort(), ['anotherProp', 'id', 'myProp']);
+    await runLoopSettled();
     assert.equal(callCount, 1);
   }
 
