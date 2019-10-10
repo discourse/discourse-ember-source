@@ -72,7 +72,7 @@ const BUILTIN_MODIFIERS = {
     action: { manager: new ActionModifierManager(), state: null },
 };
 export default class RuntimeResolver {
-    constructor() {
+    constructor(isInteractive) {
         this.handles = [
             undefined,
         ];
@@ -90,6 +90,7 @@ export default class RuntimeResolver {
         let macros = new Macros();
         populateMacros(macros);
         this.compiler = new LazyCompiler(new CompileTimeLookup(this), this, macros);
+        this.isInteractive = isInteractive;
     }
     /***  IRuntimeResolver ***/
     /**
@@ -233,7 +234,7 @@ export default class RuntimeResolver {
             if (modifier !== undefined) {
                 let managerFactory = getModifierManager(modifier.class);
                 let manager = managerFactory(owner);
-                return new CustomModifierDefinition(name, modifier, manager);
+                return new CustomModifierDefinition(name, modifier, manager, this.isInteractive);
             }
         }
         return builtin;

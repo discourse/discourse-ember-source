@@ -67,6 +67,7 @@ export function setupEngineRegistry(registry) {
     registry.register(P `template:components/-default`, ComponentTemplate);
     registry.register('service:-glimmer-environment', Environment);
     registry.register(P `template-compiler:main`, TemplateCompiler);
+    registry.injection(P `template-compiler:main`, 'environment', '-environment:main');
     registry.injection('template', 'compiler', P `template-compiler:main`);
     registry.optionsForType('helper', { instantiate: false });
     registry.register('helper:loc', loc);

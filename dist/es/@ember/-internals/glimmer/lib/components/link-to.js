@@ -456,7 +456,7 @@ if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
         _currentRoute: alias('_routing.currentRouteName'),
         _currentRouterState: alias('_routing.currentState'),
         _targetRouterState: alias('_routing.targetState'),
-        _route: computed('route', '_currentRoute', function computeLinkToComponentRoute() {
+        _route: computed('route', '_currentRouterState', function computeLinkToComponentRoute() {
             let { route } = this;
             return route === UNDEFINED ? this._currentRoute : route;
         }),

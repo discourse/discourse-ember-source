@@ -298,7 +298,7 @@ export default EmberObject.extend({
               } else if (event.cancelBubble === true) {
                 break;
               }
-            } else if (target.hasAttribute('data-ember-action')) {
+            } else if (typeof target.hasAttribute === 'function' && target.hasAttribute('data-ember-action')) {
               if (actionHandler(target, event) === false) {
                 break;
               }

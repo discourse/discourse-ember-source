@@ -6,7 +6,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   3.10.0
+ * @version   3.10.2
  */
 
 /*globals process */
@@ -19469,14 +19469,60 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
           });
         };
 
-        _proto2['@test supplied QP properties can be bound'] = function testSuppliedQPPropertiesCanBeBound(assert) {
+        _proto2['@test generates proper href for `LinkTo` with no @route after transitioning to an error route GH#17963'] = function testGeneratesProperHrefForLinkToWithNoRouteAfterTransitioningToAnErrorRouteGH17963(assert) {
           var _this11 = this;
+
+          this.router.map(function () {
+            this.route('bad');
+          });
+          this.add('controller:application', _controller.default.extend({
+            queryParams: ['baz']
+          }));
+          this.add('route:bad', _routing.Route.extend({
+            model: function () {
+              throw new Error('bad!');
+            }
+          }));
+          this.addTemplate('error', "Error: {{model.message}}");
+          this.addTemplate('application', "\n          <LinkTo id=\"bad-link\" @route=\"bad\">\n            Bad\n          </LinkTo>\n\n          <LinkTo id=\"good-link\" @query={{hash baz='lol'}}>\n            Good\n          </LinkTo>\n\n          {{outlet}}\n          ");
+          return this.visit('/').then(function () {
+            assert.equal(_this11.$('#good-link').length, 1, 'good-link should be in the DOM');
+            assert.equal(_this11.$('#bad-link').length, 1, 'bad-link should be in the DOM');
+
+            var goodLink = _this11.$('#good-link');
+
+            assert.equal(goodLink.attr('href'), '/?baz=lol');
+            return _this11.visit('/bad');
+          }).then(function () {
+            assert.equal(_this11.$('#good-link').length, 1, 'good-link should be in the DOM');
+            assert.equal(_this11.$('#bad-link').length, 1, 'bad-link should be in the DOM');
+
+            var goodLink = _this11.$('#good-link'); // should still be / because we never entered /bad (it errored before being fully entered)
+            // and error states do not get represented in the URL, so we are _effectively_ still
+            // on /
+
+
+            assert.equal(goodLink.attr('href'), '/?baz=lol');
+            (0, _internalTestHelpers.runTask)(function () {
+              return _this11.click('#good-link');
+            });
+
+            var applicationController = _this11.getController('application');
+
+            assert.deepEqual(applicationController.getProperties('baz'), {
+              baz: 'lol'
+            }, 'index controller QP properties updated');
+          });
+        };
+
+        _proto2['@test supplied QP properties can be bound'] = function testSuppliedQPPropertiesCanBeBound(assert) {
+          var _this12 = this;
 
           this.addTemplate('index', "\n          <LinkTo id=\"the-link\" @query={{hash foo=boundThing}}>\n            Index\n          </LinkTo>\n          ");
           return this.visit('/').then(function () {
-            var indexController = _this11.getController('index');
+            var indexController = _this12.getController('index');
 
-            var theLink = _this11.$('#the-link');
+            var theLink = _this12.$('#the-link');
 
             assert.equal(theLink.attr('href'), '/?foo=OMG');
             (0, _internalTestHelpers.runTask)(function () {
@@ -19487,13 +19533,13 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
         };
 
         _proto2['@test supplied QP properties can be bound (booleans)'] = function testSuppliedQPPropertiesCanBeBoundBooleans(assert) {
-          var _this12 = this;
+          var _this13 = this;
 
           this.addTemplate('index', "\n          <LinkTo id=\"the-link\" @query={{hash abool=boundThing}}>\n            Index\n          </LinkTo>\n          ");
           return this.visit('/').then(function () {
-            var indexController = _this12.getController('index');
+            var indexController = _this13.getController('index');
 
-            var theLink = _this12.$('#the-link');
+            var theLink = _this13.$('#the-link');
 
             assert.equal(theLink.attr('href'), '/?abool=OMG');
             (0, _internalTestHelpers.runTask)(function () {
@@ -19501,7 +19547,7 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
             });
             assert.equal(theLink.attr('href'), '/?abool=false');
 
-            _this12.click('#the-link');
+            _this13.click('#the-link');
 
             assert.deepEqual(indexController.getProperties('foo', 'bar', 'abool'), {
               foo: '123',
@@ -19512,13 +19558,13 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
         };
 
         _proto2['@test href updates when unsupplied controller QP props change'] = function testHrefUpdatesWhenUnsuppliedControllerQPPropsChange(assert) {
-          var _this13 = this;
+          var _this14 = this;
 
           this.addTemplate('index', "\n          <LinkTo id=\"the-link\" @query={{hash foo='lol'}}>\n            Index\n          </LinkTo>\n          ");
           return this.visit('/').then(function () {
-            var indexController = _this13.getController('index');
+            var indexController = _this14.getController('index');
 
-            var theLink = _this13.$('#the-link');
+            var theLink = _this14.$('#the-link');
 
             assert.equal(theLink.attr('href'), '/?foo=lol');
             (0, _internalTestHelpers.runTask)(function () {
@@ -19533,7 +19579,7 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
         };
 
         _proto2['@test The <LinkTo /> component with only query params always transitions to the current route with the query params applied'] = function testTheLinkToComponentWithOnlyQueryParamsAlwaysTransitionsToTheCurrentRouteWithTheQueryParamsApplied(assert) {
-          var _this14 = this; // Test harness for bug #12033
+          var _this15 = this; // Test harness for bug #12033
 
 
           this.addTemplate('cars', "\n          <LinkTo id='create-link' @route='cars.create'>Create new car</LinkTo>\n          <LinkTo id='page2-link' @query={{hash page='2'}}>Page 2</LinkTo>\n          {{outlet}}\n          ");
@@ -19548,19 +19594,19 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
             page: 1
           }));
           return this.visit('/cars/create').then(function () {
-            var router = _this14.appRouter;
+            var router = _this15.appRouter;
 
-            var carsController = _this14.getController('cars');
+            var carsController = _this15.getController('cars');
 
             assert.equal(router.currentRouteName, 'cars.create');
             (0, _internalTestHelpers.runTask)(function () {
-              return _this14.click('#close-link');
+              return _this15.click('#close-link');
             });
             assert.equal(router.currentRouteName, 'cars.index');
             assert.equal(router.get('url'), '/cars');
             assert.equal(carsController.get('page'), 1, 'The page query-param is 1');
             (0, _internalTestHelpers.runTask)(function () {
-              return _this14.click('#page2-link');
+              return _this15.click('#page2-link');
             });
             assert.equal(router.currentRouteName, 'cars.index', 'The active route is still cars');
             assert.equal(router.get('url'), '/cars?page=2', 'The url has been updated');
@@ -19569,7 +19615,7 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
         };
 
         _proto2['@test the <LinkTo /> component applies activeClass when query params are not changed'] = function testTheLinkToComponentAppliesActiveClassWhenQueryParamsAreNotChanged(assert) {
-          var _this15 = this;
+          var _this16 = this;
 
           this.addTemplate('index', "\n          <LinkTo id='cat-link' @query={{hash foo='cat'}}>Index</LinkTo>\n          <LinkTo id='dog-link' @query={{hash foo='dog'}}>Index</LinkTo>\n          <LinkTo id='change-nothing' @route='index'>Index</LinkTo>\n          ");
           this.addTemplate('search', "\n          <LinkTo id='same-search' @query={{hash search='same'}}>Index</LinkTo>\n          <LinkTo id='change-search' @query={{hash search='change'}}>Index</LinkTo>\n          <LinkTo id='same-search-add-archive' @query={{hash search='same' archive=true}}>Index</LinkTo>\n          <LinkTo id='only-add-archive' @query={{hash archive=true}}>Index</LinkTo>\n          <LinkTo id='both-same' @query={{hash search='same' archive=true}}>Index</LinkTo>\n          <LinkTo id='change-one' @query={{hash search='different' archive=true}}>Index</LinkTo>\n          <LinkTo id='remove-one' @query={{hash search='different' archive=false}}>Index</LinkTo>\n          {{outlet}}\n          ");
@@ -19590,60 +19636,60 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
             showDetails: true
           }));
           return this.visit('/').then(function () {
-            _this15.shouldNotBeActive(assert, '#cat-link');
+            _this16.shouldNotBeActive(assert, '#cat-link');
 
-            _this15.shouldNotBeActive(assert, '#dog-link');
+            _this16.shouldNotBeActive(assert, '#dog-link');
 
-            return _this15.visit('/?foo=cat');
+            return _this16.visit('/?foo=cat');
           }).then(function () {
-            _this15.shouldBeActive(assert, '#cat-link');
+            _this16.shouldBeActive(assert, '#cat-link');
 
-            _this15.shouldNotBeActive(assert, '#dog-link');
+            _this16.shouldNotBeActive(assert, '#dog-link');
 
-            return _this15.visit('/?foo=dog');
+            return _this16.visit('/?foo=dog');
           }).then(function () {
-            _this15.shouldBeActive(assert, '#dog-link');
+            _this16.shouldBeActive(assert, '#dog-link');
 
-            _this15.shouldNotBeActive(assert, '#cat-link');
+            _this16.shouldNotBeActive(assert, '#cat-link');
 
-            _this15.shouldBeActive(assert, '#change-nothing');
+            _this16.shouldBeActive(assert, '#change-nothing');
 
-            return _this15.visit('/search?search=same');
+            return _this16.visit('/search?search=same');
           }).then(function () {
-            _this15.shouldBeActive(assert, '#same-search');
+            _this16.shouldBeActive(assert, '#same-search');
 
-            _this15.shouldNotBeActive(assert, '#change-search');
+            _this16.shouldNotBeActive(assert, '#change-search');
 
-            _this15.shouldNotBeActive(assert, '#same-search-add-archive');
+            _this16.shouldNotBeActive(assert, '#same-search-add-archive');
 
-            _this15.shouldNotBeActive(assert, '#only-add-archive');
+            _this16.shouldNotBeActive(assert, '#only-add-archive');
 
-            _this15.shouldNotBeActive(assert, '#remove-one');
+            _this16.shouldNotBeActive(assert, '#remove-one');
 
-            return _this15.visit('/search?search=same&archive=true');
+            return _this16.visit('/search?search=same&archive=true');
           }).then(function () {
-            _this15.shouldBeActive(assert, '#both-same');
+            _this16.shouldBeActive(assert, '#both-same');
 
-            _this15.shouldNotBeActive(assert, '#change-one');
+            _this16.shouldNotBeActive(assert, '#change-one');
 
-            return _this15.visit('/search/results?search=same&sort=title&showDetails=true');
+            return _this16.visit('/search/results?search=same&sort=title&showDetails=true');
           }).then(function () {
-            _this15.shouldBeActive(assert, '#same-sort-child-only');
+            _this16.shouldBeActive(assert, '#same-sort-child-only');
 
-            _this15.shouldBeActive(assert, '#same-search-parent-only');
+            _this16.shouldBeActive(assert, '#same-search-parent-only');
 
-            _this15.shouldNotBeActive(assert, '#change-search-parent-only');
+            _this16.shouldNotBeActive(assert, '#change-search-parent-only');
 
-            _this15.shouldBeActive(assert, '#same-search-same-sort-child-and-parent');
+            _this16.shouldBeActive(assert, '#same-search-same-sort-child-and-parent');
 
-            _this15.shouldNotBeActive(assert, '#same-search-different-sort-child-and-parent');
+            _this16.shouldNotBeActive(assert, '#same-search-different-sort-child-and-parent');
 
-            _this15.shouldNotBeActive(assert, '#change-search-same-sort-child-and-parent');
+            _this16.shouldNotBeActive(assert, '#change-search-same-sort-child-and-parent');
           });
         };
 
         _proto2['@test the <LinkTo /> component applies active class when query-param is a number'] = function testTheLinkToComponentAppliesActiveClassWhenQueryParamIsANumber(assert) {
-          var _this16 = this;
+          var _this17 = this;
 
           this.addTemplate('index', "\n          <LinkTo id='page-link' @query={{hash page=pageNumber}}>\n            Index\n          </LinkTo>\n          ");
           this.add('controller:index', _controller.default.extend({
@@ -19652,16 +19698,16 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
             pageNumber: 5
           }));
           return this.visit('/').then(function () {
-            _this16.shouldNotBeActive(assert, '#page-link');
+            _this17.shouldNotBeActive(assert, '#page-link');
 
-            return _this16.visit('/?page=5');
+            return _this17.visit('/?page=5');
           }).then(function () {
-            _this16.shouldBeActive(assert, '#page-link');
+            _this17.shouldBeActive(assert, '#page-link');
           });
         };
 
         _proto2['@test the <LinkTo /> component applies active class when query-param is an array'] = function testTheLinkToComponentAppliesActiveClassWhenQueryParamIsAnArray(assert) {
-          var _this17 = this;
+          var _this18 = this;
 
           this.addTemplate('index', "\n          <LinkTo id='array-link' @query={{hash pages=pagesArray}}>Index</LinkTo>\n          <LinkTo id='bigger-link' @query={{hash pages=biggerArray}}>Index</LinkTo>\n          <LinkTo id='empty-link' @query={{hash pages=emptyArray}}>Index</LinkTo>\n          ");
           this.add('controller:index', _controller.default.extend({
@@ -19672,36 +19718,36 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
             emptyArray: []
           }));
           return this.visit('/').then(function () {
-            _this17.shouldNotBeActive(assert, '#array-link');
+            _this18.shouldNotBeActive(assert, '#array-link');
 
-            return _this17.visit('/?pages=%5B1%2C2%5D');
+            return _this18.visit('/?pages=%5B1%2C2%5D');
           }).then(function () {
-            _this17.shouldBeActive(assert, '#array-link');
+            _this18.shouldBeActive(assert, '#array-link');
 
-            _this17.shouldNotBeActive(assert, '#bigger-link');
+            _this18.shouldNotBeActive(assert, '#bigger-link');
 
-            _this17.shouldNotBeActive(assert, '#empty-link');
+            _this18.shouldNotBeActive(assert, '#empty-link');
 
-            return _this17.visit('/?pages=%5B2%2C1%5D');
+            return _this18.visit('/?pages=%5B2%2C1%5D');
           }).then(function () {
-            _this17.shouldNotBeActive(assert, '#array-link');
+            _this18.shouldNotBeActive(assert, '#array-link');
 
-            _this17.shouldNotBeActive(assert, '#bigger-link');
+            _this18.shouldNotBeActive(assert, '#bigger-link');
 
-            _this17.shouldNotBeActive(assert, '#empty-link');
+            _this18.shouldNotBeActive(assert, '#empty-link');
 
-            return _this17.visit('/?pages=%5B1%2C2%2C3%5D');
+            return _this18.visit('/?pages=%5B1%2C2%2C3%5D');
           }).then(function () {
-            _this17.shouldBeActive(assert, '#bigger-link');
+            _this18.shouldBeActive(assert, '#bigger-link');
 
-            _this17.shouldNotBeActive(assert, '#array-link');
+            _this18.shouldNotBeActive(assert, '#array-link');
 
-            _this17.shouldNotBeActive(assert, '#empty-link');
+            _this18.shouldNotBeActive(assert, '#empty-link');
           });
         };
 
         _proto2['@test the <LinkTo /> component applies active class to the parent route'] = function testTheLinkToComponentAppliesActiveClassToTheParentRoute(assert) {
-          var _this18 = this;
+          var _this19 = this;
 
           this.router.map(function () {
             this.route('parent', function () {
@@ -19714,22 +19760,22 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
             foo: 'bar'
           }));
           return this.visit('/').then(function () {
-            _this18.shouldNotBeActive(assert, '#parent-link');
+            _this19.shouldNotBeActive(assert, '#parent-link');
 
-            _this18.shouldNotBeActive(assert, '#parent-child-link');
+            _this19.shouldNotBeActive(assert, '#parent-child-link');
 
-            _this18.shouldNotBeActive(assert, '#parent-link-qp');
+            _this19.shouldNotBeActive(assert, '#parent-link-qp');
 
-            return _this18.visit('/parent/child?foo=dog');
+            return _this19.visit('/parent/child?foo=dog');
           }).then(function () {
-            _this18.shouldBeActive(assert, '#parent-link');
+            _this19.shouldBeActive(assert, '#parent-link');
 
-            _this18.shouldNotBeActive(assert, '#parent-link-qp');
+            _this19.shouldNotBeActive(assert, '#parent-link-qp');
           });
         };
 
         _proto2['@test The <LinkTo /> component disregards query-params in activeness computation when current-when is specified'] = function testTheLinkToComponentDisregardsQueryParamsInActivenessComputationWhenCurrentWhenIsSpecified(assert) {
-          var _this19 = this;
+          var _this20 = this;
 
           var appLink;
           this.router.map(function () {
@@ -19742,24 +19788,24 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
             page: 1
           }));
           return this.visit('/').then(function () {
-            appLink = _this19.$('#app-link');
+            appLink = _this20.$('#app-link');
             assert.equal(appLink.attr('href'), '/parent');
 
-            _this19.shouldNotBeActive(assert, '#app-link');
+            _this20.shouldNotBeActive(assert, '#app-link');
 
-            return _this19.visit('/parent?page=2');
+            return _this20.visit('/parent?page=2');
           }).then(function () {
-            appLink = _this19.$('#app-link');
-            var router = _this19.appRouter;
+            appLink = _this20.$('#app-link');
+            var router = _this20.appRouter;
             assert.equal(appLink.attr('href'), '/parent');
 
-            _this19.shouldBeActive(assert, '#app-link');
+            _this20.shouldBeActive(assert, '#app-link');
 
-            assert.equal(_this19.$('#parent-link').attr('href'), '/parent');
+            assert.equal(_this20.$('#parent-link').attr('href'), '/parent');
 
-            _this19.shouldBeActive(assert, '#parent-link');
+            _this20.shouldBeActive(assert, '#parent-link');
 
-            var parentController = _this19.getController('parent');
+            var parentController = _this20.getController('parent');
 
             assert.equal(parentController.get('page'), 2);
             (0, _internalTestHelpers.runTask)(function () {
@@ -19767,19 +19813,19 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
             });
             assert.equal(router.get('location.path'), '/parent?page=3');
 
-            _this19.shouldBeActive(assert, '#app-link');
+            _this20.shouldBeActive(assert, '#app-link');
 
-            _this19.shouldBeActive(assert, '#parent-link');
+            _this20.shouldBeActive(assert, '#parent-link');
 
             (0, _internalTestHelpers.runTask)(function () {
-              return _this19.click('#app-link');
+              return _this20.click('#app-link');
             });
             assert.equal(router.get('location.path'), '/parent');
           });
         };
 
         _proto2['@test the <LinkTo /> component default query params while in active transition regression test'] = function testTheLinkToComponentDefaultQueryParamsWhileInActiveTransitionRegressionTest(assert) {
-          var _this20 = this;
+          var _this21 = this;
 
           this.router.map(function () {
             this.route('foos');
@@ -19810,43 +19856,43 @@ enifed("@ember/-internals/glimmer/tests/integration/components/link-to/query-par
             }
           }));
           return this.visit('/').then(function () {
-            var router = _this20.appRouter;
+            var router = _this21.appRouter;
 
-            var foosLink = _this20.$('#foos-link');
+            var foosLink = _this21.$('#foos-link');
 
-            var barsLink = _this20.$('#bars-link');
+            var barsLink = _this21.$('#bars-link');
 
-            var bazLink = _this20.$('#baz-foos-link');
+            var bazLink = _this21.$('#baz-foos-link');
 
             assert.equal(foosLink.attr('href'), '/foos');
             assert.equal(bazLink.attr('href'), '/foos?baz=true');
             assert.equal(barsLink.attr('href'), '/bars?quux=true');
             assert.equal(router.get('location.path'), '/');
 
-            _this20.shouldNotBeActive(assert, '#foos-link');
+            _this21.shouldNotBeActive(assert, '#foos-link');
 
-            _this20.shouldNotBeActive(assert, '#baz-foos-link');
+            _this21.shouldNotBeActive(assert, '#baz-foos-link');
 
-            _this20.shouldNotBeActive(assert, '#bars-link');
+            _this21.shouldNotBeActive(assert, '#bars-link');
 
             (0, _internalTestHelpers.runTask)(function () {
               return barsLink.click();
             });
 
-            _this20.shouldNotBeActive(assert, '#bars-link');
+            _this21.shouldNotBeActive(assert, '#bars-link');
 
             (0, _internalTestHelpers.runTask)(function () {
               return foosLink.click();
             });
 
-            _this20.shouldNotBeActive(assert, '#foos-link');
+            _this21.shouldNotBeActive(assert, '#foos-link');
 
             (0, _internalTestHelpers.runTask)(function () {
               return foos.resolve();
             });
             assert.equal(router.get('location.path'), '/foos');
 
-            _this20.shouldBeActive(assert, '#foos-link');
+            _this21.shouldBeActive(assert, '#foos-link');
           });
         };
 
@@ -30769,6 +30815,25 @@ enifed("@ember/-internals/glimmer/tests/integration/event-dispatcher-test", ["em
         });
         assert.ok(receivedEvent, 'click event was triggered');
         assert.notOk(receivedEvent.originalEvent, 'event is not a jQuery.Event');
+      };
+
+      _proto5['@test native event on text node does not throw on hasAttribute [ISSUE #16730]'] = function testNativeEventOnTextNodeDoesNotThrowOnHasAttributeISSUE16730(assert) {
+        this.registerComponent('x-foo', {
+          ComponentClass: _helpers.Component.extend({
+            actions: {
+              someAction: function () {}
+            }
+          }),
+          template: "<a id=\"inner\" href=\"#\" {{action 'someAction'}}>test</a>"
+        });
+        this.render("{{x-foo id=\"outer\"}}");
+        var node = this.$('#inner')[0].childNodes[0];
+        (0, _internalTestHelpers.runTask)(function () {
+          var event = document.createEvent('HTMLEvents');
+          event.initEvent('mousemove', true, true);
+          node.dispatchEvent(event);
+        });
+        assert.ok(true);
       };
 
       return _class5;
