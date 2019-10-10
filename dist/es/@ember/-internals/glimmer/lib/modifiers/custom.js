@@ -1,18 +1,21 @@
+import { CONSTANT_TAG } from '@glimmer/reference';
 // Currently there are no capabilities for modifiers
 export function capabilities(_managerAPI, _optionalFeatures) {
     return {};
 }
 export class CustomModifierDefinition {
-    constructor(name, ModifierClass, delegate) {
+    constructor(name, ModifierClass, delegate, isInteractive) {
         this.name = name;
         this.ModifierClass = ModifierClass;
         this.delegate = delegate;
-        this.manager = CUSTOM_MODIFIER_MANAGER;
         this.state = {
             ModifierClass,
             name,
             delegate,
         };
+        this.manager = isInteractive
+            ? CUSTOM_INTERACTIVE_MODIFIER_MANAGER
+            : CUSTOM_NON_INTERACTIVE_MODIFIER_MANAGER;
     }
 }
 export class CustomModifierState {
@@ -34,12 +37,15 @@ export class CustomModifierState {
   implements a set of hooks that determine modifier behavior.
   To create a custom modifier manager, instantiate a new CustomModifierManager
   class and pass the delegate as the first argument:
+
   ```js
   let manager = new CustomModifierManager({
     // ...delegate implementation...
   });
   ```
+
   ## Delegate Hooks
+
   Throughout the lifecycle of a modifier, the modifier manager will invoke
   delegate hooks that are responsible for surfacing those lifecycle changes to
   the end developer.
@@ -48,7 +54,7 @@ export class CustomModifierState {
   * `updateModifier()` - invoked when the arguments passed to a modifier change
   * `destroyModifier()` - invoked when the modifier is about to be destroyed
 */
-class CustomModifierManager {
+class InteractiveCustomModifierManager {
     create(element, definition, args) {
         const capturedArgs = args.capture();
         let instance = definition.delegate.createModifier(definition.ModifierClass, capturedArgs.value());
@@ -69,4 +75,18 @@ class CustomModifierManager {
         return state;
     }
 }
-const CUSTOM_MODIFIER_MANAGER = new CustomModifierManager();
+class NonInteractiveCustomModifierManager {
+    create() {
+        return null;
+    }
+    getTag() {
+        return CONSTANT_TAG;
+    }
+    install() { }
+    update() { }
+    getDestructor() {
+        return null;
+    }
+}
+const CUSTOM_INTERACTIVE_MODIFIER_MANAGER = new InteractiveCustomModifierManager();
+const CUSTOM_NON_INTERACTIVE_MODIFIER_MANAGER = new NonInteractiveCustomModifierManager();

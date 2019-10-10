@@ -578,6 +578,26 @@ if (jQueryDisabled) {
       assert.notOk(receivedEvent.originalEvent, 'event is not a jQuery.Event');
     }
 
+    ['@test native event on text node does not throw on hasAttribute [ISSUE #16730]'](assert) {
+      this.registerComponent('x-foo', {
+        ComponentClass: Component.extend({
+          actions: {
+            someAction() {}
+
+          }
+        }),
+        template: `<a id="inner" href="#" {{action 'someAction'}}>test</a>`
+      });
+      this.render(`{{x-foo id="outer"}}`);
+      let node = this.$('#inner')[0].childNodes[0];
+      runTask(() => {
+        let event = document.createEvent('HTMLEvents');
+        event.initEvent('mousemove', true, true);
+        node.dispatchEvent(event);
+      });
+      assert.ok(true);
+    }
+
   });
 } else {
   moduleFor('EventDispatcher#jquery-events', class extends RenderingTestCase {

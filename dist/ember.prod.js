@@ -6,7 +6,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   3.10.0
+ * @version   3.10.2
  */
 
 /*globals process */
@@ -2500,8 +2500,18 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   });
   _exports.OutletView = _exports.DebugStack = _exports.INVOKE = _exports.UpdatableReference = _exports.AbstractComponentManager = _exports._experimentalMacros = _exports.InteractiveRenderer = _exports.InertRenderer = _exports.Renderer = _exports.SafeString = _exports.Environment = _exports.Helper = _exports.ROOT_REF = _exports.Component = _exports.LinkComponent = _exports.TextArea = _exports.TextField = _exports.Checkbox = _exports.RootTemplate = void 0;
 
+  function _templateObject10() {
+    const data = _taggedTemplateLiteralLoose(["component:-default"]);
+
+    _templateObject10 = function () {
+      return data;
+    };
+
+    return data;
+  }
+
   function _templateObject9() {
-    var data = _taggedTemplateLiteralLoose(["component:-default"]);
+    const data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
 
     _templateObject9 = function () {
       return data;
@@ -2511,7 +2521,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject8() {
-    var data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
+    const data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
 
     _templateObject8 = function () {
       return data;
@@ -2521,7 +2531,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject7() {
-    var data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
+    const data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
 
     _templateObject7 = function () {
       return data;
@@ -2531,7 +2541,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject6() {
-    var data = _taggedTemplateLiteralLoose(["template:components/-default"]);
+    const data = _taggedTemplateLiteralLoose(["template:components/-default"]);
 
     _templateObject6 = function () {
       return data;
@@ -2541,7 +2551,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject5() {
-    var data = _taggedTemplateLiteralLoose(["template:-root"]);
+    const data = _taggedTemplateLiteralLoose(["template:-root"]);
 
     _templateObject5 = function () {
       return data;
@@ -2551,7 +2561,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject4() {
-    var data = _taggedTemplateLiteralLoose(["template:-root"]);
+    const data = _taggedTemplateLiteralLoose(["template:-root"]);
 
     _templateObject4 = function () {
       return data;
@@ -2561,7 +2571,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject3() {
-    var data = _taggedTemplateLiteralLoose(["component:-default"]);
+    const data = _taggedTemplateLiteralLoose(["component:-default"]);
 
     _templateObject3 = function () {
       return data;
@@ -2571,7 +2581,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject2() {
-    var data = _taggedTemplateLiteralLoose(["template:components/-default"]);
+    const data = _taggedTemplateLiteralLoose(["template:components/-default"]);
 
     _templateObject2 = function () {
       return data;
@@ -2581,7 +2591,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   }
 
   function _templateObject() {
-    var data = _taggedTemplateLiteralLoose(["template:components/-default"]);
+    const data = _taggedTemplateLiteralLoose(["template:components/-default"]);
 
     _templateObject = function () {
       return data;
@@ -5070,7 +5080,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
         _currentRoute: (0, _metal.alias)('_routing.currentRouteName'),
         _currentRouterState: (0, _metal.alias)('_routing.currentState'),
         _targetRouterState: (0, _metal.alias)('_routing.targetState'),
-        _route: (0, _metal.computed)('route', '_currentRoute', function computeLinkToComponentRoute() {
+        _route: (0, _metal.computed)('route', '_currentRouterState', function computeLinkToComponentRoute() {
           var route = this.route;
           return route === UNDEFINED ? this._currentRoute : route;
         }),
@@ -11009,16 +11019,16 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
     return {};
   }
 
-  var CustomModifierDefinition = function CustomModifierDefinition(name, ModifierClass, delegate) {
+  var CustomModifierDefinition = function CustomModifierDefinition(name, ModifierClass, delegate, isInteractive) {
     this.name = name;
     this.ModifierClass = ModifierClass;
     this.delegate = delegate;
-    this.manager = CUSTOM_MODIFIER_MANAGER;
     this.state = {
       ModifierClass: ModifierClass,
       name: name,
       delegate: delegate
     };
+    this.manager = isInteractive ? CUSTOM_INTERACTIVE_MODIFIER_MANAGER : CUSTOM_NON_INTERACTIVE_MODIFIER_MANAGER;
   };
 
   var CustomModifierState =
@@ -11049,12 +11059,15 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
     implements a set of hooks that determine modifier behavior.
     To create a custom modifier manager, instantiate a new CustomModifierManager
     class and pass the delegate as the first argument:
+  
     ```js
     let manager = new CustomModifierManager({
       // ...delegate implementation...
     });
     ```
+  
     ## Delegate Hooks
+  
     Throughout the lifecycle of a modifier, the modifier manager will invoke
     delegate hooks that are responsible for surfacing those lifecycle changes to
     the end developer.
@@ -11065,12 +11078,12 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   */
 
 
-  var CustomModifierManager =
+  var InteractiveCustomModifierManager =
   /*#__PURE__*/
   function () {
-    function CustomModifierManager() {}
+    function InteractiveCustomModifierManager() {}
 
-    var _proto59 = CustomModifierManager.prototype;
+    var _proto59 = InteractiveCustomModifierManager.prototype;
 
     _proto59.create = function create(element, definition, args) {
       var capturedArgs = args.capture();
@@ -11102,10 +11115,37 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       return state;
     };
 
-    return CustomModifierManager;
+    return InteractiveCustomModifierManager;
   }();
 
-  var CUSTOM_MODIFIER_MANAGER = new CustomModifierManager();
+  var NonInteractiveCustomModifierManager =
+  /*#__PURE__*/
+  function () {
+    function NonInteractiveCustomModifierManager() {}
+
+    var _proto60 = NonInteractiveCustomModifierManager.prototype;
+
+    _proto60.create = function create() {
+      return null;
+    };
+
+    _proto60.getTag = function getTag() {
+      return _reference.CONSTANT_TAG;
+    };
+
+    _proto60.install = function install() {};
+
+    _proto60.update = function update() {};
+
+    _proto60.getDestructor = function getDestructor() {
+      return null;
+    };
+
+    return NonInteractiveCustomModifierManager;
+  }();
+
+  var CUSTOM_INTERACTIVE_MODIFIER_MANAGER = new InteractiveCustomModifierManager();
+  var CUSTOM_NON_INTERACTIVE_MODIFIER_MANAGER = new NonInteractiveCustomModifierManager();
 
   function hashToArgs(hash) {
     if (hash === null) return null;
@@ -11362,9 +11402,9 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       return _AbstractManager6.apply(this, arguments) || this;
     }
 
-    var _proto60 = MountManager.prototype;
+    var _proto61 = MountManager.prototype;
 
-    _proto60.getDynamicLayout = function getDynamicLayout(state, _) {
+    _proto61.getDynamicLayout = function getDynamicLayout(state, _) {
       var template = state.engine.lookup('template:application');
       var layout = template.asLayout();
       return {
@@ -11373,11 +11413,11 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       };
     };
 
-    _proto60.getCapabilities = function getCapabilities() {
+    _proto61.getCapabilities = function getCapabilities() {
       return CAPABILITIES$4;
     };
 
-    _proto60.create = function create(environment, state) {
+    _proto61.create = function create(environment, state) {
       if (false
       /* DEBUG */
       ) {
@@ -11429,21 +11469,21 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       return bucket;
     };
 
-    _proto60.getSelf = function getSelf(_ref32) {
+    _proto61.getSelf = function getSelf(_ref32) {
       var self = _ref32.self;
       return self;
     };
 
-    _proto60.getTag = function getTag(state) {
+    _proto61.getTag = function getTag(state) {
       return state.tag;
     };
 
-    _proto60.getDestructor = function getDestructor(_ref33) {
+    _proto61.getDestructor = function getDestructor(_ref33) {
       var engine = _ref33.engine;
       return engine;
     };
 
-    _proto60.didRenderLayout = function didRenderLayout() {
+    _proto61.didRenderLayout = function didRenderLayout() {
       if (false
       /* DEBUG */
       ) {
@@ -11451,7 +11491,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
         }
     };
 
-    _proto60.update = function update(bucket) {
+    _proto61.update = function update(bucket) {
       var controller = bucket.controller,
           modelRef = bucket.modelRef,
           modelRev = bucket.modelRev;
@@ -11543,9 +11583,9 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       this._lastDef = null;
     }
 
-    var _proto61 = DynamicEngineReference.prototype;
+    var _proto62 = DynamicEngineReference.prototype;
 
-    _proto61.value = function value() {
+    _proto62.value = function value() {
       var env = this.env,
           nameRef = this.nameRef,
           modelRef = this.modelRef;
@@ -11573,7 +11613,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       }
     };
 
-    _proto61.get = function get() {
+    _proto62.get = function get() {
       return _runtime2.UNDEFINED_REFERENCE;
     };
 
@@ -11592,17 +11632,17 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       this.tag = _reference.DirtyableTag.create();
     }
 
-    var _proto62 = RootOutletReference.prototype;
+    var _proto63 = RootOutletReference.prototype;
 
-    _proto62.get = function get(key) {
+    _proto63.get = function get(key) {
       return new PathReference(this, key);
     };
 
-    _proto62.value = function value() {
+    _proto63.value = function value() {
       return this.outletState;
     };
 
-    _proto62.update = function update(state) {
+    _proto63.update = function update(state) {
       this.outletState.outlets.main = state;
       this.tag.inner.dirty();
     };
@@ -11623,15 +11663,15 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       this.tag = (0, _reference.combine)([parentStateRef.tag, outletNameRef.tag]);
     }
 
-    var _proto63 = OutletReference.prototype;
+    var _proto64 = OutletReference.prototype;
 
-    _proto63.value = function value() {
+    _proto64.value = function value() {
       var outletState = this.parentStateRef.value();
       var outlets = outletState === undefined ? undefined : outletState.outlets;
       return outlets === undefined ? undefined : outlets[this.outletNameRef.value()];
     };
 
-    _proto63.get = function get(key) {
+    _proto64.get = function get(key) {
       return new PathReference(this, key);
     };
 
@@ -11652,13 +11692,13 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       this.tag = parent.tag;
     }
 
-    var _proto64 = PathReference.prototype;
+    var _proto65 = PathReference.prototype;
 
-    _proto64.get = function get(key) {
+    _proto65.get = function get(key) {
       return new PathReference(this, key);
     };
 
-    _proto64.value = function value() {
+    _proto65.value = function value() {
       var parent = this.parent.value();
       return parent && parent[this.key];
     };
@@ -11745,9 +11785,9 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       this.tag = outletRef.tag;
     }
 
-    var _proto65 = OutletComponentReference.prototype;
+    var _proto66 = OutletComponentReference.prototype;
 
-    _proto65.value = function value() {
+    _proto66.value = function value() {
       var state = stateFor(this.outletRef);
 
       if (validate(state, this.lastState)) {
@@ -11764,7 +11804,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       return this.definition = definition;
     };
 
-    _proto65.get = function get(_key) {
+    _proto66.get = function get(_key) {
       return _runtime2.UNDEFINED_REFERENCE;
     };
 
@@ -11988,7 +12028,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
   var RuntimeResolver =
   /*#__PURE__*/
   function () {
-    function RuntimeResolver() {
+    function RuntimeResolver(isInteractive) {
       this.handles = [undefined];
       this.objToHandle = new WeakMap();
       this.builtInHelpers = BUILTINS_HELPERS;
@@ -12004,6 +12044,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       var macros = new _opcodeCompiler.Macros();
       populateMacros(macros);
       this.compiler = new _opcodeCompiler.LazyCompiler(new CompileTimeLookup(this), this, macros);
+      this.isInteractive = isInteractive;
     }
     /***  IRuntimeResolver ***/
 
@@ -12013,9 +12054,9 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
      */
 
 
-    var _proto66 = RuntimeResolver.prototype;
+    var _proto67 = RuntimeResolver.prototype;
 
-    _proto66.lookupComponentDefinition = function lookupComponentDefinition(name, meta) {
+    _proto67.lookupComponentDefinition = function lookupComponentDefinition(name, meta) {
       var handle = this.lookupComponentHandle(name, meta);
 
       if (handle === null) {
@@ -12026,7 +12067,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       return this.resolve(handle);
     };
 
-    _proto66.lookupComponentHandle = function lookupComponentHandle(name, meta) {
+    _proto67.lookupComponentHandle = function lookupComponentHandle(name, meta) {
       var nextHandle = this.handles.length;
       var handle = this.handle(this._lookupComponentDefinition(name, meta));
       false && !!(true
@@ -12044,7 +12085,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
      */
     ;
 
-    _proto66.resolve = function resolve(handle) {
+    _proto67.resolve = function resolve(handle) {
       return this.handles[handle];
     } // End IRuntimeResolver
 
@@ -12053,7 +12094,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
      */
     ;
 
-    _proto66.lookupHelper = function lookupHelper(name, meta) {
+    _proto67.lookupHelper = function lookupHelper(name, meta) {
       var nextHandle = this.handles.length;
 
       var helper$$1 = this._lookupHelper(name, meta);
@@ -12075,7 +12116,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
      */
     ;
 
-    _proto66.lookupModifier = function lookupModifier(name, meta) {
+    _proto67.lookupModifier = function lookupModifier(name, meta) {
       return this.handle(this._lookupModifier(name, meta));
     }
     /**
@@ -12083,7 +12124,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
      */
     ;
 
-    _proto66.lookupPartial = function lookupPartial(name, meta) {
+    _proto67.lookupPartial = function lookupPartial(name, meta) {
       var partial = this._lookupPartial(name, meta);
 
       return this.handle(partial);
@@ -12096,7 +12137,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
      */
     ;
 
-    _proto66.createTemplate = function createTemplate(factory, owner) {
+    _proto67.createTemplate = function createTemplate(factory, owner) {
       var cache = this.templateCache.get(owner);
       var template;
 
@@ -12124,7 +12165,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
     } // needed for lazy compile time lookup
     ;
 
-    _proto66.handle = function handle(obj) {
+    _proto67.handle = function handle(obj) {
       if (obj === undefined || obj === null) {
         return null;
       }
@@ -12139,7 +12180,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       return handle;
     };
 
-    _proto66._lookupHelper = function _lookupHelper(_name, meta) {
+    _proto67._lookupHelper = function _lookupHelper(_name, meta) {
       var helper$$1 = this.builtInHelpers[_name];
 
       if (helper$$1 !== undefined) {
@@ -12179,7 +12220,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       };
     };
 
-    _proto66._lookupPartial = function _lookupPartial(name, meta) {
+    _proto67._lookupPartial = function _lookupPartial(name, meta) {
       var template = (0, _views.lookupPartial)(name, meta.owner);
 
       if (template) {
@@ -12189,7 +12230,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       }
     };
 
-    _proto66._lookupModifier = function _lookupModifier(name, meta) {
+    _proto67._lookupModifier = function _lookupModifier(name, meta) {
       var builtin = this.builtInModifiers[name];
 
       if (builtin === undefined) {
@@ -12199,14 +12240,14 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
         if (modifier !== undefined) {
           var managerFactory = getModifierManager(modifier.class);
           var manager = managerFactory(owner);
-          return new CustomModifierDefinition(name, modifier, manager);
+          return new CustomModifierDefinition(name, modifier, manager, this.isInteractive);
         }
       }
 
       return builtin;
     };
 
-    _proto66._parseNameForNamespace = function _parseNameForNamespace(_name) {
+    _proto67._parseNameForNamespace = function _parseNameForNamespace(_name) {
       var name = _name;
       var namespace = undefined;
 
@@ -12223,7 +12264,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       };
     };
 
-    _proto66._lookupComponentDefinition = function _lookupComponentDefinition(_name, _ref34) {
+    _proto67._lookupComponentDefinition = function _lookupComponentDefinition(_name, _ref34) {
       var moduleName = _ref34.moduleName,
           owner = _ref34.owner;
       false && !(true
@@ -12292,7 +12333,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       return definition;
     };
 
-    _proto66._lookupComponentManager = function _lookupComponentManager(owner, managerId) {
+    _proto67._lookupComponentManager = function _lookupComponentManager(owner, managerId) {
       if (this.customManagerCache.has(managerId)) {
         return this.customManagerCache.get(managerId);
       }
@@ -12307,8 +12348,9 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
 
 
   var TemplateCompiler = {
-    create: function () {
-      return new RuntimeResolver().compiler;
+    create: function (_ref35) {
+      var environment = _ref35.environment;
+      return new RuntimeResolver(environment.isInteractive).compiler;
     }
   };
   var ComponentTemplate = template({
@@ -12400,9 +12442,9 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       return new OutletView(_environment, renderer, owner, template);
     };
 
-    var _proto67 = OutletView.prototype;
+    var _proto68 = OutletView.prototype;
 
-    _proto67.appendTo = function appendTo(selector) {
+    _proto68.appendTo = function appendTo(selector) {
       var target;
 
       if (this._environment.hasDOM) {
@@ -12414,15 +12456,15 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
       (0, _runloop.schedule)('render', this.renderer, 'appendOutletView', this, target);
     };
 
-    _proto67.rerender = function rerender() {
+    _proto68.rerender = function rerender() {
       /**/
     };
 
-    _proto67.setOutletState = function setOutletState(state) {
+    _proto68.setOutletState = function setOutletState(state) {
       this.ref.update(state);
     };
 
-    _proto67.destroy = function destroy() {
+    _proto68.destroy = function destroy() {
       /**/
     };
 
@@ -12438,8 +12480,8 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
     // association won't leak
 
     registry.register('service:-dom-builder', {
-      create: function (_ref35) {
-        var bootOptions = _ref35.bootOptions;
+      create: function (_ref36) {
+        var bootOptions = _ref36.bootOptions;
         var _renderMode = bootOptions._renderMode;
 
         switch (_renderMode) {
@@ -12466,14 +12508,14 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
     }
 
     registry.register('service:-dom-changes', {
-      create: function (_ref36) {
-        var document = _ref36.document;
+      create: function (_ref37) {
+        var document = _ref37.document;
         return new _runtime2.DOMChanges(document);
       }
     });
     registry.register('service:-dom-tree-construction', {
-      create: function (_ref37) {
-        var document = _ref37.document;
+      create: function (_ref38) {
+        var document = _ref38.document;
         var Implementation = _browserEnvironment.hasDOM ? _runtime2.DOMTreeConstruction : _node.NodeDOMTreeConstruction;
         return new Implementation(document);
       }
@@ -12489,7 +12531,8 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
     registry.register((0, _container.privatize)(_templateObject6()), ComponentTemplate);
     registry.register('service:-glimmer-environment', Environment$1);
     registry.register((0, _container.privatize)(_templateObject7()), TemplateCompiler);
-    registry.injection('template', 'compiler', (0, _container.privatize)(_templateObject8()));
+    registry.injection((0, _container.privatize)(_templateObject8()), 'environment', '-environment:main');
+    registry.injection('template', 'compiler', (0, _container.privatize)(_templateObject9()));
     registry.optionsForType('helper', {
       instantiate: false
     });
@@ -12509,7 +12552,7 @@ enifed("@ember/-internals/glimmer", ["exports", "node-module", "ember-babel", "@
     }
 
     if (!_environment2.ENV._TEMPLATE_ONLY_GLIMMER_COMPONENTS) {
-      registry.register((0, _container.privatize)(_templateObject9()), Component);
+      registry.register((0, _container.privatize)(_templateObject10()), Component);
     }
   }
 
@@ -20571,7 +20614,7 @@ enifed("@ember/-internals/routing/lib/services/router", ["exports", "ember-babel
       The `rootURL` property represents the URL of the root of
       the application, '/' by default.
       This prefix is assumed on all routes defined on this app.
-         IF you change the `rootURL` in your environment configuration
+         If you change the `rootURL` in your environment configuration
       like so:
          ```config/environment.js
       'use strict';
@@ -20592,10 +20635,23 @@ enifed("@ember/-internals/routing/lib/services/router", ["exports", "ember-babel
     rootURL: (0, _computed.readOnly)('_router.rootURL'),
 
     /**
-       A `RouteInfo` that represents the current leaf route.
-       It is guaranteed to change whenever a route transition
-       happens (even when that transition only changes parameters
-       and doesn't change the active route)
+      The `currentRoute` property contains metadata about the current leaf route.
+      It returns a `RouteInfo` object that has information like the route name,
+      params, query params and more.
+         See [RouteInfo](/ember/release/classes/RouteInfo) for more info.
+         This property is guaranteed to change whenever a route transition
+      happens (even when that transition only changes parameters
+      and doesn't change the active route).
+         Usage example:
+      ```app/components/header.js
+        import Component from '@ember/component';
+        import { inject as service } from '@ember/service';
+        import { computed } from '@ember/object';
+           export default Component.extend({
+          router: service(),
+             isChildRoute: computed.notEmpty('router.currentRoute.child')
+        });
+      ```
           @property currentRoute
        @type RouteInfo
        @public
@@ -33109,7 +33165,7 @@ enifed("@ember/-internals/views/lib/system/event_dispatcher", ["exports", "@embe
                 } else if (event.cancelBubble === true) {
                   break;
                 }
-              } else if (target.hasAttribute('data-ember-action')) {
+              } else if (typeof target.hasAttribute === 'function' && target.hasAttribute('data-ember-action')) {
                 if (actionHandler(target, event) === false) {
                   break;
                 }
@@ -34808,7 +34864,7 @@ enifed("@ember/application/lib/application", ["exports", "@ember/-internals/util
   _exports.default = void 0;
 
   function _templateObject() {
-    var data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
+    const data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
 
     _templateObject = function () {
       return data;
@@ -36805,7 +36861,7 @@ enifed("@ember/engine/index", ["exports", "@ember/engine/lib/engine-parent", "@e
   _exports.default = void 0;
 
   function _templateObject2() {
-    var data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
+    const data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
 
     _templateObject2 = function () {
       return data;
@@ -36815,7 +36871,7 @@ enifed("@ember/engine/index", ["exports", "@ember/engine/lib/engine-parent", "@e
   }
 
   function _templateObject() {
-    var data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
+    const data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
 
     _templateObject = function () {
       return data;
@@ -37272,7 +37328,7 @@ enifed("@ember/engine/instance", ["exports", "@ember/-internals/utils", "@ember/
   _exports.default = void 0;
 
   function _templateObject2() {
-    var data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
+    const data = _taggedTemplateLiteralLoose(["template-compiler:main"]);
 
     _templateObject2 = function () {
       return data;
@@ -37282,7 +37338,7 @@ enifed("@ember/engine/instance", ["exports", "@ember/-internals/utils", "@ember/
   }
 
   function _templateObject() {
-    var data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
+    const data = _taggedTemplateLiteralLoose(["-bucket-cache:main"]);
 
     _templateObject = function () {
       return data;
@@ -41433,15 +41489,20 @@ enifed("@ember/runloop/index", ["exports", "@ember/debug", "@ember/-internals/er
     ```javascript
     import { schedule } from '@ember/runloop';
   
+    schedule('afterRender', this, function() {
+      // this will be executed in the 'afterRender' queue
+      console.log('scheduled on afterRender queue');
+    });
+  
     schedule('actions', this, function() {
-      // this will be executed in the 'actions' queue, after bindings have synced.
+      // this will be executed in the 'actions' queue
       console.log('scheduled on actions queue');
     });
   
     // Note the functions will be run in order based on the run queues order.
     // Output would be:
-    //   scheduled on sync queue
     //   scheduled on actions queue
+    //   scheduled on afterRender queue
     ```
   
     @method schedule
@@ -55877,7 +55938,7 @@ enifed("ember/version", ["exports"], function (_exports) {
   "use strict";
 
   _exports.default = void 0;
-  var _default = "3.10.0";
+  var _default = "3.10.2";
   _exports.default = _default;
 });
 /*global enifed, module */

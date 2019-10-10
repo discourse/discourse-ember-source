@@ -6,7 +6,7 @@
  *            Portions Copyright 2008-2011 Apple Inc. All rights reserved.
  * @license   Licensed under MIT license
  *            See https://raw.github.com/emberjs/ember.js/master/LICENSE
- * @version   3.10.0
+ * @version   3.10.2
  */
 
 /*globals process */
@@ -7764,17 +7764,13 @@ enifed("ember-template-compiler/lib/system/initializer", ["require", "ember-temp
     Application.initializer({
       name: 'domTemplates',
       initialize: function () {
-        var context;
-
         if (hasDOM) {
-          context = document;
+          (0, _bootstrap.default)({
+            context: document,
+            hasTemplate: hasTemplate,
+            setTemplate: setTemplate
+          });
         }
-
-        (0, _bootstrap.default)({
-          context: context,
-          hasTemplate: hasTemplate,
-          setTemplate: setTemplate
-        });
       }
     });
   }
@@ -9446,7 +9442,7 @@ enifed("ember/version", ["exports"], function (_exports) {
   "use strict";
 
   _exports.default = void 0;
-  var _default = "3.10.0";
+  var _default = "3.10.2";
   _exports.default = _default;
 });
 enifed("handlebars", ["exports"], function (_exports) {
