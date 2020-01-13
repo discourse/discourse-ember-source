@@ -34,13 +34,13 @@ import { assert } from '@ember/debug';
   @param {Boolean} once A flag whether a function should only be called once
   @public
 */
-export function addListener(obj, eventName, target, method, once) {
+export function addListener(obj, eventName, target, method, once, sync = true) {
     assert('You must pass at least an object and event name to addListener', Boolean(obj) && Boolean(eventName));
     if (!method && 'function' === typeof target) {
         method = target;
         target = null;
     }
-    metaFor(obj).addToListeners(eventName, target, method, once === true);
+    metaFor(obj).addToListeners(eventName, target, method, once === true, sync);
 }
 /**
   Remove an event listener

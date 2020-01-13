@@ -1,4 +1,4 @@
-import { get, set } from '@ember/-internals/metal';
+import { set } from '@ember/-internals/metal';
 import { Object as EmberObject } from '@ember/-internals/runtime';
 import { assert } from '@ember/debug';
 /**
@@ -24,7 +24,7 @@ export default class NoneLocation extends EmberObject {
         this.implementation = 'none';
     }
     detect() {
-        let rootURL = this.rootURL;
+        let { rootURL } = this;
         assert('rootURL must end with a trailing forward slash e.g. "/app/"', rootURL.charAt(rootURL.length - 1) === '/');
     }
     /**
@@ -35,8 +35,7 @@ export default class NoneLocation extends EmberObject {
       @return {String} path
     */
     getURL() {
-        let path = get(this, 'path');
-        let rootURL = get(this, 'rootURL');
+        let { path, rootURL } = this;
         // remove trailing slashes if they exists
         rootURL = rootURL.replace(/\/$/, '');
         // remove rootURL from url
@@ -89,7 +88,7 @@ export default class NoneLocation extends EmberObject {
       @return {String} url
     */
     formatURL(url) {
-        let rootURL = get(this, 'rootURL');
+        let { rootURL } = this;
         if (url !== '') {
             // remove trailing slashes if they exists
             rootURL = rootURL.replace(/\/$/, '');

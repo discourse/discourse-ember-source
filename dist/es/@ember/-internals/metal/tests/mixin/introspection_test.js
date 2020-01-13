@@ -1,7 +1,7 @@
 // NOTE: A previous iteration differentiated between public and private props
 // as well as methods vs props.  We are just keeping these for testing; the
 // current impl doesn't care about the differences as much...
-import { guidFor, NAME_KEY } from '@ember/-internals/utils';
+import { guidFor } from '@ember/-internals/utils';
 import { mixin, Mixin } from '../..';
 import { moduleFor, AbstractTestCase } from 'internal-test-helpers';
 const PrivateProperty = Mixin.create({
@@ -42,19 +42,6 @@ moduleFor('Basic introspection', class extends AbstractTestCase {
     }
 
     assert.deepEqual(mapGuids(Mixin.mixins(obj)), mapGuids([PrivateProperty, PublicProperty, PrivateMethod, PublicMethod, Combined, BarProperties, BarMethods]), 'should return included mixins');
-  }
-
-  ['@test setting a NAME_KEY on a mixin does not error'](assert) {
-    assert.expect(0);
-    let instance = Mixin.create();
-    instance[NAME_KEY] = 'My special name!';
-  }
-
-  ['@test setting a NAME_KEY on a mixin instance does not error'](assert) {
-    assert.expect(0);
-    Mixin.create({
-      [NAME_KEY]: 'My special name'
-    });
   }
 
 });

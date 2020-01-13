@@ -141,12 +141,12 @@ moduleFor('Ember.ArrayProxy - content change (length)', class extends AbstractTe
       c: observer('colors.content.length', () => cCalled++),
       d: observer('colors.[]', () => dCalled++),
       e: observer('colors.content.[]', () => eCalled++)
-    }).create();
-    obj.set('model', ArrayProxy.create({
-      content: a(['red', 'yellow', 'blue'])
-    })); // bootstrap aliases
+    }).create(); // bootstrap aliases
 
     obj.length;
+    obj.set('model', ArrayProxy.create({
+      content: a(['red', 'yellow', 'blue'])
+    }));
     await runLoopSettled();
     assert.equal(obj.get('colors.content.length'), 3);
     assert.equal(obj.get('colors.length'), 3);

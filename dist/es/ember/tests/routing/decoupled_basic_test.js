@@ -129,9 +129,14 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
     }));
     this.add('controller:homepage', Controller.extend({
-      model: {
-        home: 'Comes from homepage'
+      init() {
+        this._super(...arguments);
+
+        this.model = {
+          home: 'Comes from homepage'
+        };
       }
+
     }));
     return this.visit('/').then(() => {
       let text = this.$('p').text();
@@ -149,14 +154,24 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
     }));
     this.add('controller:foo', Controller.extend({
-      model: {
-        home: 'Comes from foo'
+      init() {
+        this._super(...arguments);
+
+        this.model = {
+          home: 'Comes from foo'
+        };
       }
+
     }));
     this.add('controller:homepage', Controller.extend({
-      model: {
-        home: 'Comes from homepage'
+      init() {
+        this._super(...arguments);
+
+        this.model = {
+          home: 'Comes from homepage'
+        };
       }
+
     }));
     return this.visit('/').then(() => {
       let text = this.$('p').text();
@@ -179,9 +194,14 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
     }));
     this.add('controller:home', Controller.extend({
-      model: {
-        home: 'Comes from home.'
+      init() {
+        this._super(...arguments);
+
+        this.model = {
+          home: 'Comes from home.'
+        };
       }
+
     }));
     return this.visit('/').then(() => {
       let text = this.$('p').text();
@@ -191,9 +211,14 @@ moduleFor('Basic Routing - Decoupled from global resolver', class extends Applic
 
   [`@test The Homepage with explicit template name in renderTemplate and controller`](assert) {
     this.add('controller:home', Controller.extend({
-      model: {
-        home: 'YES I AM HOME'
+      init() {
+        this._super(...arguments);
+
+        this.model = {
+          home: 'YES I AM HOME'
+        };
       }
+
     }));
     this.add('route:home', Route.extend({
       renderTemplate() {

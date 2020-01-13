@@ -1,5 +1,5 @@
 import { history, location, userAgent, window } from '@ember/-internals/browser-environment';
-import { get, set } from '@ember/-internals/metal';
+import { set } from '@ember/-internals/metal';
 import { getOwner } from '@ember/-internals/owner';
 import { Object as EmberObject } from '@ember/-internals/runtime';
 import { tryInvoke } from '@ember/-internals/utils';
@@ -84,7 +84,7 @@ export default class AutoLocation extends EmberObject {
         set(this, 'concreteImplementation', concrete);
     }
     willDestroy() {
-        let concreteImplementation = get(this, 'concreteImplementation');
+        let { concreteImplementation } = this;
         if (concreteImplementation) {
             concreteImplementation.destroy();
         }
@@ -163,7 +163,7 @@ AutoLocation.reopen({
 });
 function delegateToConcreteImplementation(methodName) {
     return function (...args) {
-        let concreteImplementation = get(this, 'concreteImplementation');
+        let { concreteImplementation } = this;
         assert("AutoLocation's detect() method should be called before calling any other hooks.", Boolean(concreteImplementation));
         return tryInvoke(concreteImplementation, methodName, args);
     };

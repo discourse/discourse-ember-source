@@ -10,7 +10,7 @@ import { DEBUG } from '@glimmer/env';
 import EmberLocation from '../location/api';
 import { calculateCacheKey, extractRouteArgs, getActiveTargetName, resemblesURL } from '../utils';
 import DSL from './dsl';
-import { defaultSerialize, hasDefaultSerialize, ROUTER_EVENT_DEPRECATIONS, } from './route';
+import { defaultSerialize, hasDefaultSerialize, ROUTE_CONNECTIONS, ROUTER_EVENT_DEPRECATIONS, } from './route';
 import RouterState from './router_state';
 import Router, { logAbort, QUERY_PARAMS_SYMBOL, STATE_SYMBOL, } from 'router_js';
 function defaultDidTransition(infos) {
@@ -298,7 +298,7 @@ class EmberRouter extends EmberObject {
         }
         for (let i = 0; i < routeInfos.length; i++) {
             route = routeInfos[i].route;
-            let connections = route.connections;
+            let connections = ROUTE_CONNECTIONS.get(route);
             let ownState;
             for (let j = 0; j < connections.length; j++) {
                 let appended = appendLiveRoute(liveRoutes, defaultParentState, connections[j]);
@@ -348,7 +348,7 @@ class EmberRouter extends EmberObject {
       Transition the application into another route. The route may
       be either a single route or route path:
   
-      See [transitionTo](/api/ember/release/classes/Route/methods/transitionTo?anchor=transitionTo) for more info.
+      See [transitionTo](/ember/release/classes/Route/methods/transitionTo?anchor=transitionTo) for more info.
   
       @method transitionTo
       @param {String} name the name of the route or a URL
@@ -806,7 +806,10 @@ class EmberRouter extends EmberObject {
                     if (qp.urlKey === presentProp) {
                         return true;
                     }
-                    if (_fromRouterService && presentProp !== false) {
+                    if (_fromRouterService && presentProp !== false && qp.urlKey !== qp.prop) {
+                        // assumptions (mainly from current transitionTo_test):
+                        // - this is only supposed to be run when there is an alias to a query param and the alias is used to set the param
+                        // - when there is no alias: qp.urlKey == qp.prop
                         return false;
                     }
                     return true;

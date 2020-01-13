@@ -361,11 +361,11 @@ export class Meta {
             pointer = pointer.parent;
         }
     }
-    addToListeners(eventName, target, method, once) {
+    addToListeners(eventName, target, method, once, sync) {
         if (DEBUG) {
             counters.addToListenersCalls++;
         }
-        this.pushListener(eventName, target, method, once ? 1 /* ONCE */ : 0 /* ADD */);
+        this.pushListener(eventName, target, method, once ? 1 /* ONCE */ : 0 /* ADD */, sync);
     }
     removeFromListeners(eventName, target, method) {
         if (DEBUG) {
@@ -373,7 +373,7 @@ export class Meta {
         }
         this.pushListener(eventName, target, method, 2 /* REMOVE */);
     }
-    pushListener(event, target, method, kind) {
+    pushListener(event, target, method, kind, sync = false) {
         let listeners = this.writableListeners();
         let i = indexOfListener(listeners, event, target, method);
         // remove if found listener was inherited
@@ -395,6 +395,7 @@ export class Meta {
                 target,
                 method,
                 kind,
+                sync,
             });
         }
         else {
@@ -405,8 +406,12 @@ export class Meta {
                 listeners.splice(i, 1);
             }
             else {
+                assert(`You attempted to add an observer for the same method on '${event.split(':')[0]}' twice to ${target} as both sync and async. Observers must be either sync or async, they cannot be both. This is likely a mistake, you should either remove the code that added the observer a second time, or update it to always be sync or async. The method was ${method}.`, !(listener.kind === 0 /* ADD */ &&
+                    kind === 0 /* ADD */ &&
+                    listener.sync !== sync));
                 // update own listener
                 listener.kind = kind;
+                listener.sync = sync;
             }
         }
     }
@@ -531,7 +536,7 @@ export class Meta {
                         // matches to avoid allocations when no matches are found.
                         result = [];
                     }
-                    result.push(listener.event);
+                    result.push(listener);
                 }
             }
         }
@@ -544,28 +549,17 @@ if (DEBUG) {
             ? `Cannot set the value of \`${subkey}\` on \`${toString(this.source)}\` after it has been destroyed.`
             : '', !this.isMetaDestroyed());
         let map = this._getOrCreateOwnMap('_values');
-        map[subkey] = value;
+        map[subkey] = value === undefined ? UNDEFINED : value;
     };
-    Meta.prototype.peekValues = function (subkey) {
-        return this._findInherited2('_values', subkey);
+    Meta.prototype.peekValues = function (key) {
+        let val = this._findInherited2('_values', key);
+        return val === UNDEFINED ? undefined : val;
     };
-    Meta.prototype.deleteFromValues = function (subkey) {
-        delete this._getOrCreateOwnMap('_values')[subkey];
+    Meta.prototype.deleteFromValues = function (key) {
+        delete this._getOrCreateOwnMap('_values')[key];
     };
-    Meta.prototype.readInheritedValue = function (key, subkey) {
-        let internalKey = `_${key}`;
-        let pointer = this;
-        while (pointer !== null) {
-            let map = pointer[internalKey];
-            if (map !== undefined) {
-                let value = map[subkey];
-                if (value !== undefined || subkey in map) {
-                    return value;
-                }
-            }
-            pointer = pointer.parent;
-        }
-        return UNDEFINED;
+    Meta.prototype.readInheritedValue = function (key) {
+        return this._findInherited2('_values', key);
     };
     Meta.prototype.writeValue = function (obj, key, value) {
         let descriptor = lookupDescriptor(obj, key);

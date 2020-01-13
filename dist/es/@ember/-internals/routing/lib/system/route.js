@@ -1,7 +1,7 @@
-import { computed, defineProperty, flushInvalidActiveObservers, get, getProperties, isEmpty, set, setProperties, } from '@ember/-internals/metal';
+import { computed, defineProperty, get, getProperties, isEmpty, set, setProperties, } from '@ember/-internals/metal';
 import { getOwner } from '@ember/-internals/owner';
 import { A as emberA, ActionHandler, Evented, Object as EmberObject, setFrameworkClass, typeOf, } from '@ember/-internals/runtime';
-import { EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT, EMBER_METAL_TRACKED_PROPERTIES, EMBER_ROUTING_BUILD_ROUTEINFO_METADATA, } from '@ember/canary-features';
+import { EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT } from '@ember/canary-features';
 import { assert, deprecate, info, isTesting } from '@ember/debug';
 import { ROUTER_EVENTS } from '@ember/deprecated-features';
 import { assign } from '@ember/polyfills';
@@ -11,6 +11,7 @@ import { DEBUG } from '@glimmer/env';
 import { PARAMS_SYMBOL, STATE_SYMBOL, } from 'router_js';
 import { calculateCacheKey, normalizeControllerQueryParams, prefixRouteNameArg, stashParamNames, } from '../utils';
 import generateController from './generate_controller';
+export const ROUTE_CONNECTIONS = new WeakMap();
 export function defaultSerialize(model, params) {
     if (params.length < 1 || !model) {
         return;
@@ -295,12 +296,6 @@ class Route extends EmberObject {
         let controller = this.controller;
         controller._qpDelegate = get(this, '_qp.states.inactive');
         this.resetController(controller, isExiting, transition);
-        // TODO: Once tags are enabled by default, we should refactor QP changes to
-        // use autotracking. This will likely be a large refactor, and for now we
-        // just need to trigger observers eagerly.
-        if (EMBER_METAL_TRACKED_PROPERTIES) {
-            flushInvalidActiveObservers(false);
-        }
     }
     /**
       @private
@@ -308,7 +303,7 @@ class Route extends EmberObject {
       @method enter
     */
     enter() {
-        this.connections = [];
+        ROUTE_CONNECTIONS.set(this, []);
         this.activate();
         this.trigger('activate');
     }
@@ -858,12 +853,6 @@ class Route extends EmberObject {
         this.setupController(controller, context, transition);
         if (this._environment.options.shouldRender) {
             this.renderTemplate(controller, context);
-        }
-        // TODO: Once tags are enabled by default, we should refactor QP changes to
-        // use autotracking. This will likely be a large refactor, and for now we
-        // just need to trigger observers eagerly.
-        if (EMBER_METAL_TRACKED_PROPERTIES) {
-            flushInvalidActiveObservers(false);
         }
     }
     /*
@@ -1495,7 +1484,7 @@ class Route extends EmberObject {
             }
         }
         let renderOptions = buildRenderOptions(this, isDefaultRender, name, options);
-        this.connections.push(renderOptions);
+        ROUTE_CONNECTIONS.get(this).push(renderOptions);
         once(this._router, '_setOutlets');
     }
     /**
@@ -1584,8 +1573,9 @@ class Route extends EmberObject {
         if (parent && parentView === parent.routeName) {
             parentView = undefined;
         }
-        for (let i = 0; i < this.connections.length; i++) {
-            let connection = this.connections[i];
+        let connections = ROUTE_CONNECTIONS.get(this);
+        for (let i = 0; i < connections.length; i++) {
+            let connection = connections[i];
             if (connection.outlet === outletName && connection.into === parentView) {
                 // This neuters the disconnected outlet such that it doesn't
                 // render anything, but it leaves an entry in the outlet
@@ -1593,7 +1583,7 @@ class Route extends EmberObject {
                 // don't suddenly blow up. They will still stick themselves
                 // into its outlets, which won't render anywhere. All of this
                 // statefulness should get the machete in 2.0.
-                this.connections[i] = {
+                connections[i] = {
                     owner: connection.owner,
                     into: connection.into,
                     outlet: connection.outlet,
@@ -1604,6 +1594,7 @@ class Route extends EmberObject {
                 once(this._router, '_setOutlets');
             }
         }
+        ROUTE_CONNECTIONS.set(this, connections);
     }
     willDestroy() {
         this.teardownViews();
@@ -1614,11 +1605,47 @@ class Route extends EmberObject {
       @method teardownViews
     */
     teardownViews() {
-        if (this.connections && this.connections.length > 0) {
-            this.connections = [];
+        let connections = ROUTE_CONNECTIONS.get(this);
+        if (connections !== undefined && connections.length > 0) {
+            ROUTE_CONNECTIONS.set(this, []);
             once(this._router, '_setOutlets');
         }
     }
+    /**
+      Allows you to produce custom metadata for the route.
+      The return value of this method will be attatched to
+      its corresponding RouteInfoWithAttributes obejct.
+  
+      Example
+  
+      ```app/routes/posts/index.js
+      import Route from '@ember/routing/route';
+  
+      export default Route.extend({
+        buildRouteInfoMetadata() {
+          return { title: 'Posts Page' }
+        }
+      });
+      ```
+      ```app/routes/application.js
+      import Route from '@ember/routing/route';
+      import { inject as service } from '@ember/service';
+  
+      export default Route.extend({
+        router: service('router'),
+        init() {
+          this._super(...arguments);
+          this.router.on('routeDidChange', transition => {
+            document.title = transition.to.metadata.title;
+            // would update document's title to "Posts Page"
+          });
+        }
+      });
+      ```
+  
+      @return any
+     */
+    buildRouteInfoMetadata() { }
 }
 Route.reopenClass({
     isRouteFactory: true,
@@ -2309,46 +2336,6 @@ if (ROUTER_EVENTS) {
             }
             return params;
         },
-    });
-}
-if (EMBER_ROUTING_BUILD_ROUTEINFO_METADATA) {
-    Route.reopen({
-        /**
-          Allows you to produce custom metadata for the route.
-          The return value of this method will be attatched to
-          its corresponding RouteInfoWithAttributes obejct.
-    
-          Example
-    
-          ```app/routes/posts/index.js
-          import Route from '@ember/routing/route';
-    
-          export default Route.extend({
-            buildRouteInfoMetadata() {
-              return { title: 'Posts Page' }
-            }
-          });
-          ```
-          ```app/routes/application.js
-          import Route from '@ember/routing/route';
-          import { inject as service } from '@ember/service';
-    
-          export default Route.extend({
-            router: service('router'),
-            init() {
-              this._super(...arguments);
-              this.router.on('routeDidChange', transition => {
-                document.title = transition.to.metadata.title;
-                // would update document's title to "Posts Page"
-              });
-            }
-          });
-          ```
-    
-          @return any
-          @category EMBER_ROUTING_BUILD_ROUTEINFO_METADATA
-         */
-        buildRouteInfoMetadata() { },
     });
 }
 if (EMBER_FRAMEWORK_OBJECT_OWNER_ARGUMENT) {

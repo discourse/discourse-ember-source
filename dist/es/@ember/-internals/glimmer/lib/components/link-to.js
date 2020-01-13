@@ -704,10 +704,13 @@ if (EMBER_GLIMMER_ANGLE_BRACKET_BUILT_INS) {
                     this.model === UNDEFINED &&
                     this.models === UNDEFINED &&
                     this.query === UNDEFINED));
-                if (DEBUG && this.query === UNDEFINED) {
-                    let { _models: models } = this;
-                    let lastModel = models.length > 0 && models[models.length - 1];
-                    assert('The `(query-params)` helper can only be used when invoking the `{{link-to}}` component.', !(lastModel && lastModel.isQueryParams));
+                let { _models: models } = this;
+                if (models.length > 0) {
+                    let lastModel = models[models.length - 1];
+                    if (typeof lastModel === 'object' && lastModel !== null && lastModel.isQueryParams) {
+                        this.query = lastModel.values;
+                        models.pop();
+                    }
                 }
                 return;
             }
@@ -997,7 +1000,7 @@ else {
       {{/link-to}}
       ```
   
-      See [LinkComponent](/api/ember/release/classes/LinkComponent) for a
+      See [LinkComponent](/ember/release/classes/LinkComponent) for a
       complete list of overrideable properties. Be sure to also
       check out inherited properties of `LinkComponent`.
   

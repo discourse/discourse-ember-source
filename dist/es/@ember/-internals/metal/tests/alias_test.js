@@ -1,4 +1,10 @@
-import { alias, defineProperty, get, set, isWatching, addObserver, removeObserver, tagFor, tagForProperty } from '..';
+function _initializerDefineProperty(target, property, descriptor, context) { if (!descriptor) return; Object.defineProperty(target, property, { enumerable: descriptor.enumerable, configurable: descriptor.configurable, writable: descriptor.writable, value: descriptor.initializer ? descriptor.initializer.call(context) : void 0 }); }
+
+function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) { var desc = {}; Object.keys(descriptor).forEach(function (key) { desc[key] = descriptor[key]; }); desc.enumerable = !!desc.enumerable; desc.configurable = !!desc.configurable; if ('value' in desc || desc.initializer) { desc.writable = true; } desc = decorators.slice().reverse().reduce(function (desc, decorator) { return decorator(target, property, desc) || desc; }, desc); if (context && desc.initializer !== void 0) { desc.value = desc.initializer ? desc.initializer.call(context) : void 0; desc.initializer = undefined; } if (desc.initializer === void 0) { Object.defineProperty(target, property, desc); desc = null; } return desc; }
+
+function _initializerWarningHelper(descriptor, context) { throw new Error('Decorating class property failed. Please ensure that ' + 'proposal-class-properties is enabled and set to use loose mode. ' + 'To use proposal-class-properties in spec mode with decorators, wait for ' + 'the next major version of decorators in stage 2.'); }
+
+import { alias, computed, defineProperty, get, set, isWatching, addObserver, removeObserver, tagFor, tagForProperty } from '..';
 import { Object as EmberObject } from '@ember/-internals/runtime';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { moduleFor, AbstractTestCase, runLoopSettled } from 'internal-test-helpers';
@@ -191,6 +197,44 @@ moduleFor('@ember/-internals/metal/alias', class extends AbstractTestCase {
     assertPropertyTagUnchanged(obj, 'bar', () => {
       assert.equal(get(obj, 'bar'), 'FOO');
     });
+  }
+
+  ['@test nested aliases update their chained dependencies properly'](assert) {
+    var _dec, _class, _descriptor, _temp, _dec2, _class3, _temp2;
+
+    let count = 0;
+    let Inner = (_dec = alias('pojo'), (_class = (_temp = class Inner {
+      constructor() {
+        _initializerDefineProperty(this, "aliased", _descriptor, this);
+
+        this.pojo = {
+          value: 123
+        };
+      }
+
+    }, _temp), (_descriptor = _applyDecoratedDescriptor(_class.prototype, "aliased", [_dec], {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      initializer: null
+    })), _class));
+    let Outer = (_dec2 = computed('inner.aliased.value'), (_class3 = (_temp2 = class Outer {
+      constructor() {
+        this.inner = new Inner();
+      }
+
+      get value() {
+        count++;
+        return this.inner.aliased.value;
+      }
+
+    }, _temp2), (_applyDecoratedDescriptor(_class3.prototype, "value", [_dec2], Object.getOwnPropertyDescriptor(_class3.prototype, "value"), _class3.prototype)), _class3));
+    let outer = new Outer();
+    assert.equal(outer.value, 123, 'Property works');
+    outer.value;
+    assert.equal(count, 1, 'Property was properly cached');
+    set(outer, 'inner.pojo.value', 456);
+    assert.equal(outer.value, 456, 'Property was invalidated correctly');
   }
 
 });

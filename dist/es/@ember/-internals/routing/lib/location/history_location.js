@@ -1,4 +1,4 @@
-import { get, set } from '@ember/-internals/metal';
+import { set } from '@ember/-internals/metal';
 import { Object as EmberObject } from '@ember/-internals/runtime';
 import { getHash } from './util';
 /**
@@ -64,7 +64,7 @@ export default class HistoryLocation extends EmberObject {
       @method getHash
     */
     getHash() {
-        return getHash(get(this, 'location'));
+        return getHash(this.location);
     }
     init() {
         this._super(...arguments);
@@ -74,7 +74,7 @@ export default class HistoryLocation extends EmberObject {
             baseURL = base.getAttribute('href');
         }
         set(this, 'baseURL', baseURL);
-        set(this, 'location', get(this, 'location') || window.location);
+        set(this, 'location', this.location || window.location);
         this._popstateHandler = undefined;
     }
     /**
@@ -84,7 +84,7 @@ export default class HistoryLocation extends EmberObject {
       @method initState
     */
     initState() {
-        let history = get(this, 'history') || window.history;
+        let history = this.history || window.history;
         set(this, 'history', history);
         if (history && 'state' in history) {
             this.supportsHistory = true;
@@ -108,10 +108,8 @@ export default class HistoryLocation extends EmberObject {
       @return url {String}
     */
     getURL() {
-        let location = get(this, 'location');
+        let { location, rootURL, baseURL } = this;
         let path = location.pathname;
-        let rootURL = get(this, 'rootURL');
-        let baseURL = get(this, 'baseURL');
         // remove trailing slashes if they exists
         rootURL = rootURL.replace(/\/$/, '');
         baseURL = baseURL.replace(/\/$/, '');
@@ -119,7 +117,7 @@ export default class HistoryLocation extends EmberObject {
         let url = path
             .replace(new RegExp(`^${baseURL}(?=/|$)`), '')
             .replace(new RegExp(`^${rootURL}(?=/|$)`), '')
-            .replace(/\/\/$/g, '/'); // remove extra slashes
+            .replace(/\/\//g, '/'); // remove extra slashes
         let search = location.search || '';
         url += search + this.getHash();
         return url;
@@ -169,7 +167,7 @@ export default class HistoryLocation extends EmberObject {
     */
     getState() {
         if (this.supportsHistory) {
-            return get(this, 'history').state;
+            return this.history.state;
         }
         return this._historyState;
     }
@@ -182,7 +180,7 @@ export default class HistoryLocation extends EmberObject {
     */
     pushState(path) {
         let state = { path, uuid: _uuid() };
-        get(this, 'history').pushState(state, null, path);
+        this.history.pushState(state, null, path);
         this._historyState = state;
         // used for webkit workaround
         this._previousURL = this.getURL();
@@ -196,7 +194,7 @@ export default class HistoryLocation extends EmberObject {
     */
     replaceState(path) {
         let state = { path, uuid: _uuid() };
-        get(this, 'history').replaceState(state, null, path);
+        this.history.replaceState(state, null, path);
         this._historyState = state;
         // used for webkit workaround
         this._previousURL = this.getURL();
@@ -232,8 +230,7 @@ export default class HistoryLocation extends EmberObject {
       @return formatted url {String}
     */
     formatURL(url) {
-        let rootURL = get(this, 'rootURL');
-        let baseURL = get(this, 'baseURL');
+        let { rootURL, baseURL } = this;
         if (url !== '') {
             // remove trailing slashes if they exists
             rootURL = rootURL.replace(/\/$/, '');

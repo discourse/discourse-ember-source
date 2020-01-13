@@ -16,7 +16,30 @@ moduleFor('addObserver', class extends AbstractTestCase {
     }, 'observer called without valid path');
     expectAssertion(() => {
       observer(null);
+    }, 'observer must be provided a function or an observer definition');
+    expectAssertion(() => {
+      observer({});
     }, 'observer called without a function');
+    expectAssertion(() => {
+      observer({
+        fn() {}
+
+      });
+    }, 'observer called without valid path');
+    expectAssertion(() => {
+      observer({
+        fn() {},
+
+        dependentKeys: []
+      });
+    }, 'observer called without valid path');
+    expectAssertion(() => {
+      observer({
+        fn() {},
+
+        dependentKeys: ['foo']
+      });
+    }, 'observer called without sync');
   }
 
   async ['@test observer should fire when property is modified'](assert) {
@@ -258,18 +281,10 @@ moduleFor('addObserver', class extends AbstractTestCase {
     addObserver(obj, 'foo', function () {
       fooCount++;
     });
-
-    if (!EMBER_METAL_TRACKED_PROPERTIES) {
-      beginPropertyChanges();
-    }
-
+    beginPropertyChanges();
     set(obj, 'foo', 'BIFF');
     set(obj, 'foo', 'BAZ');
-
-    if (!EMBER_METAL_TRACKED_PROPERTIES) {
-      endPropertyChanges();
-    }
-
+    endPropertyChanges();
     await runLoopSettled();
     assert.equal(fooCount, 1, 'foo should have fired once');
   }

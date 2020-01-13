@@ -137,7 +137,7 @@ var EventTarget = {
     @for rsvp
     @private
     @param {String} eventName event to stop listening to
-    @param {Function} callback optional argument. If given, only the function
+    @param {Function} [callback] optional argument. If given, only the function
     given will be removed from the event's callback queue. If no `callback`
     argument is given, all callbacks will be removed from the event's callback
     queue.
@@ -185,7 +185,7 @@ var EventTarget = {
     @for rsvp
     @private
     @param {String} eventName name of the event to be triggered
-    @param {*} options optional value to be passed to any event handlers for
+    @param {*} [options] optional value to be passed to any event handlers for
     the given `eventName`
   */
   trigger(eventName, options, label) {
@@ -287,7 +287,7 @@ function instrument(eventName, promise, child) {
   @for Promise
   @static
   @param {*} object value that the returned promise will be resolved with
-  @param {String} label optional string for identifying the returned promise.
+  @param {String} [label] optional string for identifying the returned promise.
   Useful for tooling.
   @return {Promise} a promise that will become fulfilled with the given
   `value`
@@ -320,38 +320,17 @@ const PENDING   = void 0;
 const FULFILLED = 1;
 const REJECTED  = 2;
 
-const TRY_CATCH_ERROR = { error: null };
-
-function getThen(promise) {
+function tryThen(then$$1, value, fulfillmentHandler, rejectionHandler) {
   try {
-    return promise.then;
-  } catch(error) {
-    TRY_CATCH_ERROR.error = error;
-    return TRY_CATCH_ERROR;
-  }
-}
-
-let tryCatchCallback;
-function tryCatcher() {
-  try {
-    let target = tryCatchCallback;
-    tryCatchCallback = null;
-    return target.apply(this, arguments);
+    then$$1.call(value, fulfillmentHandler, rejectionHandler);
   } catch(e) {
-    TRY_CATCH_ERROR.error = e;
-    return TRY_CATCH_ERROR;
+    return e;
   }
 }
-
-function tryCatch(fn) {
-  tryCatchCallback = fn;
-  return tryCatcher;
-}
-
 function handleForeignThenable(promise, thenable, then$$1) {
   config.async(promise => {
     let sealed = false;
-    let result = tryCatch(then$$1).call(
+    let error = tryThen(then$$1,
       thenable,
       value => {
         if (sealed) { return; }
@@ -370,14 +349,10 @@ function handleForeignThenable(promise, thenable, then$$1) {
       },
       'Settle: ' + (promise._label || ' unknown promise')
     );
-
-    if (!sealed && result === TRY_CATCH_ERROR) {
+    if (!sealed && error) {
       sealed = true;
-      let error = TRY_CATCH_ERROR.error;
-      TRY_CATCH_ERROR.error = null;
       reject(promise, error);
     }
-
   }, promise);
 }
 
@@ -406,10 +381,6 @@ function handleMaybeThenable(promise, maybeThenable, then$$1) {
 
   if (isOwnThenable) {
     handleOwnThenable(promise, maybeThenable);
-  } else if (then$$1 === TRY_CATCH_ERROR) {
-    let error = TRY_CATCH_ERROR.error;
-    TRY_CATCH_ERROR.error = null;
-    reject(promise, error);
   } else if (typeof then$$1 === 'function') {
     handleForeignThenable(promise, maybeThenable, then$$1);
   } else {
@@ -421,7 +392,14 @@ function resolve$1(promise, value) {
   if (promise === value) {
     fulfill(promise, value);
   } else if (objectOrFunction(value)) {
-    handleMaybeThenable(promise, value, getThen(value));
+    let then$$1;
+    try {
+      then$$1 = value.then;
+    } catch (error) {
+      reject(promise, error);
+      return;
+    }
+    handleMaybeThenable(promise, value, then$$1);
   } else {
     fulfill(promise, value);
   }
@@ -500,10 +478,15 @@ function publish(promise) {
 
 function invokeCallback(state, promise, callback, result) {
   let hasCallback = typeof callback === 'function';
-  let value;
+  let value, succeeded = true, error;
 
   if (hasCallback) {
-    value = tryCatch(callback)(result);
+    try {
+      value = callback(result);
+    } catch (e) {
+      succeeded = false;
+      error = e;
+    }
   } else {
     value = result;
   }
@@ -512,9 +495,7 @@ function invokeCallback(state, promise, callback, result) {
     // noop
   } else if (value === promise) {
     reject(promise, withOwnPromise());
-  } else if (value === TRY_CATCH_ERROR) {
-    let error = TRY_CATCH_ERROR.error;
-    TRY_CATCH_ERROR.error = null; // release
+  } else if (succeeded === false) {
     reject(promise, error);
   } else if (hasCallback) {
     resolve$1(promise, value);
@@ -610,7 +591,13 @@ class Enumerator {
     let c = this._instanceConstructor;
 
     if (this._isUsingOwnResolve) {
-      let then$$1 = getThen(entry);
+      let then$$1, error, succeeded = true;
+      try {
+        then$$1 = entry.then;
+      } catch (e) {
+        succeeded = false;
+        error = e;
+      }
 
       if (then$$1 === then && entry._state !== PENDING) {
         entry._onError = null;
@@ -619,8 +606,12 @@ class Enumerator {
         this._settledAt(FULFILLED, i, entry, firstPass);
       } else if (this._isUsingOwnPromise) {
         let promise = new c(noop);
-        handleMaybeThenable(promise, entry, then$$1);
-        this._willSettleAt(promise, i, firstPass);
+        if (succeeded === false) {
+          reject(promise, error);
+        } else {
+          handleMaybeThenable(promise, entry, then$$1);
+          this._willSettleAt(promise, i, firstPass);
+        }
       } else {
         this._willSettleAt(new c(resolve => resolve(entry)), i, firstPass);
       }
@@ -724,7 +715,7 @@ function setSettledResult(state, i, value) {
   @method all
   @for Promise
   @param {Array} entries array of promises
-  @param {String} label optional string for labeling the promise.
+  @param {String} [label] optional string for labeling the promise.
   Useful for tooling.
   @return {Promise} promise that is fulfilled when all `promises` have been
   fulfilled, or rejected if any of them become rejected.
@@ -805,7 +796,7 @@ function all(entries, label) {
   @for Promise
   @static
   @param {Array} entries array of promises to observe
-  @param {String} label optional string for describing the promise returned.
+  @param {String} [label] optional string for describing the promise returned.
   Useful for tooling.
   @return {Promise} a promise which settles in the same way as the first passed
   promise to settle.
@@ -868,7 +859,7 @@ function race(entries, label) {
   @for Promise
   @static
   @param {*} reason value that the returned promise will be rejected with.
-  @param {String} label optional string for identifying the returned promise.
+  @param {String} [label] optional string for identifying the returned promise.
   Useful for tooling.
   @return {Promise} a promise rejected with the given `reason`.
 */
@@ -992,7 +983,7 @@ function needsNew() {
   @class Promise
   @public
   @param {function} resolver
-  @param {String} label optional string for labeling the promise.
+  @param {String} [label] optional string for labeling the promise.
   Useful for tooling.
   @constructor
 */
@@ -1044,7 +1035,7 @@ class Promise {
 
   @method catch
   @param {Function} onRejection
-  @param {String} label optional string for labeling the promise.
+  @param {String} [label] optional string for labeling the promise.
   Useful for tooling.
   @return {Promise}
 */
@@ -1088,7 +1079,7 @@ class Promise {
 
   @method finally
   @param {Function} callback
-  @param {String} label optional string for labeling the promise.
+  @param {String} [label] optional string for labeling the promise.
   Useful for tooling.
   @return {Promise}
 */
@@ -1303,7 +1294,7 @@ Promise.prototype._guidKey = guidKey;
   @method then
   @param {Function} onFulfillment
   @param {Function} onRejection
-  @param {String} label optional string for labeling the promise.
+  @param {String} [label] optional string for labeling the promise.
   Useful for tooling.
   @return {Promise}
 */
@@ -1481,16 +1472,24 @@ function denodeify(nodeFunc, options) {
     for (let i = 0; i < l; ++i) {
       let arg = arguments[i];
 
+      // TODO: this code really needs to be cleaned up
       if (!promiseInput) {
-        // TODO: clean this up
-        promiseInput = needsPromiseInput(arg);
-        if (promiseInput === TRY_CATCH_ERROR) {
-          let error = TRY_CATCH_ERROR.error;
-          TRY_CATCH_ERROR.error = null;
-          let p = new Promise(noop);
-          reject(p, error);
-          return p;
-        } else if (promiseInput && promiseInput !== true) {
+        if (arg !== null && typeof arg === 'object') {
+          if (arg.constructor === Promise) {
+            promiseInput = true;
+          } else {
+            try {
+              promiseInput = arg.then;
+            } catch(error) {
+              let p = new Promise(noop);
+              reject(p, error);
+              return p;
+            }
+          }
+        } else {
+          promiseInput = false;
+        }
+        if (promiseInput && promiseInput !== true) {
           arg = wrapThenable(promiseInput, arg);
         }
       }
@@ -1526,10 +1525,9 @@ function denodeify(nodeFunc, options) {
 }
 
 function handleValueInput(promise, args, nodeFunc, self) {
-  let result = tryCatch(nodeFunc).apply(self, args);
-  if (result === TRY_CATCH_ERROR) {
-    let error = TRY_CATCH_ERROR.error;
-    TRY_CATCH_ERROR.error = null;
+  try {
+    nodeFunc.apply(self, args);
+  } catch (error) {
     reject(promise, error);
   }
   return promise;
@@ -1540,18 +1538,6 @@ function handlePromiseInput(promise, args, nodeFunc, self){
     .then(args => handleValueInput(promise, args, nodeFunc, self));
 }
 
-function needsPromiseInput(arg) {
-  if (arg !== null && typeof arg === 'object') {
-    if (arg.constructor === Promise) {
-      return true;
-    } else {
-      return getThen(arg);
-    }
-  } else {
-    return false;
-  }
-}
-
 /**
   This is a convenient alias for `Promise.all`.
 
@@ -1560,7 +1546,7 @@ function needsPromiseInput(arg) {
   @static
   @for rsvp
   @param {Array} array Array of promises.
-  @param {String} label An optional label. This is useful
+  @param {String} [label] An optional label. This is useful
   for tooling.
 */
 function all$1(array, label) {
@@ -1627,7 +1613,7 @@ AllSettled.prototype._setResultAt = setSettledResult;
   @static
   @for rsvp
   @param {Array} entries
-  @param {String} label - optional string that describes the promise.
+  @param {String} [label] - optional string that describes the promise.
   Useful for tooling.
   @return {Promise} promise that is fulfilled with an array of the settled
   states of the constituent promises.
@@ -1649,7 +1635,7 @@ function allSettled(entries, label) {
   @static
   @for rsvp
   @param {Array} array Array of promises.
-  @param {String} label An optional label. This is useful
+  @param {String} [label] An optional label. This is useful
   for tooling.
  */
 function race$1(array, label) {
@@ -1769,7 +1755,7 @@ class PromiseHash extends Enumerator {
   @static
   @for rsvp
   @param {Object} object
-  @param {String} label optional string that describes the promise.
+  @param {String} [label] optional string that describes the promise.
   Useful for tooling.
   @return {Promise} promise that is fulfilled when all properties of `promises`
   have been fulfilled, or rejected if any of them become rejected.
@@ -1894,7 +1880,7 @@ HashSettled.prototype._setResultAt = setSettledResult;
   @public
   @for rsvp
   @param {Object} object
-  @param {String} label optional string that describes the promise.
+  @param {String} [label] optional string that describes the promise.
   Useful for tooling.
   @return {Promise} promise that is fulfilled when when all properties of `promises`
   have been settled.
@@ -1991,7 +1977,7 @@ function rethrow(reason) {
   @public
   @static
   @for rsvp
-  @param {String} label optional string for labeling the promise.
+  @param {String} [label] optional string for labeling the promise.
   Useful for tooling.
   @return {Object}
  */
@@ -2024,18 +2010,16 @@ class MapEnumerator extends Enumerator {
 
   _setResultAt(state, i, value, firstPass) {
     if (firstPass) {
-      let val = tryCatch(this._mapFn)(value, i);
-      if (val === TRY_CATCH_ERROR) {
-        this._settledAt(REJECTED, i, val.error, false);
-      } else {
-        this._eachEntry(val, i, false);
+      try {
+        this._eachEntry(this._mapFn(value, i), i, false);
+      } catch (error) {
+        this._settledAt(REJECTED, i, error, false);
       }
     } else {
       this._remaining--;
       this._result[i] = value;
     }
   }
-
 }
 
 
@@ -2114,7 +2098,7 @@ class MapEnumerator extends Enumerator {
   @for rsvp
   @param {Array} promises
   @param {Function} mapFn function to be called on each fulfilled promise.
-  @param {String} label optional string for labeling the promise.
+  @param {String} [label] optional string for labeling the promise.
   Useful for tooling.
   @return {Promise} promise that is fulfilled with the result of calling
   `mapFn` on each fulfilled promise or value when they become fulfilled.
@@ -2142,7 +2126,7 @@ function map(promises, mapFn, label) {
   @static
   @for rsvp
   @param {*} value value that the returned promise will be resolved with
-  @param {String} label optional string for identifying the returned promise.
+  @param {String} [label] optional string for identifying the returned promise.
   Useful for tooling.
   @return {Promise} a promise that will become fulfilled with the given
   `value`
@@ -2159,7 +2143,7 @@ function resolve$2(value, label) {
   @static
   @for rsvp
   @param {*} reason value that the returned promise will be rejected with.
-  @param {String} label optional string for identifying the returned promise.
+  @param {String} [label] optional string for identifying the returned promise.
   Useful for tooling.
   @return {Promise} a promise rejected with the given `reason`.
 */
@@ -2182,10 +2166,14 @@ class FilterEnumerator extends MapEnumerator {
   _setResultAt(state, i, value, firstPass) {
     if (firstPass) {
       this._result[i] = value;
-      let val = tryCatch(this._mapFn)(value, i);
-      if (val === TRY_CATCH_ERROR) {
-        this._settledAt(REJECTED, i, val.error, false);
-      } else {
+      let val, succeeded = true;
+      try {
+        val = this._mapFn(value, i);
+      } catch (error) {
+        succeeded = false;
+        this._settledAt(REJECTED, i, error, false);
+      }
+      if (succeeded) {
         this._eachEntry(val, i, false);
       }
     } else {
@@ -2283,7 +2271,7 @@ class FilterEnumerator extends MapEnumerator {
   @param {Array} promises
   @param {Function} filterFn - function to be called on each resolved value to
   filter the final results.
-  @param {String} label optional string describing the promise. Useful for
+  @param {String} [label] optional string describing the promise. Useful for
   tooling.
   @return {Promise}
 */

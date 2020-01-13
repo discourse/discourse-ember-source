@@ -1,6 +1,6 @@
 import { assert } from '@ember/debug';
 import { onErrorTarget } from '@ember/-internals/error-handling';
-import { flushInvalidActiveObservers } from '@ember/-internals/metal';
+import { flushAsyncObservers } from '@ember/-internals/metal';
 import Backburner from 'backburner';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 let currentRunLoop = null;
@@ -16,7 +16,7 @@ function onEnd(current, next) {
   currentRunLoop = next;
 
   if (EMBER_METAL_TRACKED_PROPERTIES) {
-    flushInvalidActiveObservers();
+    flushAsyncObservers();
   }
 }
 
@@ -25,7 +25,7 @@ let flush;
 if (EMBER_METAL_TRACKED_PROPERTIES) {
   flush = function (queueName, next) {
     if (queueName === 'render' || queueName === _rsvpErrorQueue) {
-      flushInvalidActiveObservers();
+      flushAsyncObservers();
     }
 
     next();

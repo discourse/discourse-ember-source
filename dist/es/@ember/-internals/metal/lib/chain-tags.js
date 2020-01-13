@@ -14,7 +14,7 @@ export function finishLazyChains(obj, key, value) {
         return;
     }
     if (value === null || (typeof value !== 'object' && typeof value !== 'function')) {
-        lazyTags.clear();
+        lazyTags.length = 0;
         return;
     }
     while (lazyTags.length > 0) {
@@ -69,7 +69,7 @@ export function getChainTagsForKey(obj, key) {
                 if (typeof descriptor.altKey === 'string') {
                     // it's an alias, so just get the altkey without tracking
                     track(() => {
-                        current = get(obj, descriptor.altKey);
+                        current = get(current, descriptor.altKey);
                     });
                 }
                 else {

@@ -129,10 +129,10 @@ moduleFor('Controller deprecations -> Controller Content -> Model Alias', class 
   ['@test specifying `content` (with `model` specified) does not result in deprecation'](assert) {
     assert.expect(3);
     expectNoDeprecation();
-    let controller = Controller.extend({
+    let controller = Controller.create({
       content: 'foo-bar',
       model: 'blammo'
-    }).create();
+    });
     assert.equal(get(controller, 'content'), 'foo-bar');
     assert.equal(get(controller, 'model'), 'blammo');
   }

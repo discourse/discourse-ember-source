@@ -16,6 +16,7 @@ import ControllerMixin from '@ember/controller/lib/controller_mixin';
 import { _getStrings, _setStrings, dasherize, camelize, capitalize, classify, decamelize, loc, underscore, w } from '@ember/string';
 import Service, { inject as injectService } from '@ember/service';
 import { action } from '@ember/object';
+import { dependentKeyCompat } from '@ember/object/compat';
 import { and, bool, collect, deprecatingAlias, empty, equal, filterBy, filter, gte, gt, intersect, lte, lt, mapBy, map, match, max, min, none, notEmpty, not, oneWay, or, readOnly, setDiff, sort, sum, union, uniqBy, uniq } from '@ember/object/computed';
 import { Object as EmberObject, RegistryProxyMixin, ContainerProxyMixin, compare, copy, isEqual, Array as EmberArray, Copyable, MutableEnumerable, MutableArray, TargetActionSupport, Evented, PromiseProxyMixin, Observable, typeOf, isArray, _ProxyMixin, RSVP, Comparable, Namespace, Enumerable, ArrayProxy, ObjectProxy, ActionHandler, CoreObject, NativeArray, A, setFrameworkClass } from '@ember/-internals/runtime';
 import { Checkbox, Component, setComponentManager, capabilities, escapeExpression, getTemplates, Helper, helper, htmlSafe, isHTMLSafe, LinkComponent, setTemplates, template, TextField, TextArea, isSerializationFirstNode, setModifierManager, modifierCapabilties } from '@ember/-internals/glimmer'; // eslint-disable-next-line import/no-unresolved
@@ -89,19 +90,7 @@ Ember.makeArray = utils.makeArray;
 Ember.canInvoke = utils.canInvoke;
 Ember.tryInvoke = utils.tryInvoke;
 Ember.wrap = utils.wrap;
-Ember.uuid = utils.uuid;
-Object.defineProperty(Ember, 'NAME_KEY', {
-  enumerable: false,
-
-  get() {
-    deprecate('Using `Ember.NAME_KEY` is deprecated, override `.toString` instead', false, {
-      id: 'ember-name-key-usage',
-      until: '3.9.0'
-    });
-    return utils.NAME_KEY;
-  }
-
-}); // ****@ember/-internals/container****
+Ember.uuid = utils.uuid; // ****@ember/-internals/container****
 
 Ember.Container = Container;
 Ember.Registry = Registry; // ****@ember/debug****
@@ -336,6 +325,7 @@ Ember._ProxyMixin = _ProxyMixin;
 Ember.RSVP = RSVP;
 Ember.Namespace = Namespace;
 Ember._action = action;
+Ember._dependentKeyCompat = dependentKeyCompat;
 computed.empty = empty;
 computed.notEmpty = notEmpty;
 computed.none = none;

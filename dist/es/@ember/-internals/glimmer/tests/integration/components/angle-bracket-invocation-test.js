@@ -2,7 +2,7 @@ import { moduleFor, RenderingTestCase, strip, classes, runTask } from 'internal-
 import { ENV } from '@ember/-internals/environment';
 import { setModifierManager } from '@ember/-internals/glimmer';
 import { Object as EmberObject } from '@ember/-internals/runtime';
-import { EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP, EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES } from '@ember/canary-features';
+import { EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES } from '@ember/canary-features';
 import { set, setProperties } from '@ember/-internals/metal';
 import { Component } from '../../utils/helpers';
 
@@ -1299,25 +1299,22 @@ moduleFor('AngleBracket Invocation (splattributes)', class extends RenderingTest
   }
 
 });
+moduleFor('AngleBracket Invocation Nested Lookup', class extends RenderingTestCase {
+  '@test it can resolve <Foo::Bar::BazBing /> to foo/bar/baz-bing'() {
+    this.registerComponent('foo/bar/baz-bing', {
+      template: 'hello'
+    });
+    this.render('<Foo::Bar::BazBing />');
+    this.assertComponentElement(this.firstChild, {
+      content: 'hello'
+    });
+    runTask(() => this.rerender());
+    this.assertComponentElement(this.firstChild, {
+      content: 'hello'
+    });
+  }
 
-if (EMBER_GLIMMER_ANGLE_BRACKET_NESTED_LOOKUP) {
-  moduleFor('AngleBracket Invocation Nested Lookup', class extends RenderingTestCase {
-    '@test it can resolve <Foo::Bar::BazBing /> to foo/bar/baz-bing'() {
-      this.registerComponent('foo/bar/baz-bing', {
-        template: 'hello'
-      });
-      this.render('<Foo::Bar::BazBing />');
-      this.assertComponentElement(this.firstChild, {
-        content: 'hello'
-      });
-      runTask(() => this.rerender());
-      this.assertComponentElement(this.firstChild, {
-        content: 'hello'
-      });
-    }
-
-  });
-}
+});
 
 if (EMBER_GLIMMER_FORWARD_MODIFIERS_WITH_SPLATTRIBUTES) {
   moduleFor('Element modifiers on AngleBracket components', class extends RenderingTestCase {

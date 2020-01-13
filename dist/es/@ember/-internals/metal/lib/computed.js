@@ -9,6 +9,7 @@ import { getCachedValueFor, getCacheFor, getLastRevisionFor, peekCacheFor, setLa
 import { addDependentKeys, ComputedDescriptor, isElementDescriptor, makeComputedDecorator, removeDependentKeys, } from './decorator';
 import { descriptorForDecorator, descriptorForProperty, isClassicDecorator, } from './descriptor_map';
 import expandProperties from './expand_properties';
+import { setObserverSuspended } from './observer';
 import { defineProperty } from './properties';
 import { notifyPropertyChange } from './property_events';
 import { set } from './property_set';
@@ -115,7 +116,7 @@ function noop() { }
   import { computed, set } from '@ember/object';
 
   function fullNameMacro(firstNameKey, lastNameKey) {
-    @computed(firstNameKey, lastNameKey, {
+    return computed(firstNameKey, lastNameKey, {
       get() {
         return `${this[firstNameKey]} ${this[lastNameKey]}`;
       }
@@ -521,7 +522,19 @@ export class ComputedProperty extends ComputedDescriptor {
         let cache = getCacheFor(obj);
         let hadCachedValue = cache.has(keyName);
         let cachedValue = cache.get(keyName);
-        let ret = this._setter.call(obj, keyName, value, cachedValue);
+        let ret;
+        if (EMBER_METAL_TRACKED_PROPERTIES) {
+            setObserverSuspended(obj, keyName, true);
+            try {
+                ret = this._setter.call(obj, keyName, value, cachedValue);
+            }
+            finally {
+                setObserverSuspended(obj, keyName, false);
+            }
+        }
+        else {
+            ret = this._setter.call(obj, keyName, value, cachedValue);
+        }
         // allows setter to return the same value that is cached already
         if (hadCachedValue && cachedValue === ret) {
             return ret;

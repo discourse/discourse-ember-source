@@ -1,3 +1,4 @@
+import { ENV } from '@ember/-internals/environment';
 import { peekMeta } from '@ember/-internals/meta';
 import { EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
 import { schedule } from '@ember/runloop';
@@ -6,7 +7,9 @@ import { getChainTagsForKey } from './chain-tags';
 import changeEvent from './change_event';
 import { addListener, removeListener, sendEvent } from './events';
 import { unwatch, watch } from './watching';
-const ACTIVE_OBSERVERS = new Map();
+const SYNC_DEFAULT = !ENV._DEFAULT_ASYNC_OBSERVERS;
+const SYNC_OBSERVERS = new Map();
+const ASYNC_OBSERVERS = new Map();
 /**
 @module @ember/object
 */
@@ -20,13 +23,13 @@ const ACTIVE_OBSERVERS = new Map();
   @param {Function|String} [method]
   @public
 */
-export function addObserver(obj, path, target, method) {
+export function addObserver(obj, path, target, method, sync = SYNC_DEFAULT) {
     let eventName = changeEvent(path);
-    addListener(obj, eventName, target, method);
+    addListener(obj, eventName, target, method, false, sync);
     if (EMBER_METAL_TRACKED_PROPERTIES) {
         let meta = peekMeta(obj);
         if (meta === null || !(meta.isPrototypeMeta(obj) || meta.isInitializing())) {
-            activateObserver(obj, eventName);
+            activateObserver(obj, eventName, sync);
         }
     }
     else {
@@ -43,12 +46,12 @@ export function addObserver(obj, path, target, method) {
   @param {Function|String} [method]
   @public
 */
-export function removeObserver(obj, path, target, method) {
+export function removeObserver(obj, path, target, method, sync = SYNC_DEFAULT) {
     let eventName = changeEvent(path);
     if (EMBER_METAL_TRACKED_PROPERTIES) {
         let meta = peekMeta(obj);
         if (meta === null || !(meta.isPrototypeMeta(obj) || meta.isInitializing())) {
-            deactivateObserver(obj, eventName);
+            deactivateObserver(obj, eventName, sync);
         }
     }
     else {
@@ -56,14 +59,15 @@ export function removeObserver(obj, path, target, method) {
     }
     removeListener(obj, eventName, target, method);
 }
-function getOrCreateActiveObserversFor(target) {
-    if (!ACTIVE_OBSERVERS.has(target)) {
-        ACTIVE_OBSERVERS.set(target, new Map());
+function getOrCreateActiveObserversFor(target, sync) {
+    let observerMap = sync === true ? SYNC_OBSERVERS : ASYNC_OBSERVERS;
+    if (!observerMap.has(target)) {
+        observerMap.set(target, new Map());
     }
-    return ACTIVE_OBSERVERS.get(target);
+    return observerMap.get(target);
 }
-export function activateObserver(target, eventName) {
-    let activeObservers = getOrCreateActiveObserversFor(target);
+export function activateObserver(target, eventName, sync = false) {
+    let activeObservers = getOrCreateActiveObserversFor(target, sync);
     if (activeObservers.has(eventName)) {
         activeObservers.get(eventName).count++;
     }
@@ -75,18 +79,20 @@ export function activateObserver(target, eventName) {
             path,
             tag,
             lastRevision: tag.value(),
+            suspended: false,
         });
     }
 }
-export function deactivateObserver(target, eventName) {
-    let activeObservers = ACTIVE_OBSERVERS.get(target);
+export function deactivateObserver(target, eventName, sync = false) {
+    let observerMap = sync === true ? SYNC_OBSERVERS : ASYNC_OBSERVERS;
+    let activeObservers = observerMap.get(target);
     if (activeObservers !== undefined) {
         let observer = activeObservers.get(eventName);
         observer.count--;
         if (observer.count === 0) {
             activeObservers.delete(eventName);
             if (activeObservers.size === 0) {
-                ACTIVE_OBSERVERS.delete(target);
+                observerMap.delete(target);
             }
         }
     }
@@ -99,29 +105,34 @@ export function deactivateObserver(target, eventName) {
  * @param target
  */
 export function revalidateObservers(target) {
-    if (!ACTIVE_OBSERVERS.has(target)) {
-        return;
+    if (ASYNC_OBSERVERS.has(target)) {
+        ASYNC_OBSERVERS.get(target).forEach(observer => {
+            observer.tag = getChainTagsForKey(target, observer.path);
+            observer.lastRevision = observer.tag.value();
+        });
     }
-    ACTIVE_OBSERVERS.get(target).forEach(observer => {
-        observer.tag = getChainTagsForKey(target, observer.path);
-        observer.lastRevision = observer.tag.value();
-    });
+    if (SYNC_OBSERVERS.has(target)) {
+        SYNC_OBSERVERS.get(target).forEach(observer => {
+            observer.tag = getChainTagsForKey(target, observer.path);
+            observer.lastRevision = observer.tag.value();
+        });
+    }
 }
 let lastKnownRevision = 0;
-export function flushInvalidActiveObservers(shouldSchedule = true) {
+export function flushAsyncObservers() {
     if (lastKnownRevision === CURRENT_TAG.value()) {
         return;
     }
     lastKnownRevision = CURRENT_TAG.value();
-    ACTIVE_OBSERVERS.forEach((activeObservers, target) => {
+    ASYNC_OBSERVERS.forEach((activeObservers, target) => {
         let meta = peekMeta(target);
         if (meta && (meta.isSourceDestroying() || meta.isMetaDestroyed())) {
-            ACTIVE_OBSERVERS.delete(target);
+            ASYNC_OBSERVERS.delete(target);
             return;
         }
         activeObservers.forEach((observer, eventName) => {
             if (!observer.tag.validate(observer.lastRevision)) {
-                let sendObserver = () => {
+                schedule('actions', () => {
                     try {
                         sendEvent(target, eventName, [target, observer.path]);
                     }
@@ -129,16 +140,43 @@ export function flushInvalidActiveObservers(shouldSchedule = true) {
                         observer.tag = getChainTagsForKey(target, observer.path);
                         observer.lastRevision = observer.tag.value();
                     }
-                };
-                if (shouldSchedule) {
-                    schedule('actions', sendObserver);
+                });
+            }
+        });
+    });
+}
+export function flushSyncObservers() {
+    // When flushing synchronous observers, we know that something has changed (we
+    // only do this during a notifyPropertyChange), so there's no reason to check
+    // a global revision.
+    SYNC_OBSERVERS.forEach((activeObservers, target) => {
+        let meta = peekMeta(target);
+        if (meta && (meta.isSourceDestroying() || meta.isMetaDestroyed())) {
+            SYNC_OBSERVERS.delete(target);
+            return;
+        }
+        activeObservers.forEach((observer, eventName) => {
+            if (!observer.suspended && !observer.tag.validate(observer.lastRevision)) {
+                try {
+                    observer.suspended = true;
+                    sendEvent(target, eventName, [target, observer.path]);
                 }
-                else {
-                    // TODO: we need to schedule eagerly in exactly one location (_internalReset),
-                    // for query params. We should get rid of this ASAP
-                    sendObserver();
+                finally {
+                    observer.suspended = false;
+                    observer.tag = getChainTagsForKey(target, observer.path);
+                    observer.lastRevision = observer.tag.value();
                 }
             }
         });
     });
+}
+export function setObserverSuspended(target, property, suspended) {
+    let activeObservers = SYNC_OBSERVERS.get(target);
+    if (!activeObservers) {
+        return;
+    }
+    let observer = activeObservers.get(changeEvent(property));
+    if (observer) {
+        observer.suspended = suspended;
+    }
 }

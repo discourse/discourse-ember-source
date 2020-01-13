@@ -1,4 +1,4 @@
-import { HAS_NATIVE_SYMBOL, isEmberArray, symbol as emberSymbol } from '@ember/-internals/utils';
+import { isEmberArray } from '@ember/-internals/utils';
 import { EMBER_NATIVE_DECORATOR_SUPPORT } from '@ember/canary-features';
 import { assert } from '@ember/debug';
 import { DEBUG } from '@glimmer/env';
@@ -6,9 +6,6 @@ import { combine, CONSTANT_TAG } from '@glimmer/reference';
 import { isElementDescriptor } from './decorator';
 import { setClassicDecorator } from './descriptor_map';
 import { markObjectAsDirty, tagForProperty, update } from './tags';
-// For some reason TS can't infer that these two functions are compatible-ish,
-// so we need to corece the type
-let symbol = (HAS_NATIVE_SYMBOL ? Symbol : emberSymbol);
 /**
   An object that that tracks @tracked properties that were consumed.
 
@@ -74,7 +71,8 @@ if (DEBUG) {
 function descriptorForField([_target, key, desc]) {
     assert(`You attempted to use @tracked on ${key}, but that element is not a class field. @tracked is only usable on class fields. Native getters and setters will autotrack add any tracked fields they encounter, so there is no need mark getters and setters with @tracked.`, !desc || (!desc.value && !desc.get && !desc.set));
     let initializer = desc ? desc.initializer : undefined;
-    let secretKey = symbol(key);
+    let values = new WeakMap();
+    let hasInitializer = typeof initializer === 'function';
     return {
         enumerable: true,
         configurable: true,
@@ -82,21 +80,25 @@ function descriptorForField([_target, key, desc]) {
             let propertyTag = tagForProperty(this, key);
             if (CURRENT_TRACKER)
                 CURRENT_TRACKER.add(propertyTag);
+            let value;
             // If the field has never been initialized, we should initialize it
-            if (!(secretKey in this)) {
-                this[secretKey] = typeof initializer === 'function' ? initializer.call(this) : undefined;
+            if (hasInitializer && !values.has(this)) {
+                value = initializer.call(this);
+                values.set(this, value);
             }
-            let value = this[secretKey];
+            else {
+                value = values.get(this);
+            }
             // Add the tag of the returned value if it is an array, since arrays
             // should always cause updates if they are consumed and then changed
             if (Array.isArray(value) || isEmberArray(value)) {
                 update(propertyTag, tagForProperty(value, '[]'));
             }
-            return this[secretKey];
+            return value;
         },
         set(newValue) {
             markObjectAsDirty(this, key);
-            this[secretKey] = newValue;
+            values.set(this, newValue);
             if (propertyDidChange !== null) {
                 propertyDidChange();
             }

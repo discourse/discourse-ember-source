@@ -39,7 +39,7 @@ function cleanURL(url, rootURL) {
 
      actions: {
        next() {
-         this.get('router').transitionTo('other.route');
+         this.router.transitionTo('other.route');
        }
      }
    });
@@ -71,7 +71,7 @@ export default class RouterService extends Service {
        Transition the application into another route. The route may
        be either a single route or route path:
   
-       See [transitionTo](/api/ember/release/classes/Route/methods/transitionTo?anchor=transitionTo) for more info.
+       See [transitionTo](/ember/release/classes/Route/methods/transitionTo?anchor=transitionTo) for more info.
   
        Calling `transitionTo` from the Router service will cause default query parameter values to be included in the URL.
        This behavior is different from calling `transitionTo` on a route or `transitionToRoute` on a controller.
@@ -100,7 +100,7 @@ export default class RouterService extends Service {
        Transition into another route while replacing the current URL, if possible.
        The route may be either a single route or route path:
   
-       See [replaceWith](/api/ember/release/classes/Route/methods/replaceWith?anchor=replaceWith) for more info.
+       See [replaceWith](/ember/release/classes/Route/methods/replaceWith?anchor=replaceWith) for more info.
   
        Calling `replaceWith` from the Router service will cause default query parameter values to be included in the URL.
        This behavior is different from calling `replaceWith` on a route.
@@ -300,18 +300,14 @@ RouterService.reopen(Evented, {
      */
     currentURL: readOnly('_router.currentURL'),
     /**
-      The `location` property determines the type of URLs your
-      application will use.
+      The `location` property returns what implementation of the `location` API
+      your application is using, which determines what type of URL is being used.
   
-      The following location types are currently available:
-      * `auto`
-      * `hash`
-      * `history`
-      * `none`
+      See [Location](/ember/release/classes/Location) for more information.
   
-      You can pass a location type to force a particular `location` API
-      implementation to be used in your application. For example, to set
-      the `history` type:
+      To force a particular `location` API implementation to be used in your
+      application you can set a location type on your `config/environment`.
+      For example, to set the `history` type:
   
       ```config/environment.js
       'use strict';
@@ -326,6 +322,14 @@ RouterService.reopen(Evented, {
         }
       }
       ```
+  
+      The following location types are available by default:
+      `auto`, `hash`, `history`, `none`.
+  
+      See [HashLocation](/ember/release/classes/HashLocation).
+      See [HistoryLocation](/ember/release/classes/HistoryLocation).
+      See [NoneLocation](/ember/release/classes/NoneLocation).
+      See [AutoLocation](/ember/release/classes/AutoLocation).
   
       @property location
       @default 'hash'

@@ -6,7 +6,7 @@ function _initializerWarningHelper(descriptor, context) { throw new Error('Decor
 
 import { Object as EmberObject, A } from '@ember/-internals/runtime';
 import { EMBER_CUSTOM_COMPONENT_ARG_PROXY, EMBER_METAL_TRACKED_PROPERTIES } from '@ember/canary-features';
-import { tracked, nativeDescDecorator as descriptor } from '@ember/-internals/metal';
+import { computed, tracked, nativeDescDecorator as descriptor } from '@ember/-internals/metal';
 import { moduleFor, RenderingTestCase, strip, runTask } from 'internal-test-helpers';
 import GlimmerishComponent from '../../utils/glimmerish-component';
 import { Component } from '../../utils/helpers';
@@ -195,6 +195,39 @@ if (EMBER_METAL_TRACKED_PROPERTIES) {
 
         increment() {
           this.count++;
+        }
+
+      });
+      this.registerComponent('counter', {
+        ComponentClass: CountComponent,
+        template: '<button {{action this.increment}}>{{this.countAlias}}</button>'
+      });
+      this.render('<Counter />');
+      this.assertText('0');
+      runTask(() => this.$('button').click());
+      this.assertText('1');
+    }
+
+    '@test getters update when dependent computeds are invalidated'() {
+      let CountComponent = Component.extend({
+        _count: 0,
+        count: computed({
+          get() {
+            return this._count;
+          },
+
+          set(key, value) {
+            return this._count = value;
+          }
+
+        }),
+
+        get countAlias() {
+          return this.count;
+        },
+
+        increment() {
+          this.set('count', this.count + 1);
         }
 
       });
