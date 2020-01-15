@@ -8,3 +8,4 @@
 /tmp/
 /ember/
 discourse-ember-source-*.gem
+Gemfile.lock
