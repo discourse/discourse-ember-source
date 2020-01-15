@@ -1,7 +1,9 @@
 name: Publish Gem
 
 on:
-  create:
+  release:
+    types:
+      - created
   push:
     branches:
       - "*"
