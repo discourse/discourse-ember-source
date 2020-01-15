@@ -1,14 +1,6 @@
 name: Publish Gem
 
-on:
-  release:
-    types:
-      - created
-  push:
-    branches:
-      - "*"
-    tags:
-      - v*
+on: [create, push]
 
 jobs:
   build:
