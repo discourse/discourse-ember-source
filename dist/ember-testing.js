@@ -2582,4 +2582,3 @@ Ember.Test.QUnitAdapter = testing.QUnitAdapter;
 Ember.setupForTesting = testing.setupForTesting;
 
 }());
-//# sourceMappingURL=/assets/ember-testing.map
