@@ -14,6 +14,8 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/discourse/discourse-ember-source"
   spec.license       = "MIT"
 
+  spec.required_ruby_version = ">= 2.5.0"
+
   spec.files         = Dir['lib/ember/*.rb', 'dist/*.js', 'dist/*.map']
 
   spec.bindir        = "exe"
