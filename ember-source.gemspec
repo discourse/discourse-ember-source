@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "ember/version"
@@ -13,6 +14,8 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/discourse/discourse-ember-source"
   spec.license       = "MIT"
 
+  spec.required_ruby_version = ">= 2.5.0"
+
   spec.files         = Dir['lib/ember/*.rb', 'dist/*.js', 'dist/*.map']
 
   spec.bindir        = "exe"
@@ -20,6 +23,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "bundler", ">= 1.16"
-  spec.add_development_dependency "rake", "~> 10.0"
+  spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "minitest", "~> 5.0"
+  spec.add_development_dependency "rubocop-discourse", "~> 2.4.1"
 end

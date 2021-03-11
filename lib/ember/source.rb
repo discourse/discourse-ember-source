@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'ember/version'
 
 module Ember
